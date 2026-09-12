@@ -64,7 +64,76 @@ không cần biên dịch. Thiếu một khoá là game báo lỗi đỏ và **k
 
 ---
 
-## Chạy thử
+## Cách chơi
+
+### Mở game
+
+1. Cài **[Unity Hub](https://unity.com/download)**, đăng nhập, lấy giấy phép Personal miễn phí
+2. Trong Hub: **Installs → Install Editor → `6000.0.83f1`**, chọn bản **Apple Silicon** nếu dùng Mac M-series
+3. **Projects → Add → Add project from disk** → trỏ vào thư mục `unity/`
+4. Mở project, rồi mở scene **`Assets/Scenes/M1.unity`**
+5. Bấm nút **▶ Play** trên thanh công cụ
+
+> Lần mở đầu tiên Unity phải import gần 2.000 sprite, mất vài phút. Những lần sau nhanh.
+
+### Điều khiển
+
+| | |
+|---|---|
+| **Cần gạt ảo** góc dưới-trái | kéo để di chuyển — chuột trái trong Editor, ngón cái trên điện thoại |
+| **Không có nút tấn công** | nhân vật tự đánh kẻ gần nhất, **và chỉ khi bạn đứng yên** |
+
+Thả cần gạt ra là đánh. Kéo cần gạt là ngừng đánh ngay lập tức — kể cả hồi chiêu cũng dừng,
+nên nhấp-nhả liên tục **không** giúp bạn vừa chạy vừa giữ sát thương.
+
+### Cách chơi thật ra là gì
+
+Bạn bắt đầu ở giữa đấu trường, **an toàn** — sáu con quái đứng thành vòng tròn quanh bạn,
+ngoài tầm đánh của cả hai bên. Không có gì xảy ra cho tới khi bạn chủ động bước tới.
+
+Tầm đánh của quái (2,8) **lớn hơn** tầm đánh của bạn (2,0). Nghĩa là để đánh được nó,
+bạn buộc phải đứng trong tầm nó đánh bạn. Toàn bộ trò chơi nằm ở câu hỏi lặp đi lặp lại:
+
+> **Đứng lại thêm một đòn nữa cho nó chết, hay lùi ra cho an toàn?**
+
+Thanh lam dưới chân bạn là **thanh chí mạng**. Nó đầy dần sau mỗi đòn; đầy rồi thì đòn kế tiếp
+nhân ba sát thương, màn hình rung, số bay lên màu vàng. Thanh **không mất** khi bạn di chuyển —
+nên lùi ra chờ rồi xông vào dồn đòn chí mạng là chiến thuật hợp lệ, và là cách chơi hay nhất.
+
+Thanh đỏ trên đỉnh là máu bạn. Hết máu thì đợt quái bày lại từ đầu, không mất gì.
+
+### Năm điều nên để ý khi chơi
+
+1. Giữ cần gạt → số sát thương **ngừng hiện**. Thả ra → đánh lại
+2. Nhấp-nhả cần gạt liên tục → sát thương **giảm rõ rệt**
+3. Đếm tay: **đúng 5 đòn một chí mạng**, không bao giờ 4 hay 6
+4. Đánh 4 đòn → chạy vòng quanh → đứng lại → đòn kế **phải là chí mạng ngay**
+5. Đứng yên trong tầm quái → **máu tụt thật**
+
+### Thấy nhạt thì chỉnh gì
+
+Sửa [`m1-balance.csv`](unity/Assets/StreamingAssets/m1-balance.csv) rồi bấm Play lại —
+**không cần biên dịch, không đụng code**:
+
+| Khoá | Thử đổi khi |
+|---|---|
+| `enemy.damage` | đứng yên chưa đủ đáng sợ |
+| `player.attacksPerSecond` | nhịp đánh lừ đừ hoặc dồn dập quá |
+| `crit.meterSize` | 5 đòn chờ quá lâu, hoặc chí mạng đến quá dễ |
+| `crit.multiplier` | đòn chí mạng chưa đủ đã |
+| khoảng cách `player.attackRange` ↔ `enemy.attackRange` | **đòn bẩy mạnh nhất** — nó quyết định bạn phải liều bao nhiêu |
+
+### Chơi trên điện thoại thật
+
+Cách nhanh: cài **Unity Remote 5** trên điện thoại, cắm dây, chọn nó ở
+`Settings → Editor → Device`, rồi bấm Play. Hình stream sang máy, chạm thật trên màn hình thật.
+
+Cách chuẩn: `File → Build Settings → Android` (hoặc iOS) → **Build And Run**.
+Dự án đã khoá sẵn màn hình dọc và cài sẵn module cho cả hai nền tảng.
+
+---
+
+## Chạy tự động (không cần mở Unity)
 
 ```bash
 cd unity
