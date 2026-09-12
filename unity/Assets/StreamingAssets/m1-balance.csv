@@ -1,0 +1,29 @@
+# Số liệu cân bằng M1. QUY TẮC CỨNG §9.2: không một con số cân bằng nào được viết trong .cs.
+# Sửa file này rồi chạy lại — không cần biên dịch, không cần mở Unity.
+# Đây là SỐ M1, cố tình bịa cho dễ chơi. KHÔNG phải số trong can-bang.xlsx.
+#
+# TẦM ĐÁNH LÀ CHỖ SINH RA SỨC CĂNG CỦA §5.3:
+#   player.attackRange (2.0) PHẢI NHỎ HƠN enemy.attackRange (2.8).
+#   Vào được tầm đánh của mình cũng là vào tầm đánh của quái. Lùi ra thì an toàn nhưng
+#   không gây sát thương. Đảo ngược hai số này là giết sạch sức căng của M1.
+#
+# key,value,ghi chú
+player.maxHp,120,Máu người chơi
+player.moveSpeed,4.5,Tốc độ di chuyển
+player.moveDeadzone,0.15,Cần gạt lệch dưới mức này thì coi như ĐỨNG YÊN
+player.attackDamage,10,Sát thương mỗi đòn thường
+player.attacksPerSecond,2.0,Số đòn mỗi giây khi đứng yên
+player.attackRange,2.0,Tầm đánh của người chơi — phải NHỎ HƠN enemy.attackRange
+crit.meterSize,5,Cứ N đòn thì đòn thứ N chắc chắn chí mạng (§5.4)
+crit.multiplier,3.0,Hệ số nhân sát thương của đòn chí mạng
+enemy.hp,60,Máu một con quái
+enemy.count,6,Số quái trong đấu trường
+enemy.spawnRadius,3.5,Bán kính vòng tròn đặt quái — người chơi đứng giữa thì an toàn
+enemy.damage,6,Sát thương mỗi đòn của quái
+enemy.attacksPerSecond,0.8,Nhịp đánh của quái
+enemy.attackRange,2.8,Tầm đánh của quái — phải LỚN HƠN player.attackRange
+juice.shakeDuration,0.18,Thời gian rung màn hình khi chí mạng
+juice.shakeMagnitude,0.22,Biên độ rung
+juice.shakeYRatio,0.6,Tỉ lệ rung trục Y so với trục X
+juice.popupRiseSpeed,1.6,Tốc độ bay lên của số sát thương
+juice.popupLifetime,0.7,Số sát thương tồn tại bao lâu

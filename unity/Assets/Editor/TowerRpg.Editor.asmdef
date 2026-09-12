@@ -1,0 +1,14 @@
+{
+    "name": "TowerRpg.Editor",
+    "rootNamespace": "TowerRpg.EditorTools",
+    "references": ["TowerRpg", "UnityEngine.UI", "Unity.TextMeshPro"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

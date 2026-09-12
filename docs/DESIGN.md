@@ -1,0 +1,570 @@
+# Thiết kế game — Tower RPG (tên tạm)
+
+> Tài liệu thiết kế, viết trước khi code.
+> Trạng thái: **đã chốt thiết kế và engine (Unity 6 + C#)**.
+> Số liệu cân bằng đã kiểm chứng bằng `can-bang.xlsx` — xem mục 5.7, 5.8 và quyết định #15.
+> Ngày: 2026-09-12
+
+---
+
+## 1. Tóm tắt hiểu biết
+
+Game RPG 2D mobile, chơi một mình, **hoàn toàn offline**. Vòng lặp cốt lõi:
+
+```
+đánh quái → rơi vật phẩm (cố định) → nâng cấp trang bị → mạnh hơn → lên tầng cao hơn
+```
+
+**Nguyên tắc nền, không được vi phạm:** không có yếu tố may rủi ở bất kỳ đâu.
+Không gacha, không hòm đồ, không tỉ lệ rơi, không tỉ lệ chí mạng.
+Mọi kết quả đều xác định và tính toán được.
+
+**Mục đích:** sản phẩm portfolio. Ràng buộc số một là **phải hoàn thành**.
+Ưu tiên hoàn thiện và bóng bẩy hơn là sâu và nhiều.
+
+**Cái hay của game đến từ đánh đổi, không đến từ xác suất.**
+Tài nguyên luôn thiếu so với nhu cầu; người chơi buộc phải chọn tiêu vào đâu,
+và mỗi lựa chọn đóng lại một cánh cửa khác.
+
+---
+
+## 2. Không làm (non-goals)
+
+Những thứ dưới đây bị loại bỏ **có chủ ý**, không phải vì quên:
+
+| Loại bỏ | Lý do |
+|---|---|
+| Backend / server | Offline hoàn toàn; không chi phí vận hành |
+| IAP, quảng cáo | Portfolio không cần doanh thu |
+| PvP, guild, chat, bảng xếp hạng | Đội chi phí gấp nhiều lần, không phục vụ mục tiêu |
+| Gacha, hòm đồ, tỉ lệ rơi | Trái nguyên tắc nền |
+| Nhiều nhân vật / đội hình | Phình phạm vi; một nhân vật là đủ |
+| Cốt truyện, lồng tiếng, cutscene | Ngốn thời gian, không chứng minh năng lực kỹ thuật |
+| Thiết kế màn chơi (level design) | Đấu trường kín thay thế; xem mục 5.1 |
+
+---
+
+## 3. Giả định
+
+1. **Nền tảng:** build Android + iOS; test chính trên iOS.
+2. **Màn hình dọc**, chơi một tay.
+3. **Phiên chơi 5–15 phút**, chơi ngắt quãng.
+4. **Trục "nạp tiền" chỉ tồn tại trên giấy** — thiết kế đường cong kinh tế và
+   chứng minh nó cân bằng, nhưng không tích hợp IAP.
+5. **Save lưu trên máy**, chấp nhận người chơi có thể sửa. Không có gì để mất.
+6. **Ngôn ngữ hiển thị: tiếng Anh.**
+7. **Mốc thực tế: 3 tháng cho bản chơi được trọn vẹn**, mở rộng sau.
+8. **Đồ họa: đã chốt — Ninja Adventure** (Pixel-boy & AAA), giấy phép **CC0 1.0**.
+   Nằm tại `art-source/NinjaAdventure/`, kèm `ĐỌC-TRƯỚC.md` ghi đầy đủ nội dung
+   và ba thiếu sót đã biết. 66 quái (7 nhóm chủ đề), 20 boss, 19 tileset, 105 FX.
+   **Phong cách Đông Á** (samurai, tengu, kappa, oni) — đây là cửa một chiều, tháp sẽ không
+   phải fantasy phương Tây.
+9. **Nhạc và âm thanh: đã chốt** — cùng bộ trên, cũng CC0: 41 nhạc, 132 SFX, 15 jingle.
+10. **Bảng màu: đã đổi — "Mực & Son"**, sinh tự động tại
+    `unity/Assets/Art/NinjaAdventure-MucSon/`. Ba tầng đọc: thế giới **xám**,
+    quái **đỏ**, nhân vật **lam ngọc**. Bản gốc giữ nguyên làm đầu vào cho biến thể sau.
+11. **Năm nền theo chương: đã chốt** — `unity/Assets/Art/Chapters/`, chỉ 2,4 MB vì chỉ
+    sinh lại `Backgrounds/`. Nền Đá → Chiếu & Giấy Dầu → Nắng Đồng → Chàm Đêm → Sương Lệch.
+    Quái và nhân vật **giữ nguyên cả 100 tầng**.
+
+---
+
+## 4. Yêu cầu phi chức năng
+
+| Hạng mục | Yêu cầu |
+|---|---|
+| Hiệu năng | 60fps ổn định trên máy tầm trung đời 2020 |
+| Quy mô dữ liệu | Một người chơi, save vài trăm KB |
+| Bảo mật | Không áp dụng — không dữ liệu cá nhân, không mạng, không tiền |
+| Độ tin cậy | **Hỏng save là rủi ro thật duy nhất.** Bắt buộc ghi nguyên tử + giữ 1 bản backup |
+| Bảo trì | Làm một mình, sẽ có lúc nghỉ vài tuần. **Toàn bộ số liệu cân bằng phải nằm ngoài code** |
+
+---
+
+## 5. Thiết kế
+
+### 5.1 Cấu trúc tháp
+
+**100 tầng, chia 5 chương × 20 tầng.** Mỗi chương dùng một bộ tile và một nhóm quái
+riêng — đây là cách xử lý điểm yếu đơn điệu của cấu trúc tháp. Người chơi bước sang
+tầng 21 và thấy cả thế giới đổi màu: phần thưởng thị giác không tốn dòng code nào.
+
+**Một tầng:** đấu trường kín, 5–8 quái theo đợt, khoảng 40–60 giây.
+
+**Mỗi 10 tầng có một boss.** Boss là cổng chặn thật sự và là nơi **duy nhất** rơi ra
+tài nguyên hiếm. Toàn bộ đường cong tiến trình neo vào đây.
+
+**Không có thiết kế màn chơi.** 100 tầng chỉ là 100 cấu hình dạng
+*"đợt nào, quái gì, bao nhiêu con"* — dữ liệu thuần túy trong một file.
+Đây là quyết định tiết kiệm công sức lớn nhất của toàn bộ dự án.
+
+### 5.2 Hai cơ chế tự động
+
+| Cơ chế | Mở khi nào | Tác dụng |
+|---|---|---|
+| **Quét nhanh** | Clear một tầng lần đầu | Tầng đó bấm một nút là nhận thưởng, không đánh lại. Khiến việc farm không thành cực hình |
+| **Tự động chiến đấu** | Hoàn thành chương 1 (tầng 20) | Nhân vật tự đánh tầng mới. Cột mốc lớn — cần màn hình chúc mừng riêng |
+
+**Vì sao mốc auto là tầng 20:** đủ lâu để người chơi hiểu hệ thống bằng tay và thấy
+việc đánh tay có ý nghĩa, đủ sớm để chưa kịp chán. Với 40–60 giây/tầng, đây là
+khoảng **25–35 phút** chơi tay đầu tiên — đúng ngưỡng chú ý của người chơi mobile.
+
+### 5.3 Chiến đấu
+
+**Nhìn từ trên xuống, màn hình dọc, đấu trường kín.**
+
+**Điều khiển: một ngón tay.** Cần gạt ảo bên trái để di chuyển. Không có nút tấn công —
+nhân vật tự đánh kẻ địch gần nhất, **nhưng chỉ khi đứng yên**.
+
+> **Luật cốt lõi:** Di chuyển thì an toàn nhưng không gây sát thương.
+> Đứng yên thì gây sát thương nhưng ăn đòn.
+
+Một luật duy nhất tạo ra toàn bộ chiều sâu của giai đoạn đánh tay. Không cần thêm
+hệ thống nào, sức căng đã có sẵn.
+
+### 5.4 Chí mạng xác định — thanh dồn
+
+Thay vì "20% cơ hội chí mạng": mỗi đòn đánh nạp một thanh; thanh đầy thì
+**đòn kế tiếp chắc chắn chí mạng**. Thanh hiển thị ngay dưới nhân vật.
+
+Cùng một khoái cảm — số to, màu vàng, rung màn hình — nhưng không có xác suất nào.
+Tốt hơn xác suất ở ba điểm:
+
+1. **Chơi quanh được.** Thanh gần đầy mà boss sắp ra đòn? Lùi lại, chờ, rồi dồn
+   chí mạng vào lúc boss hở sườn. Kỹ năng thật, xuất hiện đúng ở giai đoạn đánh tay.
+2. **Không bao giờ gây ức chế.** Không có chuyện "xui 10 đòn liền rồi chết".
+   Mọi thất bại đều truy được về quyết định.
+3. **Tính toán được.** Ngồi tính chính xác DPS trên bảng tính — cân bằng dễ hơn bội phần.
+
+Ghép với luật 5.3: muốn dồn đủ thanh để tung chí mạng vào boss, phải **đứng yên
+đủ lâu** — đúng lúc nguy hiểm nhất.
+
+### 5.5 Trang bị
+
+| Ô | Chỉ số | Vai trò thật (đo được, không phải ý định) |
+|---|---|---|
+| Vũ khí | Sát thương mỗi đòn (+4,4%/cấp) | Trục sức mạnh. Đóng góp trần 20→60: **x5,60** |
+| Giáp | Máu tối đa + hút máu (+4,4%/cấp) | **Nguồn máu duy nhất**, nên là trục lựa chọn duy nhất. **x5,60** |
+| Găng | Tốc độ đánh (+3,4%/cấp) | Trục **nhịp tay**. x3,87 |
+| Nhẫn | Hệ số chí mạng (+3,4%/cấp) | Trục **cảm giác**. x2,40 — thấp nhất |
+
+**Chỉ bốn ô. Không thêm.**
+
+> **Mục này mô tả sự thật đo được của mô hình, không mô tả ý định.** Bản trước hứa "hai
+> hướng xây dựng đối lập thật sự". Lời hứa đó đã được chứng minh là **không thể giữ**.
+> Thà nói thật còn hơn để người sau đi cân lại số một cách vô vọng.
+
+#### Vì sao không có "hai hướng đối lập cân sức"
+
+Biên chiến thắng tỉ lệ với tích `sát thương × máu hiệu dụng`. Trong tích đó, **ba ô
+Vũ khí / Găng / Nhẫn cùng đổ vào một thừa số; chỉ Giáp đổ vào thừa số kia.** Bốn ô không
+phải hai cặp đối lập — chúng là **một trục, cộng ba cách tiêu tiền dọc trục đó**.
+
+Gốc rễ sâu hơn, và là mệnh đề **đại số** chứ không phải chuyện chỉnh số:
+
+**`(15,10,3,1)` chính là ảnh gương của `(1,3,10,15)`.** Ở tầng 100 hai build có vector cấp
+`[20,30,50,60]` và `[60,50,30,20]`, đảo nhau khít. Với độ dốc mỗi ô là `s₀..s₃`:
+
+> `log biên(bùng nổ) − log biên(bền bỉ) = 40(s₃−s₀) + 20(s₂−s₁)`
+
+Cứu **bùng nổ** đòi Nhẫn dốc hơn Vũ khí. Cứu **bền bỉ** đòi điều ngược lại.
+**Hai điều kiện loại trừ nhau với mọi bộ số.**
+
+Đã quét **420.000 cấu hình** (14 cách gán bốn ô vào hai trục × 30.000 bộ độ dốc 0,5–14%/cấp):
+
+| | Số cấu hình thoát |
+|---|---|
+| Bùng nổ một mình không bị trội (tầng 50/70/100) | 18.387 (4,38%) |
+| Bền bỉ một mình không bị trội | 18.289 (4,35%) |
+| **Cả hai cùng lúc** | **0 (0,0000%)** |
+
+Mỗi hướng riêng lẻ cứu được. **Giao của hai điều kiện là rỗng.**
+
+Điều này đúng với mọi ô có đường cong "%/cấp cố định" — tức đúng với toàn bộ §5.7. Phá nó
+**bắt buộc** phải cho ít nhất một ô đường cong **phi mũ**, tức một cơ chế mới. Đã dựng thử
+và đo: cơ chế rẻ nhất làm được điều đó đẩy thời gian giết boss tầng 100 từ 200 giây lên
+**trung vị 48 phút, chậm nhất 4,8 giờ** — phá §5.1 và §3 — mà hai hướng **vẫn chỉ đạt 65%
+biên của build dàn đều**. Không-bị-trội **không đồng nghĩa** cạnh tranh được.
+
+Nói cho chính xác: mệnh đề bất khả thi đúng cho **§5.7 như đang viết**, không phải cho mọi
+thiết kế. Nếu sau này chấp nhận trả cái giá trên thì con đường vẫn mở.
+
+#### Lựa chọn thật nằm ở đâu
+
+**(a) Bao nhiêu Lõi vào Giáp. Năm nấc. Đây là quyết định duy nhất có sức nặng.**
+
+| Lõi vào Giáp | Build mạnh nhất của nấc | Sát thương | Máu hiệu dụng | Biên so với tối ưu |
+|---|---|---|---|---|
+| 1 | (15,1,10,3) | 1.245 | 17.704 | 59% |
+| 3 | (15,3,6,6) | 1.092 | 27.239 | 80% |
+| **6** | **(15,6,6,3)** | **888** | **41.910** | **100%** |
+| **10** | **(10,10,6,3)** | **577** | **64.484** | **100%** |
+| **15** | **(6,15,6,3)** | **375** | **99.215** | **100%** |
+
+Ba nấc 6 / 10 / 15 có biên **bằng nhau đến sai số dấu phẩy động**. Đó là lựa chọn đúng nghĩa:
+giết nhanh mà mỏng, hay chậm mà dày, **cùng khả năng thắng**, sát thương chênh **2,4 lần**
+giữa hai đầu. Hai nấc 1 và 3 là lựa chọn **dở** — tài liệu nói thẳng thay vì gọi chúng là
+"một phong cách chơi".
+
+> ⚠️ **Ba nấc bằng nhau vì `dmgL == hpL` (cùng 4,403%), không vì may mắn.** Hoán vị Lõi giữa
+> Vũ khí và Giáp cho biên y hệt trên **52/52** build. Đây là **lựa chọn cân sức duy nhất còn
+> lại của thiết kế**, và nó là lưỡi dao: §5.7 tự khai số của nó sẽ chỉnh hàng chục lần.
+> **Khoá `dmgL == hpL` thành bất biến trong file dữ liệu, kèm comment và một test tự động.**
+
+**(b) Găng và Nhẫn quyết định trò chơi §5.3 *chơi ra sao*, không quyết định *mạnh cỡ nào*.**
+
+| Tầng 100 | 5 đòn mất bao lâu | Hệ số chí mạng | % sát thương ở đòn chí mạng |
+|---|---|---|---|
+| Găng 10 / Nhẫn 15 | **0,95 s** | 14,7x | **79%** |
+| Dàn đều (6/6) | 1,34 s | 7,5x | 65% |
+| Găng 3 / Nhẫn 1 | **1,87 s** | 3,8x | **49%** |
+
+Cùng khả năng qua boss, hai người chơi hai trò khác nhau: một người dồn gần bốn phần năm sát
+thương vào một đòn mỗi 0,95 giây; người kia ăn đều và đợi 1,87 giây. Khác biệt về **nhịp tay**
+— có thật, cảm được, **không tốn một con số cân bằng nào**.
+
+Hai con số này phải hiện trên màn hình trang bị (~10 dòng C#, mốc M2, đọc từ file dữ liệu
+theo §9.2). **Nhãn phải là "5 đòn ≈ 0,95 s đánh liên tục", KHÔNG được viết "giữ yên liên tục"**
+— §5.4 cho phép lùi lại chờ mà không mất thanh dồn; nhãn sai sẽ dạy người chơi ngược luật.
+
+Phần khó nghe: bảng (b) mô tả rìa, không mô tả build nên chọn. Bốn trong năm build trên biên
+Pareto ở tầng 100 đều có Găng 6 / Nhẫn 3. Muốn chạm cột 0,95 s phải trả **67% biên**.
+
+**(c) Ba boss đầu không có lựa chọn nào cả.** Đến hết tầng 31, ngân sách Mảnh chưa đẩy được ô
+nào chạm trần, nên **cả 52 phân bổ có chỉ số giống hệt nhau** — chênh biên đúng **1,0000** ở
+boss 1, 2, 3. Chỉ số bắt đầu phân biệt từ **tầng 32**. Hệ quả trực tiếp của thang cổng §5.6,
+không phải lỗi — nhưng UI phải trung thực, đừng để màn hình đột phá gào lên "quyết định trọng
+đại" ở boss 1 khi nó chưa là gì cả.
+
+#### ⚠️ Vấn đề chưa xử lý: Nhẫn là ô đổ rác
+
+Hoán vị Lõi ở tầng 100, mỗi phép chuyển một bậc từ ô này sang ô kia, tính theo biên:
+
+| Thêm một bậc Lõi vào | Lợi | Hoà | Hại |
+|---|---|---|---|
+| Vũ khí | 56 | 28 | **0** |
+| Giáp | 56 | 28 | **0** |
+| Găng | 28 | 0 | 56 |
+| **Nhẫn** | **0** | **0** | **84** |
+
+**Không một lần nào trong 84 phép đo mà thêm Lõi vào Nhẫn làm tăng biên.** Đó là định nghĩa
+một ô đổ rác, và nó **vi phạm §5.6** ("mỗi Lõi tiêu đi là một cánh cửa đóng lại"). Găng cũng
+sai nhiều hơn đúng. Người chơi tính đúng chỉ đổ Lõi vào Vũ khí và Giáp — mà hai ô đó lại hoán
+đổi được cho nhau.
+
+Ghi thẳng thay vì giấu: **thiết kế hiện có bốn ô nhưng chỉ một quyết định Lõi thật sự** —
+dồn hay dàn — nhân với một lựa chọn nhãn miễn phí. Đã thử cân bằng lại bằng thuần số
+(Găng 4,4%/cấp, Nhẫn 5,6%/cấp): Nhẫn hết chết và hai hướng có biên bằng nhau, **nhưng** tiến
+trình vọt từ 59x lên 154x và hệ số máu boss lên 13,8 — phá §5.11. Để mở ở §7, **không tự chốt**.
+
+### 5.6 Kinh tế tài nguyên
+
+| Tài nguyên | Nguồn | Tính chất | Trục |
+|---|---|---|---|
+| **Mảnh** | Quái thường | Vô hạn | *Thời gian* — cày nhiều thì có nhiều |
+| **Lõi** | **Chỉ boss, chỉ lần giết đầu tiên** | Hữu hạn tuyệt đối | *Lựa chọn* |
+
+Quét lại boss **không** cho Lõi.
+
+**Con số buộc phải chọn:**
+
+- Mỗi trang bị đi từ cấp 1 → **60**.
+- Mốc **10/20/30/40/50** là cổng chặn cứng, phải dùng Lõi để đột phá; mỗi lần đột phá nâng trần thêm 10 cấp.
+  *(Bản thảo đầu ghi cấp tối đa 50 — sai. Năm cổng, mỗi cổng +10 cấp, thì trần cuối phải là 60.
+  Ba con số 15 / 60 / 30 vẫn giữ nguyên.)*
+- Chi phí đột phá: **1 → 2 → 3 → 4 → 5 Lõi**.
+- Nâng một món lên tối đa tốn **15 Lõi**. Bốn món tối đa tốn **60 Lõi**.
+- **Cả game chỉ có 30 Lõi** (10 boss × 3).
+
+Toàn bộ thiết kế gói trong ba con số đó. Người chơi **không bao giờ** max được mọi thứ —
+chỉ đủ cho hai món, hoặc dàn đều thì không món nào vượt mốc 30. Mỗi Lõi tiêu đi là
+một cánh cửa đóng lại. Không có xác suất nào, nhưng có sức nặng thật.
+
+### 5.7 Đường cong sức mạnh
+
+**Nguyên tắc duy nhất:** người chơi cày bình thường phải luôn đi trước đường cong
+quái một chút.
+
+Con số khởi điểm (sẽ tinh chỉnh hàng chục lần):
+
+| Đại lượng | Giá trị đã kiểm chứng |
+|---|---|
+| Máu quái mỗi tầng | **+5,2%** |
+| Sát thương quái mỗi tầng | **+4,0%** |
+| Máu nền người chơi mỗi tầng đã qua | **+4,5%** |
+| Vũ khí / Giáp — mỗi cấp | **+4,4%** |
+| Găng / Nhẫn — mỗi cấp | **+3,4%** |
+
+Hai tốc độ của người chơi đều là con số ban đầu (9% và 7%) **chia đôi theo hình học**,
+nên tỉ lệ 9:7 giữa hai cặp ô được bảo toàn tuyệt đối. Đây không phải con số tuỳ tiện:
+xem §5.11 để biết vì sao buộc phải nén.
+
+Máu quái +5,2% là giá trị **lớn nhất** còn giữ được biên tầng thường ở mức 1,60 cho
+build yếu nhất — giải ngược từ ràng buộc, không phải chọn tay.
+
+Bản thảo đầu ghi "người chơi nhỉnh hơn 8% mỗi tầng" — con số đó sai. 8% mỗi tầng luỹ kế
+qua 100 tầng là **hơn 2.000 lần**, tức game trở nên vô nghĩa từ giữa chặng.
+
+⚠️ **Khoảng cách giữa máu quái (+5,2%) và sát thương quái (+4,0%) nay rất hẹp** — bản
+thảo đầu để 9% và 4%. Mối đe doạ của tháp không còn thuần tuý là "quái dày máu" mà cân
+bằng giữa dày máu và đánh đau. Sinh tồn được gánh chủ yếu bởi **máu nền +4,5%/tầng**
+chứ không phải bởi Giáp; đó cũng là van an toàn số 4 ở §5.8.
+
+**Ba con số này bắt buộc nằm trong file dữ liệu, không nằm trong code.**
+
+### 5.8 Chống bế tắc vĩnh viễn ⚠️
+
+**Đây là rủi ro nghiêm trọng nhất của thiết kế.**
+
+Lõi hữu hạn tuyệt đối + mốc đột phá chặn cứng = người chơi có thể tự đưa mình vào
+trạng thái **không thể thắng**. Ai đó dồn hết 30 Lõi vào Nhẫn và Găng, đến tầng 80
+phát hiện mình quá mong manh, và không có đường lùi. Họ gỡ game.
+Với sản phẩm portfolio, một người xem demo gặp đúng tình huống này là hỏng cả buổi.
+
+**Ba van an toàn, cần cả ba:**
+
+1. **Điều kiện thiết kế (đã sửa sau khi dựng mô hình):**
+
+   > *Mọi phân bổ đầu tư ít nhất một bậc đột phá vào **cả bốn ô** đều qua được tầng 100.*
+
+   Bản thảo đầu viết "bất kỳ hướng xây dựng hợp lý nào" — điều kiện đó **bất khả thi về
+   mặt toán học**. Nếu nhịp độ phẳng và người chơi chạm cấp trần đúng ở tầng cuối, thì
+   build bỏ trắng một ô không thể theo kịp với *bất kỳ* bộ tham số nào; đó là hệ quả đại số,
+   không phải chuyện chỉnh số.
+
+   Quét toàn bộ **62 phân bổ tiêu hết 30 Lõi**, đánh giá tại cả 10 boss với bộ tham số
+   đã chốt: **53 phân bổ qua được, 9 phân bổ không qua.** Cả 9 đều bỏ trắng ít nhất một ô:
+   `0/0/15/15`, `0/10/10/10`, `0/15/0/15`, `0/15/15/0`, `10/0/10/10`, `10/10/0/10`,
+   `15/0/0/15`, `15/0/15/0`, `15/15/0/0`. Tất cả do van số 2 (tẩy điểm) xử lý.
+
+   **Cả 52 phân bổ có ≥1 Lõi ở cả bốn ô đều qua được cả 10 boss**, biên thấp nhất 1,50.
+   Điều kiện trên vẫn đúng tuyệt đối.
+
+   *(Bản thảo trước ghi "đúng một phân bổ không qua" — con số đó tính ở tầng 100 với quái
+   thường, không phải ở boss, và với tham số cũ. Sau khi nén tăng trưởng, con số là 9.)*
+2. **Tẩy điểm:** rút toàn bộ Lõi ra và phân bổ lại, **hoàn 100%, nhưng tốn rất
+   nhiều Mảnh**. Người cày chăm sửa được sai lầm; người lười phải sống với nó.
+   Quyết định vẫn có sức nặng, nhưng sức nặng tính bằng thời gian, không bằng
+   việc mất tài khoản.
+3. **Boss thử lại vô hạn, không mất gì.** Không vé thách đấu, không giới hạn lượt.
+   Thất bại chỉ tốn thời gian — thứ người chơi sẵn lòng bỏ ra.
+4. **Máu nền tăng theo tầng đã qua, độc lập với Giáp** (+4,5%/tầng — xem bảng §5.7). Van thứ tư, phát hiện
+   khi dựng mô hình: không có nó, build nhẹ Giáp chết tức khắc ở tầng cao và điều kiện trên
+   không bao giờ thỏa.
+
+### 5.10 Độ khó nằm ở boss, không ở quái thường
+
+Hệ quả không tránh được của việc cấp trần Lõi phải có ý nghĩa: quái thường **sẽ** dễ dần
+ở giữa game. Đó không phải lỗi cần sửa — đã có quét nhanh nên tầng thường vốn chỉ là
+nguồn tài nguyên.
+
+Vì vậy **boss có đường cong máu riêng**. Đã chốt, không còn phải chỉnh tay:
+
+| Boss | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Hệ số máu | 1,56 | 2,20 | 3,14 | 4,42 | 4,62 | 4,31 | 4,07 | 3,45 | 2,36 | 1,50 |
+
+Hệ số sát thương boss để nguyên **1,0** ở cả mười con. Lý do: trong công thức biên,
+hai hệ số máu và sát thương chỉ xuất hiện dưới dạng **tích** — chúng là đúng một bậc
+tự do. Thêm trục thứ hai không mua được gì, chỉ thêm một cột phải chỉnh tay.
+
+Bộ hệ số này neo build **yếu nhất** đúng 1,50 ở mọi boss; build mạnh nhất chạm **5,15**.
+Máu boss tuyệt đối tăng đơn điệu từ 1.229 đến 111.287, và mọi hệ số đều ≥ 1,0 nên boss
+luôn dày máu hơn quái thường cùng tầng.
+
+**Ghi chú mô hình — Mảnh là tài nguyên chung.** Các con số trên tính với giả định: ô đã chạm
+trần Lõi không nhận Mảnh nữa, phần đó dồn sang ô còn lại. Bảng tính đầu chia cứng Mảnh 1/4
+cho mỗi ô ở mọi tầng — kể cả ô đã chạm trần, điều người chơi không bao giờ làm vì màn hình
+nâng cấp không cho. Sửa lại **không tốn một dòng code Unity nào** (nó chỉ mô tả đúng hành vi
+sẵn có) và cải thiện mọi chỉ số: ca ngoài dải 3 → **0**, dải biên 1,50–5,78 → **1,50–5,15**,
+build bền bỉ bị áp đảo 22/10/1 → **0/3/1**, tiến trình giữ nguyên **59,13x**, vẫn **0/520**
+build bị khoá.
+
+Vẫn là **xấp xỉ**: nó giả định người chơi chia Mảnh đều cho các ô chưa chạm trần. Người chơi
+thật có thể dồn hết vào một ô.
+
+### 5.11 Vì sao phải nén tăng trưởng mỗi cấp
+
+Đây là ràng buộc cứng nhất của toàn bộ thiết kế, và nó chỉ lộ ra khi dựng mô hình.
+
+Hệ số máu boss chỉ **tịnh tiến** cả cụm build lên xuống — nó không thu hẹp được khoảng
+cách giữa chúng. Mà khoảng cách ấy sinh từ *cấp trần chênh nhau × tăng trưởng mỗi cấp*.
+Với tham số ban đầu (9%/cấp, trần chênh 40 cấp), build mạnh nhất hơn build yếu nhất
+**11,7 lần** ở boss 7. Không hệ số boss nào sửa được điều đó.
+
+Nén tăng trưởng là **cách duy nhất**. Nhưng nó đánh đổi trực tiếp với cảm giác mạnh lên:
+
+| Tăng trưởng mỗi cấp | Chênh lệch build | Dải biên đạt được | Tiến trình DPS qua 100 tầng |
+|---|---|---|---|
+| 9% / 7% (ban đầu) | 11,7x | 1,5 – 17,6 | 5.090x |
+| 5,9% / 4,6% | 5,6x | 1,5 – 8,4 | 252x |
+| **4,4% / 3,4% (đã chọn)** | **3,9x** | **1,5 – 5,8** | **59x** |
+| 2,9% / 2,3% | 2,6x | 1,5 – 3,9 | 14x |
+| 1,7% / 1,4% | 1,8x | 1,5 – 2,7 | 5x |
+
+Chọn 4,4%/3,4% là chọn **giữ cảm giác tiến trình** (sát thương đi từ 10 lên ~600) và
+chấp nhận build tối ưu thấy boss chỉ ở mức dễ chịu (biên 5,8) thay vì bị chặn nghẹt.
+Siết dải xuống 1,5–3,0 sẽ khiến sát thương chỉ đi từ 10 lên 24 sau cả trăm tầng —
+với một RPG mà vòng lặp cốt lõi là *"đánh quái → mạnh hơn"*, đó là đường cong chết.
+
+**Thang cổng đột phá không bị đụng.** Trần 10/20/30/40/50/60, chi phí 1-2-3-4-5, tổng 30 Lõi
+— §5.6 và quyết định #7 còn nguyên từng chữ. Phương án thay thế (nâng trần nền 10→40) đã bị
+loại vì nó khiến Lõi vô hình suốt 70% game.
+
+### 5.9 Thiết kế kiếm tiền (trên giấy)
+
+Nếu sau này thương mại hóa: **bán Mảnh, không bao giờ bán Lõi.**
+
+Tiền mua được *tốc độ*, không mua được *sức mạnh*. Người nạp đến tầng 50 nhanh hơn,
+nhưng ở cùng tầng 50 họ không mạnh hơn người cày — và vẫn phải đối mặt đúng những
+lựa chọn đau đầu đó.
+
+Đây là điểm nên nói thành lời trong hồ sơ: nó cho thấy hiểu cách kiếm tiền mà không
+thao túng người chơi.
+
+---
+
+## 6. Nhật ký quyết định
+
+| # | Quyết định | Phương án khác đã cân nhắc | Lý do chọn |
+|---|---|---|---|
+| 1 | Mục đích: portfolio | Học cho vui; thử nghiệm thương mại | Định hình mọi ràng buộc còn lại: *phải xong* > *phải sâu* |
+| 2 | Offline hoàn toàn, không backend | Leaderboard; PvP bất đối xứng; guild | Portfolio không cần doanh thu → không cần so sánh xã hội → không cần server |
+| 3 | Combat: đánh tay trước, auto sau | Idle thuần; hành động toàn phần; turn-based | Học hệ thống bằng tay; mở auto thành cột mốc phần thưởng |
+| 4 | Cấu trúc: leo tháp | Nhiều khu vực (B); run-based (C) | A có khả năng hoàn thành cao nhất. C **xung đột** với nguyên tắc không ngẫu nhiên (roguelite sinh ra để chứa ngẫu nhiên) |
+| 5 | Cái hay = đánh đổi phân bổ tài nguyên | Kỹ năng tay; cảm giác số tăng; khám phá nội dung | Giữ được hồi hộp mà không cần xác suất; khớp với trục "chăm chỉ / nạp tiền" |
+| 6 | **Giữ chí mạng, nhưng dạng thanh dồn** | Bỏ hẳn chí mạng; chí mạng theo xác suất thật | Giữ trọn khoái cảm chí mạng **và** nguyên tắc không ngẫu nhiên. Còn thêm được kỹ năng canh thời điểm ở giai đoạn đánh tay |
+| 7 | 4 ô trang bị, tổng 30 Lõi | Nhiều ô hơn; Lõi vô hạn | Ba con số (15 / 60 / 30) tự động ép chuyên môn hóa mà không cần luật phụ |
+| 8 | Bán Mảnh, không bán Lõi | Bán cả hai; bán lượt quét | Tiền mua tốc độ chứ không mua sức mạnh — luận điểm đạo đức mạnh cho portfolio |
+| 9 | Đấu trường kín, không level design | Màn có địa hình; map mở | Tiết kiệm công sức lớn nhất toàn dự án; biến 100 tầng thành dữ liệu |
+| 10 | Di chuyển = không đánh | Có nút tấn công riêng | Một luật tạo sẵn sức căng; cộng hưởng hoàn hảo với thanh chí mạng |
+| 11 | Cho phép tẩy điểm, tốn Mảnh | Không cho tẩy; tẩy miễn phí | Van chống bế tắc vĩnh viễn, mà không làm quyết định mất sức nặng |
+| 12 | Số liệu cân bằng để ngoài code | Hằng số trong code | Sẽ chỉnh hàng chục lần; và sẽ có lúc nghỉ vài tuần rồi quay lại |
+| 13 | Một bộ asset pack duy nhất | Tự vẽ; ghép nhiều pack; 3D low-poly | Không chuyên vẽ; ghép pack là cách nhanh nhất khiến game trông nghiệp dư |
+| 14 | **Engine: Unity 6 + C#** | Godot 4 + GDScript (khuyến nghị ban đầu của tài liệu); Flame/Flutter; dựng thử M1 trên cả hai | Nền C# sẵn có từ .NET dùng lại được ngay. Unity được nhận diện rộng hơn Godot nhiều lần trên thị trường tuyển dụng — với sản phẩm portfolio đây là lợi ích thật, không phải cảm tính. **Đánh đổi chấp nhận:** editor nặng, vòng lặp sửa–chạy chậm hơn, build iOS lâu hơn |
+| 15 | **Sửa điều kiện 5.8 theo kết quả mô hình** | Giữ nguyên điều kiện cũ; siết Lõi chặt hơn; nới trần cấp | Điều kiện cũ bất khả thi về mặt toán học. Quét 62 phân bổ cho quy tắc thay thế rõ ràng và kiểm chứng được: **>= 1 Lõi ở cả bốn ô thì luôn qua**. Kèm theo: cấp trần 50→60, tách đường cong sát thương quái khỏi máu quái, thêm van an toàn thứ tư, dồn độ khó về boss |
+| 16 | **Nén tăng trưởng mỗi cấp xuống một nửa (9%/7% → 4,4%/3,4%), giữ nguyên toàn bộ thang cổng đột phá** | Nâng trần nền 10→40 *(loại: Lõi vô hình tới tầng 72)*; gộp bốn tốc độ về một số *(loại: Vũ khí và Găng thành cùng một chỉ số)*; thêm soft-cap sát thương cho boss *(loại: phá §5.3 và §5.4)*; nén mạnh hơn nữa xuống 1,7%/1,4% *(loại: tiến trình chỉ còn 5x)* | Hệ số boss chỉ tịnh tiến cả cụm, không thu hẹp được chênh lệch 11,7x giữa các build — nén tăng trưởng là cách duy nhất. Chọn mức chia đôi vì nó giữ được tiến trình 59x (cảm giác mạnh lên còn thật) mà vẫn đưa mọi build hợp lệ vào dải 1,5–5,8. §5.7 tự khai số của nó là tạm và sẽ chỉnh hàng chục lần; §5.6 là trụ cột nên không đụng. Kiểm chứng: 0 build hợp lệ bị khoá, 52/52 qua cả 10 boss |
+| 17 | **Viết lại §5.5 theo sự thật đo được, thay vì thêm cơ chế để cứu "hai hướng đối lập"** | Hút máu chí mạng cho Nhẫn; chuyển một ô sát thương sang sinh tồn (2 chọi 2, cơ chế khiên); chí mạng mạnh riêng ở boss | Quét 420.000 cấu hình: cứu được bùng nổ **hoặc** bền bỉ, **không bao giờ cả hai** — hai build là ảnh gương của nhau nên hai điều kiện loại trừ nhau. Cơ chế rẻ nhất phá được ràng buộc đẩy thời gian giết boss cuối lên trung vị 48 phút và hai hướng vẫn chỉ đạt 65% biên build dàn đều. Cái giá lớn hơn thứ mua về; dự án làm một mình và ràng buộc số một là PHẢI HOÀN THÀNH. Lấy kèm: sửa mô hình Mảnh-dùng-chung (0 dòng code, cải thiện mọi chỉ số) |
+| 18 | **Bộ asset: Ninja Adventure (CC0)** | ElvGames Rogue Adventure 39,99$ *(10 boss, nhưng nhiều khả năng chỉ 1 hướng và **cấm đẩy art lên repo công khai**)*; ElvGames Fantasy Dreamland *(loại: 0 boss)*; CraftPix Premium *(loại: ~105 pack nhiều hoạ sĩ, đúng cái bẫy #13)*; Dungeons&Pixels 5,99$ *(loại: chỉ 3 nhóm quái)* | Đã TẢI VỀ ĐẾM THẬT, không tin trang bán: 66 quái / 7 nhóm chủ đề (cần 5), 20 boss, 19 tileset — đều nhiều hơn quảng cáo. **CC0 là điểm tách bạch quyết định**: hai lựa chọn trả phí đều cấm phát tán art thô, tức phải .gitignore thư mục art nếu muốn public repo — mất mát thật với một sản phẩm PORTFOLIO mà người xem muốn đọc code. Giá 0đ cũng nghĩa là chọn sai thì mất thời gian chứ không mất tiền. Kèm theo: đóng luôn câu hỏi nhạc/âm thanh (41 nhạc + 132 SFX, cùng CC0). **Đánh đổi đã biết và chấp nhận:** quái thường chỉ có hoạt ảnh đi (4 hướng × 4 frame), không có đánh và không có chết — lấp bằng FX có sẵn trong chính bộ này |
+| 19 | **Đổi bảng màu sang "Mực & Son" — ba tầng đọc** | Giữ nguyên bảng gốc *(loại: nhân vật màu ô liu trên sàn cam, không nổi)*; "Tháp Đêm" xám tím lạnh *(loại: mọi loài quái thành cùng một khối xám, mất khả năng phân biệt)*; "Huyết Nguyệt" đỏ tím *(loại: sàn đỏ + quái đỏ, tương phản kém và mỏi mắt)*; "Chu Sa" sơn mài ấm *(loại giữa chừng: bảng gốc vốn đã cam ấm nên dải ấm gần như không đổi được gì)* | Không phải chuyện thẩm mỹ mà là **thứ bậc đọc**, phục vụ §3 (màn hình dọc nhỏ) và §5.3 (phải theo dõi được vị trí của chính mình trong lúc đứng yên ăn đòn). Thế giới xám trung tính, quái đỏ, nhân vật lam ngọc — ba tầng, không lẫn. Sắc đỏ lệch nhẹ theo tên loài nên các loài vẫn phân biệt được. **Lỗi đã sửa trong quá trình:** quy tắc đầu chỉ giữ những màu vốn đã đỏ, làm 41/66 quái chìm vào nền — đổi sang quy tắc theo thư mục (vai trò) thì 66/66 nổi được. Sinh lại bất cứ lúc nào bằng `tools/doi-bang-mau.py`; bản gốc giữ nguyên làm đầu vào |
+| 20 | **Năm nền theo chương, chỉ đổi tầng thế giới** | Sinh lại toàn bộ art cho mỗi chương *(loại: 5 × 124 MB, và làm UI/HUD đổi màu theo chương)*; giữ một nền chung cho cả tháp *(loại: §5.1 cần 5 chương khác nhau về thị giác)* | Chỉ `Backgrounds/` là chương-riêng — 2,4 MB cho cả 5. Hai tầng quái đỏ và nhân vật lam giữ nguyên suốt 100 tầng vì người chơi học thứ bậc đọc một lần rồi dùng mãi. **Phát hiện quan trọng trong quá trình:** bản thiết kế đầu đạt mọi ràng buộc khi đo ở *mốc giữa dải* nhưng render ra thì ba cặp chương rơi xuống ΔE 13–17 — vì pixel tile sàn nằm ở đoạn sáng, nơi năm bảng hội tụ. Mốc giữa đẹp nhưng không có pixel nào ở đó. Sau khi kéo hai mốc sáng và giãn độ sáng: ΔE 24,3. Còn hai thiếu sót dưới 1 đơn vị, chấp nhận. **Cũng sửa luôn một lỗi thật:** cờ `giu_do` của bản Mực & Son giữ nguyên pixel đỏ của lớp thế giới, làm đèn lồng và lửa trong tile đỏ trùng khít màu quái (ΔE 1,0) — đã bỏ |
+| 21 | **Dựng scene M1 bằng mã, kèm 8 test PlayMode** | Dựng tay theo hướng dẫn *(loại: 18 ô kéo-thả, sai một ô là luật §5.3 hỏng trong im lặng và không ai biết)*; viết thẳng file .unity *(loại: YAML đầy GUID và fileID chéo, viết tay gần như chắc chắn hỏng)*; chỉ kiểm tham chiếu, không chạy thử *(loại: nối đúng KHÁC chạy đúng)* | `BuildM1Scene.cs` dựng lại được bất cứ lúc nào; `VerifyM1Scene.cs` soi 18 tham chiếu + 10 mục từng hỏng trong đợt review; `M1LoopTests.cs` chạy game thật headless. Bốn test khoá chặt §5.3 và §5.4 — đứng yên thì đánh và ăn đòn, di chuyển thì quái không mất một điểm máu nào, đúng 5 đòn một chí mạng, thanh không reset khi di chuyển. **8/8 đạt trong 18,3 giây.** Kèm theo: tách mã game ra asmdef riêng (`TowerRpg`, `TowerRpg.Editor`, `TowerRpg.Tests.PlayMode`) — bắt buộc vì asmdef không tham chiếu được Assembly-CSharp, và cũng làm biên dịch nhanh hơn |
+
+---
+
+## 7. Câu hỏi còn treo
+
+- Tên game.
+- Bộ asset pack cụ thể (quyết định này khóa luôn phong cách hình ảnh — chọn sớm).
+- Boss có cơ chế riêng hay chỉ là quái nhiều máu?
+  *(Bộ asset có 20 mục boss với Idle/Walk/Hit — đủ cho 10 mốc boss của §5.6, kể cả khi loại các biến thể màu.)* *(Khuyến nghị: chương 1–2 chỉ nhiều
+  máu, từ chương 3 mới thêm cơ chế — để bản chơi được ra sớm.)*
+- Nhạc và âm thanh: lấy từ đâu.
+- ~~Hệ số máu 10 con boss~~ — **đã chốt**, xem §5.10.
+- ~~Bộ asset pack cụ thể~~ — **đã chốt**: Ninja Adventure, CC0. Xem §3 giả định 8.
+- ~~Nhạc và âm thanh lấy từ đâu~~ — **đã chốt**: cùng bộ asset, cũng CC0.
+- **Icon cho ba ô Giáp / Găng / Nhẫn** — bộ asset chỉ có icon vũ khí (45 cái). Tự vẽ hay mua
+  bộ icon nhỏ khác tác giả? *(Ngoại lệ hợp lý với quyết định #13 — icon UI không đứng cạnh
+  sprite nhân vật nên không có rủi ro lệch phong cách.)*
+- **Hoạt ảnh chết cho quái và boss** — bộ asset không có. Kế hoạch hiện tại là dùng FX khói/nổ
+  có sẵn. Chấp nhận được cho M1-M4; cân nhắc lại ở M5 nếu thấy chưa đã.
+- ⚠️ **HÚT MÁU CHƯA CÓ TRONG MÔ HÌNH — phải chốt trước mốc M4.** §5.5 ghi Giáp cho "máu +
+  hút máu" nhưng bảng tính chỉ mô hình hoá máu. Đo ngược tại tầng 100: người chơi nhận
+  **72,8 sát thương/giây**, nên chỉ cần hút máu **5,85%** là build sát thương cao nhất hồi
+  nhanh hơn mất — **bất tử, biên vô cực**. 5,85% là con số hoàn toàn tầm thường trong ARPG.
+  Chốt hút máu mà không đưa vào bảng tính thì toàn bộ dải biên 1,50–5,15 và bảng hệ số boss
+  §5.10 trở thành vô nghĩa. Ngưỡng bất tử theo build: sát thương cao nhất 5,85% · dàn đều
+  10,3% · thủ dày 19,4%.
+- **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
+  thì phá §5.1. Chưa có lời giải rẻ.
+
+---
+
+## 8. Lộ trình đề xuất
+
+Ràng buộc lớn nhất của dự án này **không phải kỹ thuật mà là bỏ dở**.
+Lộ trình dưới đây thiết kế để luôn có thứ chạy được trên máy.
+
+| Mốc | Nội dung | Tiêu chí hoàn thành |
+|---|---|---|
+| **M1 — Vòng lặp sống** | 1 tầng, 1 loại quái, di chuyển + tự đánh, thanh chí mạng | Đánh được, thấy vui hoặc không vui. **Nếu không vui, dừng lại và sửa ở đây** |
+| **M2 — Tiến trình** | 20 tầng, rơi Mảnh, nâng cấp 4 ô trang bị, save/load | Chơi được 30 phút liên tục có cảm giác tiến bộ |
+| **M3 — Xương sống** | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle | Toàn bộ hệ thống đã đủ; chỉ còn thiếu nội dung |
+| **M4 — Nội dung** | 100 tầng, 5 chương, 10 boss | Chơi hết được từ đầu đến cuối |
+| **M5 — Bóng bẩy** | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | Trông như sản phẩm thật. **Đây là phần quyết định giá trị portfolio** |
+
+**Cảnh báo:** M5 là phần dev hay bỏ qua nhất và cũng là phần người xem portfolio
+đánh giá đầu tiên. Đừng cắt nó để thêm tầng.
+
+---
+
+## 9. Ghi chú kỹ thuật — Unity 6
+
+Các quyết định dưới đây chốt trước khi mở editor, để không phải làm lại giữa chừng.
+
+### 9.1 Thiết lập dự án
+
+| Hạng mục | Chọn | Lý do |
+|---|---|---|
+| Phiên bản | **Unity 6 LTS** | Bản ổn định dài hạn; tránh bản beta cho dự án làm dần |
+| Render pipeline | **URP, 2D Renderer** | Cho phép dùng đèn 2D và shader — vũ khí chính của mốc M5 |
+| Input | **Input System (mới)** | Có sẵn `On-Screen Stick` cho cần gạt ảo; không dùng `Input` legacy |
+| UI | **uGUI (Canvas)** | Ổn định, tài liệu nhiều, hợp game UI. UI Toolkit để dành cho công cụ editor |
+| Scripting backend | **IL2CPP** | Bắt buộc cho iOS; bật Managed Stripping mức Medium để giảm dung lượng |
+| Hướng màn hình | Khóa **Portrait** | Theo giả định mục 3 |
+
+### 9.2 Dữ liệu cân bằng để ngoài code
+
+Yêu cầu ở mục 4 được hiện thực bằng hai lớp:
+
+- **ScriptableObject** cho cấu trúc: `EquipmentDef`, `EnemyDef`, `FloorDef`, `BossDef`.
+  Sửa được ngay trong Inspector, không cần biên dịch lại.
+- **CSV/JSON trong `StreamingAssets`** cho ba con số của mục 5.7 và bảng chi phí nâng cấp.
+  Sửa được **không cần mở Unity** — quan trọng khi bạn ngồi cân bằng trên bảng tính.
+
+> **Quy tắc cứng:** không một con số cân bằng nào được viết thẳng trong file `.cs`.
+> Nếu thấy mình gõ `damage * 1.12f` thì đó là lỗi.
+
+### 9.3 Những chỗ dễ vấp trên mobile
+
+| Vấn đề | Cách xử lý |
+|---|---|
+| Sinh/hủy quái liên tục gây giật do GC | `UnityEngine.Pool.ObjectPool<T>` (có sẵn từ Unity 2021+) cho quái, đạn, **và số sát thương bay lên** |
+| Số sát thương dùng `Text` gây tốn draw call | Dùng **TextMeshPro** + pooling; gom chung một canvas riêng |
+| Canvas UI vẽ lại toàn bộ khi một phần tử đổi | Tách canvas: canvas tĩnh và canvas động **để riêng** |
+| Build iOS chậm làm nản vòng lặp | Phát triển và cân bằng trên **Android + Unity Remote**, chỉ build iOS ở các mốc |
+
+### 9.4 Save — rủi ro tin cậy duy nhất
+
+Theo mục 4, hỏng save là rủi ro thật duy nhất của dự án. Cách làm:
+
+1. Serialize bằng `JsonUtility` (đủ dùng, không cần thư viện ngoài).
+2. Ghi vào `Application.persistentDataPath`.
+3. **Ghi nguyên tử:** ghi ra `save.tmp` → `File.Replace(tmp, save, save.bak)`.
+   Cách này để lại một bản backup miễn phí và không bao giờ có trạng thái ghi dở.
+4. Lưu khi: qua tầng, nâng cấp, và `OnApplicationPause(true)` — **bắt buộc có cái cuối**,
+   vì iOS giết app trong nền mà không báo.
+
+### 9.5 Thư viện ngoài
+
+Giữ tối thiểu. Chỉ một thứ đáng thêm:
+
+- **DOTween (bản Free)** — tween cho juice ở mốc M5. Tự viết tween sẽ tốn hàng chục giờ
+  để có chất lượng tệ hơn.
+
+Không dùng Addressables (thừa cho dung lượng dự án này), không dùng ECS/DOTS
+(vài chục quái trên màn hình không cần đến nó).
+
+### 9.6 Mốc M1 trong Unity trông như thế nào
+
+Để không bị tê liệt lúc bắt đầu, M1 chỉ gồm đúng sáu thứ:
+
+1. Một scene, một sprite nhân vật, cần gạt ảo di chuyển được.
+2. Quái đứng yên, có máu.
+3. Luật cốt lõi: **đứng yên thì tự đánh kẻ gần nhất, di chuyển thì không**.
+4. Thanh chí mạng nạp theo mỗi đòn; đầy thì đòn kế tiếp nhân hệ số.
+5. Số sát thương bay lên + màn hình rung nhẹ khi chí mạng.
+6. Quái chết thì biến mất.
+
+Không UI nâng cấp, không tầng, không save. Mục tiêu duy nhất là trả lời:
+**vòng lặp đứng-yên-để-đánh có vui không?** Nếu không vui, mọi thứ phía sau đều vô nghĩa.

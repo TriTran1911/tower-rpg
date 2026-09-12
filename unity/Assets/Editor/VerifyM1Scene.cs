@@ -1,0 +1,143 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TowerRpg.Core;
+using TowerRpg.Enemies;
+using TowerRpg.Juice;
+using TowerRpg.Player;
+using TowerRpg.UI;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+namespace TowerRpg.EditorTools
+{
+    /// <summary>
+    /// Mở scene M1 và soi từng tham chiếu [SerializeField]. Dựng scene bằng mã vẫn có thể
+    /// nối sai — script này là bước kiểm chứng, không phải trang trí.
+    ///
+    /// Unity -batchmode -quit -projectPath . -executeMethod TowerRpg.EditorTools.VerifyM1Scene.Verify
+    /// </summary>
+    public static class VerifyM1Scene
+    {
+        private const string ScenePath = "Assets/Scenes/M1.unity";
+
+        [MenuItem("Tower RPG/Kiểm scene M1")]
+        public static void Verify()
+        {
+            var log = new StringBuilder();
+            int fail = 0;
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            log.AppendLine($"scene: {scene.name}  ({scene.rootCount} đối tượng gốc)");
+
+            // ── cây đối tượng ──────────────────────────────────────────────────────────
+            log.AppendLine("\nCÂY ĐỐI TƯỢNG");
+            foreach (GameObject root in scene.GetRootGameObjects())
+                Dump(root.transform, log, 1);
+
+            // ── tham chiếu ─────────────────────────────────────────────────────────────
+            log.AppendLine("\nTHAM CHIẾU");
+            fail += Check<GameBootstrap>(log, "balance", "spawner", "playerHealth");
+            fail += Check<EnemySpawner>(log, "enemyPrefab");
+            fail += Check<DamagePopupSpawner>(log, "popupPrefab");
+            fail += Check<PlayerController>(log, "joystick");
+            fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
+            fail += Check<CritMeterUI>(log, "meter", "fillImage");
+            fail += Check<PlayerHealthUI>(log, "health", "fillImage");
+            fail += Check<VirtualJoystick>(log, "background", "handle", "canvas");
+            fail += Check<CameraShake>(log, "target");
+
+            // ── những thứ dễ dựng sai ──────────────────────────────────────────────────
+            log.AppendLine("\nKIỂM RIÊNG");
+
+            var joy = Object.FindFirstObjectByType<VirtualJoystick>();
+            var joyRt = joy != null ? joy.GetComponent<RectTransform>() : null;
+            fail += Assert(log, "cần gạt có kích thước thật (neo kéo giãn -> bán kính 0)",
+                           joyRt != null && joyRt.rect.width > 1f,
+                           joyRt == null ? "không có" : $"rect.width = {joyRt.rect.width}");
+
+            var rb = Object.FindFirstObjectByType<PlayerController>()?.GetComponent<Rigidbody2D>();
+            fail += Assert(log, "Rigidbody2D: gravityScale = 0",
+                           rb != null && Mathf.Approximately(rb.gravityScale, 0f),
+                           rb == null ? "không có" : $"{rb.gravityScale}");
+            fail += Assert(log, "Rigidbody2D: khoá xoay",
+                           rb != null && (rb.constraints & RigidbodyConstraints2D.FreezeRotation) != 0,
+                           rb == null ? "không có" : $"{rb.constraints}");
+
+            foreach (Image img in Object.FindObjectsByType<Image>(FindObjectsSortMode.None)
+                                        .Where(i => i.name is "CritFill" or "HealthBar"))
+                fail += Assert(log, $"{img.name}: Image.Type = Filled",
+                               img.type == Image.Type.Filled, img.type.ToString());
+
+            var cam = Camera.main;
+            fail += Assert(log, "camera trực giao", cam != null && cam.orthographic,
+                           cam == null ? "không có" : cam.orthographic.ToString());
+
+            var sr = GameObject.Find("Floor")?.GetComponent<SpriteRenderer>();
+            fail += Assert(log, "sàn: sprite + chế độ Tiled",
+                           sr != null && sr.sprite != null && sr.drawMode == SpriteDrawMode.Tiled,
+                           sr == null ? "không có Floor" : $"sprite={sr.sprite?.name} mode={sr.drawMode}");
+
+            var enemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy.prefab");
+            fail += Assert(log, "prefab Enemy có SpriteRenderer + sprite",
+                           enemyPrefab != null && enemyPrefab.GetComponent<SpriteRenderer>()?.sprite != null,
+                           enemyPrefab == null ? "không có" : $"{enemyPrefab.GetComponent<SpriteRenderer>()?.sprite?.name}");
+
+            var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/DamagePopup.prefab");
+            fail += Assert(log, "prefab DamagePopup có TMP_Text",
+                           popupPrefab != null && popupPrefab.GetComponent<TMPro.TMP_Text>() != null,
+                           popupPrefab == null ? "không có" : "ok");
+
+            bool csv = System.IO.File.Exists("Assets/StreamingAssets/m1-balance.csv");
+            fail += Assert(log, "m1-balance.csv có trong StreamingAssets", csv, csv ? "có" : "THIẾU");
+
+            log.AppendLine(fail == 0
+                ? "\n===== TẤT CẢ ĐỀU ĐẠT ====="
+                : $"\n===== {fail} MỤC KHÔNG ĐẠT =====");
+            Debug.Log("[VerifyM1Scene]\n" + log);
+
+            if (fail > 0) EditorApplication.Exit(1);
+        }
+
+        private static void Dump(Transform t, StringBuilder log, int depth)
+        {
+            string comps = string.Join(", ", t.GetComponents<Component>()
+                                              .Where(c => c != null && c is not Transform)
+                                              .Select(c => c.GetType().Name));
+            log.AppendLine($"  {new string(' ', depth * 2)}{t.name}" + (comps.Length > 0 ? $"  [{comps}]" : ""));
+            foreach (Transform c in t) Dump(c, log, depth + 1);
+        }
+
+        private static int Check<T>(StringBuilder log, params string[] fields) where T : Component
+        {
+            var c = Object.FindFirstObjectByType<T>();
+            if (c == null)
+            {
+                log.AppendLine($"  ✗ {typeof(T).Name}: KHÔNG CÓ trong scene");
+                return 1;
+            }
+
+            var so = new SerializedObject(c);
+            var missing = new List<string>();
+            foreach (string f in fields)
+            {
+                SerializedProperty p = so.FindProperty(f);
+                if (p == null) missing.Add($"{f}(không có trường)");
+                else if (p.objectReferenceValue == null) missing.Add(f);
+            }
+
+            if (missing.Count == 0) { log.AppendLine($"  ✓ {typeof(T).Name}: {fields.Length}/{fields.Length}"); return 0; }
+            log.AppendLine($"  ✗ {typeof(T).Name}: thiếu {string.Join(", ", missing)}");
+            return 1;
+        }
+
+        private static int Assert(StringBuilder log, string what, bool ok, string actual)
+        {
+            log.AppendLine($"  {(ok ? "✓" : "✗")} {what}" + (ok ? "" : $"  -> {actual}"));
+            return ok ? 0 : 1;
+        }
+    }
+}
