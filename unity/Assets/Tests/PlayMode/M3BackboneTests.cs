@@ -418,6 +418,51 @@ namespace TowerRpg.Tests
                 + $"tầng 1) nhưng đang là {hp.MaxHp:F1} — van an toàn #4 của §5.8 không chạy");
         }
 
+        [UnityTest]
+        public IEnumerator Moi_boss_phai_dat_bien_an_toan_toi_thieu()
+        {
+            yield return null;
+            BalanceConfig b = BalanceConfig.Instance;
+
+            // Cấp trang bị mà 'Đường cong tầng'!G của can-bang.xlsx kỳ vọng ở mỗi tầng boss.
+            var expected = new (int floor, int gear)[] { (10, 7), (20, 13), (30, 19), (40, 25) };
+            const float MinMargin = 1.5f;     // ô 'Thông số'!B40
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                (int floor, int gear) = expected[i];
+                if (!b.Has($"boss.hpMult{i + 1}")) continue;
+
+                float Pow(string key, int lv) => Mathf.Pow(1f + b.Get(key), lv - 1);
+
+                float dmg = b.Get("player.attackDamage") * Pow("gear.weapon.perLevel", gear);
+                float aps = b.Get("player.attacksPerSecond") * Pow("gear.glove.perLevel", gear);
+                float critMul = Pow("gear.ring.perLevel", gear) * b.Get("crit.multiplier");
+                float pdps = dmg * aps * (1f + (critMul - 1f) / b.Get("crit.meterSize"));
+
+                float php = b.Get("player.maxHp")
+                          * Mathf.Pow(1f + b.Get("player.hpPerFloor"), floor - 1)
+                          * Pow("gear.armor.perLevel", gear);
+
+                float bhp = b.Get("enemy.hpFloor1")
+                          * Mathf.Pow(1f + b.Get("enemy.hpGrowth"), floor - 1)
+                          * b.Get($"boss.hpMult{i + 1}");
+                float bdps = b.Get("enemy.dpsFloor1")
+                           * Mathf.Pow(1f + b.Get("enemy.dpsGrowth"), floor - 1);
+
+                float margin = (php / bdps) / (bhp / pdps);
+
+                // ĐÂY LÀ RÀNG BUỘC KHIẾN GAME KẾT THÚC ĐƯỢC. Nó từng hỏng theo BA cách cùng
+                // lúc và không test nào thấy: (1) enemy.dpsFloor1 giao 3 thay vì B7xB9 = 1,5,
+                // (2) van an toàn #4 của §5.8 không chạy vì PlayerHealth cache máu tối đa,
+                // (3) quét nhanh vô hạn che mất triệu chứng bằng Mảnh thừa mứa.
+                Assert.GreaterOrEqual(margin, MinMargin,
+                    $"boss {i + 1} (tầng {floor}, trang bị cấp {gear}): biên {margin:F2} < {MinMargin}. "
+                    + "Thời gian sống ngắn hơn thời gian giết -> KHÔNG THẮNG NỔI bằng đường leo. "
+                    + "Kiểm enemy.dpsFloor1, player.hpPerFloor và boss.hpMult trong m1-balance.csv.");
+            }
+        }
+
         // ── Save ──────────────────────────────────────────────────────────────────
 
         [UnityTest]

@@ -35,7 +35,17 @@ gear.costGrowth,0.155,Chi phí nhân thêm mỗi cấp
 # ── QUÁI §5.7 ─────────────────────────────────────────────────────────────────
 enemy.hpFloor1,500,TỔNG máu toàn bộ quái ở tầng 1
 enemy.hpGrowth,0.0518,Máu quái mỗi tầng
-enemy.dpsFloor1,3,Tổng sát thương quái mỗi giây ở tầng 1
+# GỘP SẴN TỈ LỆ THỰC NHẬN. can-bang.xlsx tách làm hai ô: 'Thông số'!B7 = 3 ("sát thương
+# quái/giây — NẾU NGƯỜI CHƠI ĐỨNG YÊN HOÀN TOÀN") và B9 = 0,5 ("tỉ lệ sát thương thực nhận
+# — nhờ luật di chuyển ở mục 5.3"). Công thức biên 'Kiểm chứng build'!T5 = P5/(R5 x B9) chỉ
+# dùng chúng dưới dạng TÍCH: 3 x 0,5 = 1,5. Mã không có ô B9 nào nên trước đây giao thẳng 3,
+# tức GẤP ĐÔI thứ bảng đang báo — cả bốn boss rơi xuống biên 0,51/0,33/0,21/0,14.
+# Để 1,5 ở đây là để mã giao ĐÚNG con số bảng tính đang hiển thị. Không sửa một ô nào của
+# can-bang.xlsx (ràng buộc 4 nguyên vẹn), không đụng hệ số máu boss (§5.10 nguyên vẹn).
+# ĐÁNH ĐỔI ĐÃ BIẾT: tầng thường cũng dễ đi một nửa. Chấp nhận được vì bảng CHƯA BAO GIỜ
+# tính biên tầng thường ('Đường cong tầng' không có cột sống sót), và §5.10 tự nói quái
+# thường dễ dần là có chủ ý.
+enemy.dpsFloor1,1.5,Sát thương quái/giây tầng 1 — ĐÃ GỘP tỉ lệ thực nhận 0,5 (= B7 x B9)
 enemy.dpsGrowth,0.04,Sát thương quái mỗi tầng
 enemy.count,6,Số quái mỗi tầng
 enemy.spawnRadius,3.5,Bán kính vòng tròn — người chơi đứng giữa thì an toàn
