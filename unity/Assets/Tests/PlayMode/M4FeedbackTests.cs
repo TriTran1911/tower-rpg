@@ -449,6 +449,41 @@ namespace TowerRpg.Tests
         }
 
         [UnityTest]
+        public IEnumerator Doi_chuong_thi_DOI_SAN()
+        {
+            var runner = Object.FindFirstObjectByType<FloorRunner>();
+            Assert.IsNotNull(runner);
+            int moiChuong = BalanceConfig.Instance.GetInt("tower.floorsPerChapter");
+            yield return null; yield return null;
+
+            // Năm chương, mỗi chương 20 tầng — ranh giới đúng ở 1/21/41/61/81.
+            Assert.AreEqual(0, runner.ChapterOf(1));
+            Assert.AreEqual(0, runner.ChapterOf(moiChuong));
+            Assert.AreEqual(1, runner.ChapterOf(moiChuong + 1));
+            Assert.AreEqual(4, runner.ChapterOf(moiChuong * 5));
+            Assert.AreEqual(4, runner.ChapterOf(999), "tầng ngoài dải phải kẹp về chương cuối");
+
+            GameObject sanGo = null;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                if (root.name == "Floor") { sanGo = root; break; }
+            Assert.IsNotNull(sanGo, "không thấy đối tượng Floor");
+            var san = sanGo.GetComponent<SpriteRenderer>();
+            Sprite chuong1 = san.sprite;
+            Assert.IsNotNull(chuong1);
+
+            // Leo qua ranh giới rồi ép bày lại tầng.
+            while (_gs.Floor <= moiChuong) _gs.AdvanceFloor();
+            EnemyRegistry.ClearAll();
+            float t = 0f;
+            while (san.sprite == chuong1 && t < 10f) { t += Time.deltaTime; yield return null; }
+
+            // Thiếu một bảng nền là CẢ 20 TẦNG của chương đó dùng nền cũ, và không gì
+            // báo cho biết — người chơi chỉ thấy tháp 100 tầng trông y hệt nhau.
+            Assert.AreNotEqual(chuong1, san.sprite,
+                $"qua tầng {moiChuong + 1} mà sàn vẫn là bảng nền chương 1");
+        }
+
+        [UnityTest]
         public IEnumerator Man_cot_moc_dung_game_roi_TRA_LAI_timeScale()
         {
             var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();

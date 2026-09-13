@@ -23,8 +23,13 @@ namespace TowerRpg.Progression
         [SerializeField] private Loot.ShardDropSpawner coreDrops;
 
         [Header("Boss — §5.10")]
-        [SerializeField] private Sprite bossSprite;
+        [SerializeField] private Sprite[] bossSprites = new Sprite[10];
         [SerializeField] private float bossScale = 2f;
+
+        [Header("Chương — M4")]
+        [SerializeField] private SpriteRenderer floorRenderer;
+        [SerializeField] private Sprite[] chapterFloors = new Sprite[5];
+        [SerializeField] private Sprite[] chapterEnemies = new Sprite[5];
 
         [Header("Nhịp")]
         [SerializeField] private float clearDelay = 1.2f;   // khoảng nghỉ sau khi dọn sạch
@@ -36,6 +41,11 @@ namespace TowerRpg.Progression
 
         private float _hp1, _hpG, _dps1, _dpsG, _radius, _rate, _range, _bossRangeMult;
         private bool _healOnBoss;
+        private int _tangMoiChuong = 20;
+        private int _chuongDangVe = -1;
+
+        /// <summary>Chương của một tầng, đếm từ 0. Năm chương, mỗi chương 20 tầng.</summary>
+        public int ChapterOf(int floor) => Mathf.Clamp((floor - 1) / _tangMoiChuong, 0, 4);
         private int _count, _bossCount;
         private readonly System.Collections.Generic.List<float> _bossMult =
             new System.Collections.Generic.List<float>();
@@ -95,6 +105,7 @@ namespace TowerRpg.Progression
             _range  = b.Get("enemy.attackRange");
 
             _bossCount     = Mathf.Max(1, b.GetInt("boss.count"));
+            _tangMoiChuong = Mathf.Max(1, b.GetInt("tower.floorsPerChapter"));
             _healOnBoss    = b.GetInt("boss.healOnEnter") != 0;
             _bossRangeMult = b.Get("boss.attackRangeMult");
             _bossMult.Clear();
@@ -206,6 +217,19 @@ namespace TowerRpg.Progression
                 Debug.Log($"[FloorRunner] Cửa boss tầng {floor}: hồi đầy máu.");
             }
 
+            // ĐỔI BẢNG NỀN THEO CHƯƠNG. Chỉ đổi SÀN và loại quái; màu quái vẫn đỏ và
+            // nhân vật vẫn lam ngọc suốt 100 tầng — người chơi học thứ bậc đọc MỘT LẦN
+            // rồi dùng mãi, đổi nó theo chương là phá luôn giá trị của hệ thống (#23).
+            int chuong = ChapterOf(floor);
+            if (chuong != _chuongDangVe)
+            {
+                _chuongDangVe = chuong;
+                if (floorRenderer != null && chuong < chapterFloors.Length
+                    && chapterFloors[chuong] != null)
+                    floorRenderer.sprite = chapterFloors[chuong];
+                Debug.Log($"[FloorRunner] Vào chương {chuong + 1} ở tầng {floor}.");
+            }
+
             // BẮT BUỘC: ClearAll() dưới đây chỉ dọn QUÁI. Viên Mảnh của lượt trước vẫn nằm
             // trên sàn, và nếu để lại thì chúng được cộng vào hũ của lượt này.
             if (drops != null) drops.DiscardAll();
@@ -218,12 +242,12 @@ namespace TowerRpg.Progression
 
             // Hệ số máu boss của §5.10. Thiếu khoá cho boss thứ n thì dùng 1,0 và kêu to —
             // im lặng rơi về quái thường là kiểu hỏng không ai phát hiện ra.
+            int bossIdx = boss ? GameState.Instance.BossIndex(floor) - 1 : -1;
             if (boss)
             {
-                int bi = GameState.Instance.BossIndex(floor) - 1;
-                if (bi >= 0 && bi < _bossMult.Count) totalHp *= _bossMult[bi];
-                else Debug.LogWarning($"[FloorRunner] Thiếu boss.hpMult{bi + 1} cho tầng {floor} " +
-                                      "— dùng hệ số 1,0. Bổ sung vào m1-balance.csv.");
+                if (bossIdx >= 0 && bossIdx < _bossMult.Count) totalHp *= _bossMult[bossIdx];
+                else Debug.LogWarning($"[FloorRunner] Thiếu boss.hpMult{bossIdx + 1} cho tầng " +
+                                      $"{floor} — dùng hệ số 1,0. Bổ sung vào m1-balance.csv.");
             }
 
             float hpEach  = totalHp / count;
@@ -249,11 +273,18 @@ namespace TowerRpg.Progression
                 Enemy e = Instantiate(enemyPrefab, centre + off, Quaternion.identity, transform);
                 e.name = boss ? $"F{floor}_BOSS" : $"F{floor}_Enemy{i:00}";
 
+                var sr = e.GetComponent<SpriteRenderer>();
                 if (boss)
                 {
-                    var sr = e.GetComponent<SpriteRenderer>();
-                    if (sr != null && bossSprite != null) sr.sprite = bossSprite;
+                    // Mỗi boss một hình riêng — mười con, không con nào lặp.
+                    if (sr != null && bossIdx >= 0 && bossIdx < bossSprites.Length
+                        && bossSprites[bossIdx] != null) sr.sprite = bossSprites[bossIdx];
                     e.transform.localScale *= bossScale;
+                }
+                else if (sr != null && chuong < chapterEnemies.Length
+                         && chapterEnemies[chuong] != null)
+                {
+                    sr.sprite = chapterEnemies[chuong];
                 }
 
                 e.Initialise(hpEach, dmgEach, _rate, range, boss, share, drops);

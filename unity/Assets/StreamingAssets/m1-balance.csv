@@ -62,16 +62,28 @@ shard.growth,0.09,Mảnh tăng mỗi tầng
 # mở ra một cấp KHÔNG AI MUA NỔI -> Lõi vô nghĩa (chênh build đúng x1,00).
 # Đo lại theo độ sâu: 20 tầng x1,00 · 30 tầng x1,85 · 40 tầng x3,30 · 50 tầng x5,90.
 # Chọn 40: x3,30 đã gần trọn dải x3,9 mà §5.11 chốt cho cả 100 tầng.
-tower.floors,40,Số tầng hiện có. Bản đầy đủ là 100 tầng ở M4
+tower.floors,100,Số tầng — BẢN ĐẦY ĐỦ (M4)
+# Năm chương, mỗi chương 20 tầng. Bảng nền đổi theo chương (docs/Chapters/ĐỌC-TRƯỚC.md);
+# quái vẫn ĐỎ và nhân vật vẫn LAM NGỌC suốt 100 tầng — người chơi học thứ bậc đọc một lần
+# rồi dùng mãi, đổi nó theo chương là phá luôn giá trị của hệ thống (quyết định #23).
+tower.floorsPerChapter,20,Số tầng mỗi chương
 tower.bossEvery,10,Cứ N tầng có một boss
 
 # ── BOSS §5.10 ────────────────────────────────────────────────────────────────
 # Hệ số máu 10 boss đã chốt: 1.56 2.20 3.14 4.42 4.62 4.31 4.07 3.45 2.36 1.50
-# M3 mới có 2 boss (tầng 10, 20) nên chỉ dùng hai số đầu.
+# M4 dùng đủ cả mười. Đã mô phỏng leo hết 100 tầng: với ngân sách quét 2x thì CẢ MƯỜI
+# boss đạt biên >= 1,50; KHÔNG quét thì kẹt ở boss 2, 3, 4 (0,99 / 0,91 / 0,92).
+# Tức quét nhanh KHÔNG phải tiện ích — nó là thứ bắt buộc để chơi hết game.
 boss.hpMult1,1.56,Hệ số máu boss 1 — tầng 10
 boss.hpMult2,2.20,Hệ số máu boss 2 — tầng 20
 boss.hpMult3,3.14,Hệ số máu boss 3 — tầng 30
 boss.hpMult4,4.42,Hệ số máu boss 4 — tầng 40
+boss.hpMult5,4.62,Hệ số máu boss 5 — tầng 50
+boss.hpMult6,4.31,Hệ số máu boss 6 — tầng 60
+boss.hpMult7,4.07,Hệ số máu boss 7 — tầng 70
+boss.hpMult8,3.45,Hệ số máu boss 8 — tầng 80
+boss.hpMult9,2.36,Hệ số máu boss 9 — tầng 90
+boss.hpMult10,1.50,Hệ số máu boss 10 — tầng 100
 boss.count,1,Số quái ở tầng boss — một mình nó
 # Boss đánh lâu LÀ CHỦ Ý, không phải lỗi: §5.1 chốt 200 giây cho boss tầng 100,
 # §5.5b liệt kê 87s (Sát thủ) đến 314s (Tăng). M3 đo được 75s/112s/158s/193s — trong dải.

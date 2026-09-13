@@ -172,6 +172,18 @@ namespace TowerRpg.Tests
                 chScreen.Toggle();
             }
 
+            // ── 10 · sang chương 2: bảng nền và loại quái đổi ────────────────────
+            int moiChuong = BalanceConfig.Instance.GetInt("tower.floorsPerChapter");
+            while (gs.Floor <= moiChuong + 4) gs.AdvanceFloor();
+            EnemyRegistry.ClearAll();
+            float t2 = 0f;
+            while (EnemyRegistry.Count == 0 && t2 < 10f)
+            { t2 += Time.unscaledDeltaTime; yield return null; }
+            yield return Doi(0.4f);
+            ctrl.transform.position = Vector3.zero;
+            yield return null;
+            Chup("chuong-2", gs, hp, $"tầng {gs.Floor} — bảng nền và quái của chương 2");
+
             _cam.targetTexture = null;
             Time.timeScale = 1f;
             Debug.Log("\n╔══ NHẬT KÝ PHIÊN CHƠI ═══════════════════════════\n" + _nhatKy);

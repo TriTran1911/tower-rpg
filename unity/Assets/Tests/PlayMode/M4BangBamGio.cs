@@ -30,6 +30,9 @@ namespace TowerRpg.Tests
     public class M4BangBamGio
     {
         private const int SoTang = 10;
+        // KHÔNG kéo lên 20: đã thử, và 20 tầng x ~50 giây game ở tốc độ tua 6x vẫn vượt
+        // hạn 900 giây vì boss tầng 20 dày máu và AutoBattle chơi cố ý dở. Ranh giới
+        // chương kiểm bằng một test riêng, nhanh hơn nhiều — xem Doi_chuong_thi_DOI_SAN.
         private const float TocDo = 6f;      // tua nhanh; 10 tầng x ~45s = 450s thật
 
         /// <summary>Mua ô rẻ nhất trước, tới khi không đủ Mảnh. Giáp đổi thì máu phải tính lại.</summary>

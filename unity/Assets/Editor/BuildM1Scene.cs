@@ -74,13 +74,13 @@ namespace TowerRpg.EditorTools
 
             Sprite player = charSprites[0];
             Sprite enemy  = SliceAndGet($"{Art}/Actor/Monster/Skull/SpriteSheet.png", Cell, 0);
-            Sprite boss   = SliceAndGet($"{Art}/Actor/Boss/GiantSpirit/Idle.png", 50, 0);
+
             Sprite floor  = SliceAndGet($"{Chapter}/Tilesets/TilesetFloor.png", Cell, 23, fullRect: true);
 
-            if (player == null || enemy == null || floor == null || boss == null)
+            if (player == null || enemy == null || floor == null)
             {
                 Debug.LogError("[BuildM1Scene] Thiếu sprite, dừng. " +
-                               $"player={player} enemy={enemy} floor={floor} boss={boss}");
+                               $"player={player} enemy={enemy} floor={floor}");
                 return;
             }
             for (int i = 0; i < CharacterRoster.Count; i++)
@@ -565,7 +565,9 @@ namespace TowerRpg.EditorTools
             // ── Nối tham chiếu ────────────────────────────────────────────────────────
             Wire(runner,   ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()),
                            ("arenaCentre", null), ("playerHealth", health),
-                           ("bossSprite", boss), ("drops", drops), ("coreDrops", coreDrops));
+                           ("drops", drops), ("coreDrops", coreDrops),
+                           ("floorRenderer", floorSr));
+            WireChuongVaBoss(runner);
             Wire(drops,     ("pickupPrefab", shardPrefab.GetComponent<ShardPickup>()));
             Wire(coreDrops, ("pickupPrefab", corePrefab.GetComponent<ShardPickup>()));
             Wire(slashes,   ("prefab", slashPrefab.GetComponent<SlashFx>()));
@@ -822,6 +824,55 @@ namespace TowerRpg.EditorTools
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        /// <summary>
+        /// Năm chương và mười boss của M4.
+        ///
+        /// Chương chỉ đổi SÀN và LOẠI QUÁI. Màu quái vẫn đỏ, nhân vật vẫn lam ngọc suốt
+        /// 100 tầng — quyết định #23: người chơi học thứ bậc đọc MỘT LẦN rồi dùng mãi.
+        /// Thư mục Chapters/ đã sinh sẵn năm bảng nền, cùng cấu trúc 51 file, chỉ khác màu.
+        /// </summary>
+        private static void WireChuongVaBoss(FloorRunner runner)
+        {
+            string[] chuong = { "1-nen-da", "2-chieu-giay", "3-nang-dong",
+                                "4-cham-dem", "5-suong-lech" };
+            // Một loại quái cho mỗi chương, chọn theo chủ đề bảng nền.
+            string[] quai = { "Skull", "Bamboo", "Flam", "BlueBat", "Spirit" };
+
+            // Mười boss, mười hình, không con nào lặp. Ô vuông khác nhau nên kèm kích thước.
+            (string ten, int o)[] boss =
+            {
+                ("GiantFrog2", 40), ("GiantRacoon", 60),          // chương 1
+                ("GiantBamboo", 62), ("GiantBamboo2", 62),        // chương 2
+                ("GiantFlam", 50), ("GiantRacoonGold", 60),       // chương 3
+                ("DemonCyclop", 50), ("TenguBlue", 68),           // chương 4
+                ("GiantBlueSamurai", 48), ("TenguRed", 82),       // chương 5
+            };
+
+            var so = new SerializedObject(runner);
+
+            SerializedProperty san = so.FindProperty("chapterFloors");
+            san.arraySize = chuong.Length;
+            SerializedProperty conQuai = so.FindProperty("chapterEnemies");
+            conQuai.arraySize = chuong.Length;
+            for (int i = 0; i < chuong.Length; i++)
+            {
+                san.GetArrayElementAtIndex(i).objectReferenceValue =
+                    SliceAndGet($"Assets/Art/Chapters/{chuong[i]}/Tilesets/TilesetFloor.png",
+                                Cell, 23, fullRect: true);
+                conQuai.GetArrayElementAtIndex(i).objectReferenceValue =
+                    SliceAndGet($"{Art}/Actor/Monster/{quai[i]}/SpriteSheet.png", Cell, 0);
+            }
+
+            SerializedProperty bs = so.FindProperty("bossSprites");
+            bs.arraySize = boss.Length;
+            for (int i = 0; i < boss.Length; i++)
+                bs.GetArrayElementAtIndex(i).objectReferenceValue =
+                    SliceAndGet($"{Art}/Actor/Boss/{boss[i].ten}/Idle.png", boss[i].o, 0);
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(runner);
         }
 
         private static SpriteRenderer BarPart(Transform parent, string name, Sprite sprite,

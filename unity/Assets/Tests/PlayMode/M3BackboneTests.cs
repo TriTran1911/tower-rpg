@@ -435,14 +435,23 @@ namespace TowerRpg.Tests
             yield return null;
             BalanceConfig b = BalanceConfig.Instance;
 
-            // Cấp trang bị mà 'Đường cong tầng'!G của can-bang.xlsx kỳ vọng ở mỗi tầng boss.
-            var expected = new (int floor, int gear)[] { (10, 7), (20, 13), (30, 19), (40, 25) };
+            // Cấp trang bị LEO ĐƯỢC ở mỗi tầng boss, mô phỏng với ngân sách quét 2x và
+            // cổng Lõi — tức số THẬT một người chơi có, không phải số trên giấy.
+            // Bốn mốc đầu khớp 'Đường cong tầng'!G của can-bang.xlsx (7/13/19/25).
+            var expected = new (int floor, int gear)[]
+            {
+                (10, 7), (20, 13), (30, 19), (40, 25), (50, 31),
+                (60, 37), (70, 40), (80, 40), (90, 40), (100, 40),
+            };
             const float MinMargin = 1.5f;     // ô 'Thông số'!B40
 
+            int daKiem = 0;
             for (int i = 0; i < expected.Length; i++)
             {
                 (int floor, int gear) = expected[i];
                 if (!b.Has($"boss.hpMult{i + 1}")) continue;
+                if (floor > b.GetInt("tower.floors")) continue;
+                daKiem++;
 
                 float Pow(string key, int lv) => Mathf.Pow(1f + b.Get(key), lv - 1);
 
@@ -472,6 +481,15 @@ namespace TowerRpg.Tests
                     + "Thời gian sống ngắn hơn thời gian giết -> KHÔNG THẮNG NỔI bằng đường leo. "
                     + "Kiểm enemy.dpsFloor1, player.hpPerFloor và boss.hpMult trong m1-balance.csv.");
             }
+
+            // §8 giao tiêu chí M4 là "chơi hết được từ đầu đến cuối". Một tháp 100 tầng mà
+            // chỉ kiểm được 4 boss thì không ai biết sáu con sau có qua nổi không — và
+            // 'Biên theo boss' của bảng tính neo vào trang bị CUỐI GAME nên về cấu trúc
+            // không thể phát hiện bức tường ở boss sớm.
+            int canKiem = b.GetInt("tower.floors") / b.GetInt("tower.bossEvery");
+            Assert.AreEqual(canKiem, daKiem,
+                $"tháp {b.GetInt("tower.floors")} tầng có {canKiem} boss nhưng chỉ kiểm được "
+                + $"{daKiem} — thiếu khoá boss.hpMult hoặc thiếu mốc cấp trang bị");
         }
 
         // ── Việc 3: âm thanh ──────────────────────────────────────────────────────

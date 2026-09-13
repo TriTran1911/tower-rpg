@@ -42,7 +42,7 @@ namespace TowerRpg.EditorTools
 
             // ── tham chiếu ─────────────────────────────────────────────────────────────
             log.AppendLine("\nTHAM CHIẾU");
-            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "bossSprite", "drops");
+            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "drops", "floorRenderer");
             fail += Check<ShardDropSpawner>(log, "pickupPrefab");
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
@@ -234,6 +234,21 @@ namespace TowerRpg.EditorTools
                 }
             fail += Assert(log, "đủ sprite hoạt ảnh nhân vật (3 bộ x 5 x 4 hướng)",
                            animCan > 0 && animCo == animCan, $"{animCo}/{animCan}");
+
+            // M4: thiếu một hình boss là tầng đó hiện con quái thường phóng to, và không
+            // gì báo cho biết. Thiếu một bảng nền là cả 20 tầng của chương đó dùng nền cũ.
+            var fr = Object.FindFirstObjectByType<FloorRunner>();
+            var frSo = fr != null ? new SerializedObject(fr) : null;
+            foreach ((string ten, int can) in new[]
+                     { ("bossSprites", 10), ("chapterFloors", 5), ("chapterEnemies", 5) })
+            {
+                SerializedProperty arr = frSo?.FindProperty(ten);
+                int co = 0;
+                if (arr != null)
+                    for (int i = 0; i < arr.arraySize; i++)
+                        if (arr.GetArrayElementAtIndex(i).objectReferenceValue != null) co++;
+                fail += Assert(log, $"đủ {can} {ten}", co == can, $"{co}/{can}");
+            }
 
             fail += Assert(log, "có SweepRunner trong scene",
                            Object.FindFirstObjectByType<SweepRunner>() != null, "không có");
