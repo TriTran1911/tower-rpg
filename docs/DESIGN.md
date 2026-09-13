@@ -38,7 +38,7 @@ Những thứ dưới đây bị loại bỏ **có chủ ý**, không phải vì
 | IAP, quảng cáo | Portfolio không cần doanh thu |
 | PvP, guild, chat, bảng xếp hạng | Đội chi phí gấp nhiều lần, không phục vụ mục tiêu |
 | Gacha, hòm đồ, tỉ lệ rơi | Trái nguyên tắc nền |
-| Nhiều nhân vật / đội hình | Phình phạm vi; một nhân vật là đủ |
+| **Đội hình** nhiều nhân vật cùng đánh | Buộc phải bỏ §5.3 — sáu nhân vật thì không đặt vị trí từng người trên màn hình dọc được, nó thành auto-battle. *(Đổi nhân vật thì KHÁC và ĐƯỢC PHÉP — xem §5.5b)* |
 | Cốt truyện, lồng tiếng, cutscene | Ngốn thời gian, không chứng minh năng lực kỹ thuật |
 | Thiết kế màn chơi (level design) | Đấu trường kín thay thế; xem mục 5.1 |
 
@@ -235,6 +235,47 @@ nào chạm trần, nên **cả 52 phân bổ có chỉ số giống hệt nhau*
 boss 1, 2, 3. Chỉ số bắt đầu phân biệt từ **tầng 32**. Hệ quả trực tiếp của thang cổng §5.6,
 không phải lỗi — nhưng UI phải trung thực, đừng để màn hình đột phá gào lên "quyết định trọng
 đại" ở boss 1 khi nó chưa là gì cả.
+
+#### 5.5b Đổi nhân vật — sưu tầm mà không phá gì
+
+**Vẫn là MỘT nhân vật trên màn hình.** Đây không phải đội hình: không ghép ba người bổ trợ
+nhau, không tương khắc. §5.3 sống nguyên vẹn vì bạn vẫn chỉ điều khiển vị trí của chính mình.
+
+| Luật | |
+|---|---|
+| **Mở khoá theo mốc** | Giết boss lần đầu → mở một nhân vật. 10 boss = 10 nhân vật. Xác định, không quay số |
+| **Trang bị dùng chung** | Bốn ô, Mảnh, Lõi thuộc về **người chơi**, không thuộc nhân vật. Đổi người không mất gì |
+| **Chỉ đổi hình dạng, không đổi sức mạnh** | Mỗi nhân vật nhân sát thương lên `k`, chia máu cho `k` |
+| **Đổi tự do giữa các tầng** | Không tốn tài nguyên, không chờ hồi |
+
+**Vì sao luật thứ ba quan trọng đến thế:** biên an toàn tỉ lệ với **tích** `sát thương × máu`
+(xem §5.10). Nhân một thừa số lên `k` và chia thừa số kia cho `k` thì tích **không đổi** —
+nên biên không đổi một chữ số nào.
+
+Đã kiểm: 5 nhân vật × 5 build × 10 boss, tất cả cho **1,364485 → 904,373632**, trùng khít
+tới 6 chữ số thập phân.
+
+> **Thêm bao nhiêu nhân vật cũng không đụng một dòng nào của `can-bang.xlsx`.**
+
+Nhưng chơi thì khác hẳn — tại boss cuối, build dàn đều:
+
+| Nhân vật | `k` | Giết boss | Sống được | Kiểu chơi |
+|---|---|---|---|---|
+| Sát thủ | 1,80 | **87s** | 320s | Giết chớp nhoáng, sai một nhịp là chết |
+| Kiếm sĩ | 1,35 | 116s | 426s | |
+| Cân bằng | 1,00 | 157s | 575s | Trung dung |
+| Vệ binh | 0,70 | 224s | 822s | |
+| Tăng | 0,50 | **314s** | **1.151s** | Chậm mà chắc, tha thứ sai lầm |
+
+Bảng tính nói chúng bằng nhau. **Tay người chơi thì không** — nhân vật mỏng chết vì một lần
+đứng lì quá lâu, nhân vật dày tha thứ sai lầm. Đó là kỹ năng, không phải sức mạnh, nên nó
+không phá nguyên tắc "khoảng cách do chăm chỉ" ở §1.
+
+**Đồ hoạ có sẵn:** `art-source/NinjaAdventure/Actor/Character/` có **89 nhân vật đủ hoạt ảnh**
+(Attack · Dead · Idle · Walk + hai chiêu Special) — Samurai, Knight, Tengu, Vampire, Skeleton,
+Monk, Ninja đủ màu. Cùng tác giả, cùng phong cách, nên **quyết định #13 không bị phá**.
+
+**Thuộc mốc M3**, cùng chỗ với boss và Lõi, vì mở khoá gắn với lần giết boss đầu tiên.
 
 #### ⚠️ Vấn đề chưa xử lý: Nhẫn là ô đổ rác
 
@@ -449,6 +490,7 @@ thao túng người chơi.
 | 19 | **Đổi bảng màu sang "Mực & Son" — ba tầng đọc** | Giữ nguyên bảng gốc *(loại: nhân vật màu ô liu trên sàn cam, không nổi)*; "Tháp Đêm" xám tím lạnh *(loại: mọi loài quái thành cùng một khối xám, mất khả năng phân biệt)*; "Huyết Nguyệt" đỏ tím *(loại: sàn đỏ + quái đỏ, tương phản kém và mỏi mắt)*; "Chu Sa" sơn mài ấm *(loại giữa chừng: bảng gốc vốn đã cam ấm nên dải ấm gần như không đổi được gì)* | Không phải chuyện thẩm mỹ mà là **thứ bậc đọc**, phục vụ §3 (màn hình dọc nhỏ) và §5.3 (phải theo dõi được vị trí của chính mình trong lúc đứng yên ăn đòn). Thế giới xám trung tính, quái đỏ, nhân vật lam ngọc — ba tầng, không lẫn. Sắc đỏ lệch nhẹ theo tên loài nên các loài vẫn phân biệt được. **Lỗi đã sửa trong quá trình:** quy tắc đầu chỉ giữ những màu vốn đã đỏ, làm 41/66 quái chìm vào nền — đổi sang quy tắc theo thư mục (vai trò) thì 66/66 nổi được. Sinh lại bất cứ lúc nào bằng `tools/doi-bang-mau.py`; bản gốc giữ nguyên làm đầu vào |
 | 20 | **Năm nền theo chương, chỉ đổi tầng thế giới** | Sinh lại toàn bộ art cho mỗi chương *(loại: 5 × 124 MB, và làm UI/HUD đổi màu theo chương)*; giữ một nền chung cho cả tháp *(loại: §5.1 cần 5 chương khác nhau về thị giác)* | Chỉ `Backgrounds/` là chương-riêng — 2,4 MB cho cả 5. Hai tầng quái đỏ và nhân vật lam giữ nguyên suốt 100 tầng vì người chơi học thứ bậc đọc một lần rồi dùng mãi. **Phát hiện quan trọng trong quá trình:** bản thiết kế đầu đạt mọi ràng buộc khi đo ở *mốc giữa dải* nhưng render ra thì ba cặp chương rơi xuống ΔE 13–17 — vì pixel tile sàn nằm ở đoạn sáng, nơi năm bảng hội tụ. Mốc giữa đẹp nhưng không có pixel nào ở đó. Sau khi kéo hai mốc sáng và giãn độ sáng: ΔE 24,3. Còn hai thiếu sót dưới 1 đơn vị, chấp nhận. **Cũng sửa luôn một lỗi thật:** cờ `giu_do` của bản Mực & Son giữ nguyên pixel đỏ của lớp thế giới, làm đèn lồng và lửa trong tile đỏ trùng khít màu quái (ΔE 1,0) — đã bỏ |
 | 21 | **Dựng scene M1 bằng mã, kèm 8 test PlayMode** | Dựng tay theo hướng dẫn *(loại: 18 ô kéo-thả, sai một ô là luật §5.3 hỏng trong im lặng và không ai biết)*; viết thẳng file .unity *(loại: YAML đầy GUID và fileID chéo, viết tay gần như chắc chắn hỏng)*; chỉ kiểm tham chiếu, không chạy thử *(loại: nối đúng KHÁC chạy đúng)* | `BuildM1Scene.cs` dựng lại được bất cứ lúc nào; `VerifyM1Scene.cs` soi 18 tham chiếu + 10 mục từng hỏng trong đợt review; `M1LoopTests.cs` chạy game thật headless. Bốn test khoá chặt §5.3 và §5.4 — đứng yên thì đánh và ăn đòn, di chuyển thì quái không mất một điểm máu nào, đúng 5 đòn một chí mạng, thanh không reset khi di chuyển. **8/8 đạt trong 18,3 giây.** Kèm theo: tách mã game ra asmdef riêng (`TowerRpg`, `TowerRpg.Editor`, `TowerRpg.Tests.PlayMode`) — bắt buộc vì asmdef không tham chiếu được Assembly-CSharp, và cũng làm biên dịch nhanh hơn |
+| 22 | **Đổi nhân vật (§5.5b), KHÔNG phải đội hình** | Đội hình 3-6 người cùng đánh *(loại: buộc bỏ §5.3, vì không đặt vị trí từng người trên màn hình dọc được — nó thành auto-battle, và đó là đổi thể loại chứ không phải thêm tính năng)*; gacha rút nhân vật *(loại: trái nguyên tắc nền)*; mỗi nhân vật một bộ trang bị riêng *(loại: nhân số ô cân bằng lên 10 lần, phạt người chơi thử nghiệm)* | Người dùng muốn **cảm giác mở khoá**, không phải chiến thuật ghép đội — hỏi rõ trước khi thiết kế. Lời giải: một nhân vật trên màn hình như cũ, trang bị dùng chung, nhân vật chỉ đổi HÌNH DẠNG chỉ số (nhân sát thương `k`, chia máu `k`). Biên an toàn tỉ lệ với TÍCH hai thừa số nên `k` triệt tiêu — **kiểm 5 nhân vật × 5 build × 10 boss, trùng khít tới 6 chữ số thập phân.** Chi phí: 0 cân bằng, 0 đồ hoạ (89 nhân vật có sẵn, cùng tác giả), ~150 dòng code. **Một nhận định sai đã sửa:** trước đó tôi kết luận bộ asset chỉ có 1 nhân vật đủ hoạt ảnh — sai, vì chỉ nhìn thư mục `CharacterAnimated` mà bỏ qua `Character` |
 
 ---
 
@@ -489,7 +531,7 @@ Lộ trình dưới đây thiết kế để luôn có thứ chạy được tr�
 |---|---|---|
 | **M1 — Vòng lặp sống** | 1 tầng, 1 loại quái, di chuyển + tự đánh, thanh chí mạng | Đánh được, thấy vui hoặc không vui. **Nếu không vui, dừng lại và sửa ở đây** |
 | **M2 — Tiến trình** | 20 tầng, rơi Mảnh, nâng cấp 4 ô trang bị, save/load | Chơi được 30 phút liên tục có cảm giác tiến bộ |
-| **M3 — Xương sống** | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle | Toàn bộ hệ thống đã đủ; chỉ còn thiếu nội dung |
+| **M3 — Xương sống** | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle, **mở khoá và đổi nhân vật (§5.5b)** | Toàn bộ hệ thống đã đủ; chỉ còn thiếu nội dung |
 | **M4 — Nội dung** | 100 tầng, 5 chương, 10 boss | Chơi hết được từ đầu đến cuối |
 | **M5 — Bóng bẩy** | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | Trông như sản phẩm thật. **Đây là phần quyết định giá trị portfolio** |
 
