@@ -292,6 +292,24 @@ namespace TowerRpg.EditorTools
             bossFill.fillOrigin = (int)Image.OriginHorizontal.Left;
             bossBarGo.SetActive(false);
 
+            // banner sự kiện: dọn sạch tầng / hạ boss. Đặt ở 1/3 trên màn hình — đủ cao để
+            // không che đấu trường, đủ thấp để nằm trong vùng mắt đang nhìn khi đánh nhau.
+            // Neo TRÁI và thu bề ngang lại: cột nút bên phải bắt đầu ở x = 832, còn banner
+            // căn giữa rộng 952 thì chiếm tới x = 1016 và chui xuống dưới nút QUÉT NHANH.
+            // Nhìn ảnh chụp mới thấy — kích thước "cả bề ngang trừ hai lề" nghe rất hợp lý
+            // cho tới lúc có một cột nút chiếm mất bên phải.
+            Image bannerBg = UiImage("EventBanner", canvasGo.transform, bgSp);
+            bannerBg.rectTransform.anchorMin = bannerBg.rectTransform.anchorMax = new Vector2(0f, 1f);
+            bannerBg.rectTransform.pivot = new Vector2(0f, 1f);
+            bannerBg.rectTransform.anchoredPosition = new Vector2(Edge, -(UiRefH * 0.32f));
+            bannerBg.rectTransform.sizeDelta = new Vector2(UiRefW - Edge - (Edge + Touch + 40 + Unit), 96);
+
+            var eventBanner = UiText("Label", bannerBg.transform, "", 38f, UiGold);
+            eventBanner.rectTransform.anchorMin = Vector2.zero;
+            eventBanner.rectTransform.anchorMax = Vector2.one;
+            eventBanner.rectTransform.offsetMin = eventBanner.rectTransform.offsetMax = Vector2.zero;
+            bannerBg.gameObject.SetActive(false);
+
             var hudUi = canvasGo.AddComponent<HudUI>();
 
             // nút mở màn nâng cấp — góc trên-phải, vùng chạm đủ lớn
@@ -528,7 +546,9 @@ namespace TowerRpg.EditorTools
                            ("sweep", sweep), ("sweepButton", sweepBtn),
                            ("sweepLabel", sweepTxt), ("sweepFill", sweepFill),
                            ("auto", autoBattle), ("autoButton", autoBtn), ("autoLabel", autoTxt),
-                           ("runner", runner));
+                           ("runner", runner), ("eventBanner", eventBanner),
+                           ("eventBannerRoot", bannerBg.gameObject),
+                           ("cameraShake", shake));
             Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
                            ("coreLabel", upCores), ("respecButton", respecBtn),
                            ("respecLabel", respecTxt));

@@ -399,7 +399,26 @@ AdvanceFloor → tầng mới → _paid tự reset ở SpawnFloor
 
 ---
 
-## VIỆC 6 — ĐÍCH ĐẾN CỦA VIÊN MẢNH: HUD CHẠY SỐ + BANNER DỌN TẦNG (≈ 0,5 ngày)
+## ~~VIỆC 6 — ĐÍCH ĐẾN CỦA VIÊN MẢNH~~ ✅ XONG
+
+> **47/47 test, 47 mục kiểm scene.** `FloorCleared` bắn từ M2 mà không một ai nghe — giờ nó
+> hiện banner **"TẦNG 01 XONG · +400 MẢNH"**. `OnBossDefeated` từ một dòng `Debug.Log` thành
+> banner **"HẠ BOSS · +3 LÕI · MỞ NHÂN VẬT MỚI"** kèm rung màn hình. Số Mảnh trên HUD chạy
+> tới giá trị mới trong 0,25 giây kèm một nháy sáng.
+>
+> **Bốn lỗi tự gây rồi sửa, đều chỉ lộ ra khi chạy hoặc khi nhìn:**
+> 1. Bộ đếm **tiệm cận mà không tới nơi** — tính lại bước đi từ khoảng cách *còn lại* mỗi
+>    khung hình là phân rã mũ. Đo được còn thiếu 17 Mảnh sau 2 giây. Đổi sang nội suy tuyến
+>    tính theo mốc thời gian.
+> 2. Banner vàng đặt thẳng trên sàn đấu trường chỉ đạt **2,44:1** — dưới cả ngưỡng 3:1 cho
+>    chữ lớn. Cho nó nền gỗ tối, lên 5,40:1.
+> 3. Banner rộng "cả bề ngang trừ hai lề" **chui xuống dưới cột nút bên phải**. Nghe rất hợp
+>    lý cho tới lúc nhìn ảnh chụp.
+> 4. Test dùng `FindFirstObjectByType<Canvas>()` — scene có **HAI** Canvas (thanh chí mạng
+>    world-space và Canvas màn hình) và "First" không hứa cái nào. Test xanh do may thứ tự,
+>    hỏng ngay lần dựng lại kế tiếp. Đổi sang duyệt cây scene kể cả đối tượng đang tắt.
+
+### Nội dung gốc
 
 `FloorRunner.cs:107` bắn `FloorCleared` và **grep toàn repo cho thấy KHÔNG MỘT AI NGHE** (`HudUI.cs:45` chỉ nghe `FloorStarted`). Viên Mảnh phải hạ cánh vào đâu đó, nếu không đường bay kết thúc trong hư không.
 

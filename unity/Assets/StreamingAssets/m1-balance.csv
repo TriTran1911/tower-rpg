@@ -169,3 +169,12 @@ loot.magnetRadius,1.8,Vào gần mức này thì viên tự bay tới
 loot.pickupRadius,0.35,Chạm mức này thì cộng Mảnh
 loot.flySpeed,7,Tốc độ bay về phía người chơi
 loot.maxLifetime,25,Giây tối đa một viên nằm trên sàn trước khi tự bay về
+
+# ── PHẢN HỒI HUD ──────────────────────────────────────────────────────────────
+# Số Mảnh CHẠY tới giá trị mới thay vì nhảy phắt. Không đổi thời điểm hay số lượng
+# Mảnh — chỉ làm cho lần cộng vốn đã có trở nên nhìn thấy được. Mắt bắt được chuyển
+# động ngoài vùng nhìn trung tâm, nhưng không bắt được một con số đổi tức thì.
+hud.countSeconds,0.25,Số Mảnh chạy tới giá trị mới trong bao lâu
+hud.flashSeconds,0.18,Nhãn Mảnh nháy sáng bao lâu khi vừa nhận
+hud.floorBannerSeconds,1.0,Banner dọn sạch tầng hiện bao lâu
+hud.bossBannerSeconds,2.0,Banner hạ boss hiện bao lâu

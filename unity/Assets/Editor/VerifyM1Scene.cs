@@ -46,7 +46,8 @@ namespace TowerRpg.EditorTools
             fail += Check<ShardDropSpawner>(log, "pickupPrefab");
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
-                                      "sweepFill", "auto", "autoButton", "autoLabel", "runner");
+                                      "sweepFill", "auto", "autoButton", "autoLabel", "runner",
+                                      "eventBanner", "eventBannerRoot", "cameraShake");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
                                               "coreLabel", "respecButton", "respecLabel");

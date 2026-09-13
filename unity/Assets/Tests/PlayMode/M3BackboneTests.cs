@@ -622,6 +622,23 @@ namespace TowerRpg.Tests
         // Đó là điểm mấu chốt: 30 test cũ đều đi đường ClearAll nên quái không bao giờ chết
         // thật, và không test nào trong số đó đi qua được đường rơi đồ.
 
+        /// <summary>
+        /// Tìm đối tượng theo tên trong CẢ scene, kể cả đang tắt.
+        ///
+        /// KHÔNG dùng FindFirstObjectByType&lt;Canvas&gt;() rồi lục trong đó: scene có HAI
+        /// Canvas (thanh chí mạng world-space gắn dưới chân nhân vật, và Canvas màn hình),
+        /// mà "First" không hứa hẹn cái nào. Test từng xanh chỉ vì may thứ tự, rồi hỏng
+        /// ngay lần dựng lại scene kế tiếp. GameObject.Find cũng không dùng được vì nó bỏ
+        /// qua đối tượng đang tắt — mà banner thì phải tắt lúc chưa có sự kiện.
+        /// </summary>
+        private static GameObject FindInScene(string name)
+        {
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == name) return t.gameObject;
+            return null;
+        }
+
         private static void KillAll()
         {
             foreach (Enemy e in Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None))
@@ -747,6 +764,64 @@ namespace TowerRpg.Tests
 
             Assert.AreEqual(0, drops.LiveCount, "lại gần mà viên không bay tới");
             Assert.Greater(_gs.Shards, before, "nhặt viên rồi mà Mảnh không tăng");
+        }
+
+        // ── Việc 6: đích đến của viên Mảnh ────────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Don_sach_tang_thi_HIEN_BANNER()
+        {
+            // Tìm theo tên trong cây scene, KHÔNG dùng UnityEditor.SerializedObject:
+            // asmdef test này cũng biên dịch cho máy thật, mà UnityEditor thì không có ở đó.
+            // Phải duyệt cả đối tượng đang TẮT — banner vốn phải tắt lúc chưa có sự kiện.
+            GameObject root = FindInScene("EventBanner");
+            Assert.IsNotNull(root, "không thấy EventBanner trong scene");
+            var label = root.GetComponentInChildren<TMPro.TMP_Text>(true);
+            Assert.IsNotNull(label);
+
+            yield return null; yield return null;
+            Assert.IsFalse(root.activeSelf, "chưa dọn tầng thì banner phải ẩn");
+
+            KillAll();
+            float t = 0f;
+            while (!root.activeSelf && t < 12f) { t += Time.deltaTime; yield return null; }
+
+            // FloorRunner bắn FloorCleared từ M2 mà KHÔNG MỘT AI NGHE: 400 Mảnh vào ví
+            // trong im lặng hoàn toàn, không một pixel nào đổi ngoài con số ở góc màn hình.
+            Assert.IsTrue(root.activeSelf,
+                "dọn sạch tầng mà không có banner — FloorCleared vẫn không ai nghe");
+            StringAssert.Contains("MẢNH", label.text, "banner phải nói rõ nhận bao nhiêu Mảnh");
+        }
+
+        [UnityTest]
+        public IEnumerator So_Manh_tren_HUD_CHAY_toi_gia_tri_moi()
+        {
+            GameObject shardGo = FindInScene("ShardCount");
+            Assert.IsNotNull(shardGo, "không thấy ShardCount trong scene");
+            var label = shardGo.GetComponent<TMPro.TMP_Text>();
+            Assert.IsNotNull(label);
+            yield return null; yield return null;
+
+            float before = _gs.Shards;
+            _gs.AddShards(50_000f);
+            yield return null;
+
+            // Ngay khung hình kế: số hiển thị PHẢI còn thua số thật. Nhảy phắt thì mắt
+            // không bắt được, và đường bay của viên Mảnh kết thúc trong hư không.
+            string shown = label.text.Replace(",", "").Replace(".", "");
+            float.TryParse(shown, out float v);
+            Assert.Less(v, before + 50_000f,
+                $"số Mảnh nhảy thẳng lên {v:F0} trong một khung hình — phải chạy tới nơi");
+
+            float t = 0f;
+            float want = _gs.Shards;
+            while (t < 2f)
+            {
+                t += Time.deltaTime; yield return null;
+                shown = label.text.Replace(",", "").Replace(".", "");
+                if (float.TryParse(shown, out v) && Mathf.Abs(v - want) < 1f) break;
+            }
+            Assert.AreEqual(want, v, 1f, "sau khi chạy xong phải bằng đúng số thật");
         }
 
         // ── Save ──────────────────────────────────────────────────────────────────

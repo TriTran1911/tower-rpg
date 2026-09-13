@@ -1,4 +1,5 @@
 using TMPro;
+using TowerRpg.Core;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using UnityEngine;
@@ -32,6 +33,9 @@ namespace TowerRpg.UI
         [SerializeField] private TMP_Text autoLabel;
 
         [SerializeField] private FloorRunner runner;
+        [SerializeField] private GameObject eventBannerRoot;
+        [SerializeField] private TMP_Text eventBanner;
+        [SerializeField] private Juice.CameraShake cameraShake;
 
         // QUYẾT ĐỊNH #28 áp cho cả HUD: nút dùng gỗ SÁNG (243,140,76), mà trên nền đó
         // vàng đạt 1,27:1 · ngọc 1,25:1 · mờ 1,45:1 — đều dưới xa 4,5:1, tức là không đọc
@@ -42,12 +46,28 @@ namespace TowerRpg.UI
         //   nút KHOÁ = cùng gỗ đó nhân TintLock      -> nền TỐI (112,62,32) -> chữ GIẤY (4,7:1)
         // Bản đầu tôi dùng một màu "mực nhạt" cho nút khoá và đo được 1,05:1 — tức là
         // dòng "CÒN 20 TẦNG", thứ mang toàn bộ thông điệp, gần như vô hình.
+        // Banner có NỀN GỖ TỐI riêng, không nằm thẳng trên sàn: đo được vàng trên sàn
+        // đấu trường (116,116,116) chỉ đạt 2,44:1, dưới cả ngưỡng 3:1 dành cho chữ lớn.
+        // Trên nền gỗ tối (70,64,46) thì vàng đạt 5,40 và ngọc 5,33.
+        private static readonly Color Gold = new Color(0.91f, 0.70f, 0.29f);
+        private static readonly Color Jade = new Color(0.28f, 0.81f, 0.70f);
+
         private static readonly Color Ink  = new Color(0.10f, 0.09f, 0.08f);
         private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
 
         private static readonly Color TintOn   = new Color(0.62f, 1f, 0.90f, 1f);   // đang chạy — ngả ngọc
         private static readonly Color TintOpen = Color.white;                        // dùng được
         private static readonly Color TintLock = new Color(0.46f, 0.44f, 0.42f, 1f); // còn khoá
+
+        // Số Mảnh hiển thị CHẠY tới số thật thay vì nhảy phắt. Mắt người bắt được chuyển
+        // động ở ngoài vùng nhìn trung tâm rất tốt, nhưng gần như không bắt được một con
+        // số đổi tức thì ở góc màn hình. Viên Mảnh bay lên HUD rồi con số đứng im thì
+        // đường bay đó kết thúc trong hư không.
+        private float _shownShards = -1f;
+        private float _countFrom, _countTarget, _countElapsed;
+        private float _countSeconds = 0.25f, _flashSeconds = 0.18f;
+        private float _flashUntil, _bannerUntil;
+        private Color _shardBase = Color.white;
 
         private void Start()
         {
@@ -58,9 +78,42 @@ namespace TowerRpg.UI
             {
                 runner.FloorStarted += _ => Refresh();
                 runner.BossDefeated += OnBossDefeated;
+                runner.FloorCleared += OnFloorCleared;
             }
             if (bossBanner != null) bossBanner.gameObject.SetActive(false);
             if (bossBarRoot != null) bossBarRoot.SetActive(false);
+            if (eventBannerRoot != null) eventBannerRoot.SetActive(false);
+            if (shardCount != null) _shardBase = shardCount.color;
+
+            BalanceConfig.TryUse(this, b =>
+            {
+                _countSeconds = Mathf.Max(0.01f, b.Get("hud.countSeconds"));
+                _flashSeconds = Mathf.Max(0f, b.Get("hud.flashSeconds"));
+                _floorBannerSeconds = b.Get("hud.floorBannerSeconds");
+                _bossBannerSeconds = b.Get("hud.bossBannerSeconds");
+            });
+        }
+
+        private float _floorBannerSeconds = 1f, _bossBannerSeconds = 2f;
+
+        /// <summary>
+        /// Dọn sạch một tầng. FloorRunner đã bắn sự kiện này từ M2 mà KHÔNG MỘT AI NGHE —
+        /// nên 400 Mảnh vào ví trong im lặng hoàn toàn, không một pixel nào đổi ngoài con
+        /// số ở góc màn hình.
+        /// </summary>
+        private void OnFloorCleared(int floor, float reward)
+        {
+            // Tiếng đã do FloorRunner phát; ở đây chỉ lo phần nhìn.
+            ShowBanner($"TẦNG {floor:00} XONG   ·   +{reward:N0} MẢNH", Gold, _floorBannerSeconds);
+        }
+
+        private void ShowBanner(string text, Color colour, float seconds)
+        {
+            if (eventBanner == null) return;
+            eventBanner.text = text;
+            eventBanner.color = colour;
+            if (eventBannerRoot != null) eventBannerRoot.SetActive(true);
+            _bannerUntil = Time.unscaledTime + Mathf.Max(0.1f, seconds);
         }
 
         private void OnEnable()
@@ -86,9 +139,17 @@ namespace TowerRpg.UI
             if (sweepFill != null) sweepFill.fillAmount = t;
         }
 
+        /// <summary>
+        /// Đỉnh duy nhất của 8 phút đầu. Trước Việc 6 nó là MỘT DÒNG Debug.Log — người chơi
+        /// hạ con boss đầu tiên, nhận Lõi, mở nhân vật mới, và trên màn hình không có gì
+        /// xảy ra cả. §5.2 tự ghi "cột mốc lớn — cần màn hình chúc mừng riêng"; màn hình
+        /// riêng để Đợt 2, nhưng im lặng hoàn toàn thì không chấp nhận được.
+        /// </summary>
         private void OnBossDefeated(int floor, int cores)
         {
-            Debug.Log($"[HudUI] Hạ boss tầng {floor}: +{cores} Lõi, mở nhân vật mới.");
+            ShowBanner($"HẠ BOSS   ·   +{cores} LÕI   ·   MỞ NHÂN VẬT MỚI",
+                       Jade, _bossBannerSeconds);
+            if (cameraShake != null) cameraShake.Shake();
             Refresh();
         }
 
@@ -112,10 +173,50 @@ namespace TowerRpg.UI
                 if (fighting) bossFill.fillAmount = runner.BossHealthFraction;
             }
 
+            TickShardCounter();
+            TickBanner();
+
             if (_hooked || GameState.Instance == null || !GameState.Instance.Ready) return;
             GameState.Instance.Changed += Refresh;
             _hooked = true;
             Refresh();
+        }
+
+        private void TickShardCounter()
+        {
+            GameState gs = GameState.Instance;
+            if (shardCount == null || gs == null || !gs.Ready) return;
+
+            if (_shownShards < 0f) { _shownShards = gs.Shards; _countTarget = gs.Shards; }
+
+            // Nội suy TUYẾN TÍNH theo mốc thời gian, không phải "mỗi khung tiến một phần
+            // quãng đường còn lại". Bản đầu tính lại bước đi từ khoảng cách CÒN LẠI mỗi
+            // khung hình, tức phân rã mũ: nó tiệm cận mãi mà không tới nơi — đo được còn
+            // thiếu 17 Mảnh sau 2 giây. Cách này chạm đích đúng sau _countSeconds.
+            if (!Mathf.Approximately(_countTarget, gs.Shards))
+            {
+                _countFrom = _shownShards;
+                _countTarget = gs.Shards;
+                _countElapsed = 0f;
+            }
+
+            if (!Mathf.Approximately(_shownShards, _countTarget))
+            {
+                _countElapsed += Time.deltaTime;
+                float k = Mathf.Clamp01(_countElapsed / _countSeconds);
+                _shownShards = k >= 1f ? _countTarget : Mathf.Lerp(_countFrom, _countTarget, k);
+            }
+
+            shardCount.text = $"{_shownShards:N0}";
+            shardCount.color = Time.unscaledTime < _flashUntil
+                             ? Color.Lerp(_shardBase, Color.white, 0.85f)
+                             : _shardBase;
+        }
+
+        private void TickBanner()
+        {
+            if (eventBannerRoot == null || !eventBannerRoot.activeSelf) return;
+            if (Time.unscaledTime >= _bannerUntil) eventBannerRoot.SetActive(false);
         }
 
         private void Refresh()
@@ -126,7 +227,10 @@ namespace TowerRpg.UI
             if (floorNumber != null)
                 floorNumber.text = gs.Floor.ToString("00") +
                                    (gs.IsBossFloor(gs.Floor) ? "  ☠" : "");
-            if (shardCount  != null) shardCount.text  = $"{gs.Shards:N0}";
+            // Số Mảnh do Update() lo (nó phải chạy mượt giữa hai lần Refresh), nhưng ghi
+            // nhận mốc nháy sáng ở đây vì Refresh mới là chỗ biết Mảnh vừa đổi.
+            if (shardCount != null && _shownShards >= 0f && gs.Shards > _shownShards + 0.01f)
+                _flashUntil = Time.unscaledTime + _flashSeconds;
             if (coreCount   != null) coreCount.text   = gs.Cores.ToString();
 
             // Lõi chưa tồn tại với người chơi mới — đừng bày một ô số 0 khó hiểu lên HUD.

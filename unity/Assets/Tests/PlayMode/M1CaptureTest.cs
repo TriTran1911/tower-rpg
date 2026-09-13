@@ -38,7 +38,8 @@ namespace TowerRpg.Tests
             (9.0f, "5b-vien-manh"),   // ngay sau khi con đầu tiên gục — để NHÌN thấy viên rơi
         };
 
-        private static readonly string[] Extra = { "5c-vien-tren-san", "6-nang-cap", "7-nhan-vat" };
+        private static readonly string[] Extra =
+            { "5d-banner-tang", "5c-vien-tren-san", "6-nang-cap", "7-nhan-vat" };
 
         /// <summary>Đọc khung hình đang có trong RenderTexture ra file PNG.</summary>
         private static void Shot(RenderTexture rt, string name)
@@ -166,6 +167,16 @@ namespace TowerRpg.Tests
                 yield return null;
                 Shot(rt, "5c-vien-tren-san");
             }
+
+            // ── banner dọn sạch tầng ─────────────────────────────────────────────
+            // PHẢI chạy SAU khối viên Mảnh: khối này giết sạch quái, mà khối kia cần một
+            // con còn sống để giết. Đặt trước thì ảnh viên Mảnh không bao giờ được chụp.
+            // Banner chỉ sống 1,0 giây nên chụp sau 0,5 giây, không phải 2,5.
+            foreach (var e in Object.FindObjectsByType<TowerRpg.Enemies.Enemy>(FindObjectsSortMode.None))
+                if (e.IsAlive) e.TakeDamage(1e9f, false);
+            float bw = 0f;
+            while (bw < 0.5f) { bw += Time.deltaTime; yield return null; }
+            Shot(rt, "5d-banner-tang");
 
             // ── màn hình nhân vật (M3) ───────────────────────────────────────────
             var ch = Object.FindFirstObjectByType<CharacterScreen>();
