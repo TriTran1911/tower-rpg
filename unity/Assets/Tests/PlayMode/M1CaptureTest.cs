@@ -39,7 +39,12 @@ namespace TowerRpg.Tests
         public IEnumerator Chup_anh_van_hanh()
         {
             Directory.CreateDirectory(OutDir);
-            foreach (string f in Directory.GetFiles(OutDir, "*.png")) File.Delete(f);
+            // Chỉ xoá ảnh CỦA MÌNH — dọn cả thư mục sẽ nuốt luôn ảnh ghép tay để trong đó.
+            foreach ((float _, string n) in Shots)
+            {
+                string old = Path.Combine(OutDir, n + ".png");
+                if (File.Exists(old)) File.Delete(old);
+            }
 
             SceneManager.LoadScene("M1", LoadSceneMode.Single);
             yield return null; yield return null;
