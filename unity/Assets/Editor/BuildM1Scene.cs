@@ -5,6 +5,7 @@ using TMPro;
 using TowerRpg.Core;
 using TowerRpg.Enemies;
 using TowerRpg.Juice;
+using TowerRpg.Loot;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using TowerRpg.UI;
@@ -121,6 +122,7 @@ namespace TowerRpg.EditorTools
             var popups   = bootGo.AddComponent<DamagePopupSpawner>();
             var sweep    = bootGo.AddComponent<SweepRunner>();
             var sfx      = bootGo.AddComponent<SfxPlayer>();
+            var drops    = bootGo.AddComponent<ShardDropSpawner>();
 
             // ── Người chơi ────────────────────────────────────────────────────────────
             var playerGo = new GameObject("Player");
@@ -503,11 +505,13 @@ namespace TowerRpg.EditorTools
             Directory.CreateDirectory(PrefabDir);
             GameObject enemyPrefab = MakeEnemyPrefab(enemy);
             GameObject popupPrefab = MakePopupPrefab();
+            GameObject shardPrefab = MakeShardPrefab();
 
             // ── Nối tham chiếu ────────────────────────────────────────────────────────
             Wire(runner,   ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()),
                            ("arenaCentre", null), ("playerHealth", health),
-                           ("bossSprite", boss));
+                           ("bossSprite", boss), ("drops", drops));
+            Wire(drops,    ("pickupPrefab", shardPrefab.GetComponent<ShardPickup>()));
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
             Wire(ctrl,     ("joystick", joystick));
             Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups), ("cameraShake", shake));
@@ -795,6 +799,46 @@ namespace TowerRpg.EditorTools
                 EditorUtility.SetDirty(ti);
                 ti.SaveAndReimport();
             }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        /// <summary>Viên Mảnh rơi ra từ quái. GemYellow 14x14, một ảnh nguyên nên không cắt lưới.</summary>
+        private static GameObject MakeShardPrefab()
+        {
+            var go = new GameObject("ShardPickup");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = ActorSpriteAt("Items/Resource/GemYellow.png");
+            sr.sortingOrder = 7;              // trên sàn (-100) và trên quái (5)
+
+            // NHUỘM VÀNG. Tên file là "GemYellow" nhưng bảng màu Mực & Son đã remap nó
+            // thành XÁM (175,180,184) vì rule_for() xếp Items/ vào tầng "thế giới" — và
+            // một viên xám nằm trên sàn xám thì gần như vô hình. Đã đo từng pixel mới thấy.
+            //
+            // Mảnh KHÔNG thuộc tầng thế giới: nó là PHẦN THƯỞNG, cùng tầng đọc với giao
+            // diện — tông ấm, không đổi theo chương (quyết định #23). Nhãn "Mảnh" trên HUD
+            // đã là vàng; viên rơi ra phải cùng màu thì người chơi mới nối được hai thứ.
+            sr.color = UiGold;
+            go.AddComponent<ShardPickup>();
+
+            string path = $"{PrefabDir}/ShardPickup.prefab";
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return prefab;
+        }
+
+        /// <summary>Như ActorSprite nhưng nhận đường dẫn ngoài thư mục Actor/.</summary>
+        private static Sprite ActorSpriteAt(string rel)
+        {
+            string path = $"{Art}/{rel}";
+            if (AssetImporter.GetAtPath(path) is not TextureImporter ti)
+            {
+                Debug.LogError($"[BuildM1Scene] Không thấy sprite: {path}");
+                return null;
+            }
+            ti.textureType = TextureImporterType.Sprite;
+            ti.spriteImportMode = SpriteImportMode.Single;
+            EditorUtility.SetDirty(ti);
+            ti.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 

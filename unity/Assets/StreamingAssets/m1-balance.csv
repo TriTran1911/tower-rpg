@@ -151,3 +151,21 @@ audio.sfxVolume,0.7,Âm lượng tiếng động 0..1
 # Sáu con quái cùng đánh thì tiếng "bị đánh" chồng lên nhau thành nhiễu. 0,15s là
 # khoảng ngắn nhất mà tai còn tách được hai tiếng rời nhau.
 audio.playerHitCooldown,0.15,Giây tối thiểu giữa hai tiếng người chơi bị đánh
+
+# ── MẢNH RƠI §1 bước 2 ────────────────────────────────────────────────────────
+# Vòng lặp gốc ở DESIGN.md:15 là "đánh quái -> rơi vật phẩm CỐ ĐỊNH -> nâng cấp".
+# Bản cài trước đây bỏ mất bước giữa: Mảnh chỉ cộng khi dọn sạch cả tầng, tức 1 lần
+# mỗi 49 giây và không vẽ gì ra màn hình. Giờ mỗi con trả lương ngay tại chỗ:
+# nhịp trả thưởng xuống còn 1 lần mỗi ~8 giây.
+# KHÔNG MỘT LỜI GỌI RANDOM NÀO: lượng cố định = thưởng tầng / số quái, hướng bật cố
+# định về phía người chơi. §1 cấm hên xui, và cấm cả "hên xui nhỏ cho vui".
+loot.popDistance,1.1,Viên bật ra xa xác bao nhiêu đơn vị
+loot.popSeconds,0.25,Thời gian bật ra
+# Lúc quái gục người chơi đứng cách nó <= player.attackRange = 2,0; viên bật 1,1 về
+# phía người chơi nên rơi cách chân ~0,9 — NẰM SẴN trong bán kính hút. Cố ý: rơi đồ là
+# thứ NHÌN THẤY, không phải thứ bắt đi nhặt. Bán kính nhỏ hơn thì người chơi đi theo
+# cung TRONG của vòng tròn bán kính 3,5 và không bao giờ đi ngang viên nào.
+loot.magnetRadius,1.8,Vào gần mức này thì viên tự bay tới
+loot.pickupRadius,0.35,Chạm mức này thì cộng Mảnh
+loot.flySpeed,7,Tốc độ bay về phía người chơi
+loot.maxLifetime,25,Giây tối đa một viên nằm trên sàn trước khi tự bay về

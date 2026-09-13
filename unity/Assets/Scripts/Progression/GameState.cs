@@ -30,6 +30,10 @@ namespace TowerRpg.Progression
         public int Respecs { get; private set; }
         public int CharacterIndex { get; private set; }
 
+        // Hũ Mảnh của tầng đang chơi dở — FloorRunner sở hữu logic, GameState chỉ chở đi lưu.
+        public int PaidFloor { get; private set; } = -1;
+        public float PaidShards { get; private set; }
+
         public int BossEvery { get; private set; } = 10;
 
         public event Action Changed;        // tiến trình đổi — giao diện nghe cái này
@@ -93,6 +97,8 @@ namespace TowerRpg.Progression
             HighestCleared = Mathf.Clamp(d.highestCleared, 0, TowerFloors);
             Respecs        = Mathf.Max(0, d.respecs);
             ShardsSwept    = Mathf.Max(0f, d.shardsSwept);
+            PaidFloor      = d.paidFloor;
+            PaidShards     = Mathf.Max(0f, d.paidShards);
 
             // Save v2 trở về trước không tách nguồn Mảnh; SaveSystem đánh dấu -1 để đây
             // dựng lại từ số tầng đã dọn. Làm ở đây chứ không ở SaveSystem vì cần
@@ -237,6 +243,13 @@ namespace TowerRpg.Progression
             return true;
         }
 
+        /// <summary>FloorRunner báo lại hũ Mảnh để lần Save tới ghi đúng.</summary>
+        public void SetFloorPot(int floor, float paid)
+        {
+            PaidFloor = floor;
+            PaidShards = Mathf.Max(0f, paid);
+        }
+
         public void MarkCleared(int floor)
         {
             if (floor <= HighestCleared) return;
@@ -266,6 +279,8 @@ namespace TowerRpg.Progression
             characterIndex = CharacterIndex,
             shardsClimbed = ShardsClimbed,
             shardsSwept = ShardsSwept,
+            paidFloor = PaidFloor,
+            paidShards = PaidShards,
         });
 
         // iOS giết app trong nền mà không báo — đây là chỗ DUY NHẤT chắc chắn còn chạy.

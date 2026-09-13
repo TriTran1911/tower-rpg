@@ -306,7 +306,32 @@ StartCoroutine(DieVisual());               // co ngang/giãn dọc + alpha→0 t
 
 ---
 
-## VIỆC 5 — MẢNH RƠI TỪ TỪNG CON QUÁI (≈ 1,5 ngày)
+## ~~VIỆC 5 — MẢNH RƠI TỪ TỪNG CON QUÁI~~ ✅ XONG
+
+> **45/45 test, 47 mục kiểm scene.** Bước 2 của vòng lặp ở `DESIGN.md:15` đã quay lại:
+> *"đánh quái → rơi vật phẩm cố định → nâng cấp trang bị"*. Nhịp trả thưởng từ
+> **1 lần/49 giây xuống 1 lần/8 giây** — ảnh chụp cho thấy HUD hiện "Mảnh 67" ngay
+> giữa tầng, đúng 400/6 = phần của một con quái.
+>
+> **Bất biến trung tâm được giữ:** mỗi lượt tầng vẫn trả đúng `ShardReward(tầng)`. Mảnh
+> rơi là cách CHIA NHỎ khoản cũ, không phải nguồn mới — nên `can-bang.xlsx` không phải
+> chạy lại một dòng. Cả bốn đường rò đã bịt và có test đi qua từng đường **bằng cách giết
+> quái THẬT**, không dùng `ClearAll` như 30 test cũ.
+>
+> **Ba lỗi tìm được trong lúc làm:**
+> 1. `BalanceConfig.TryUse` gọi từ `Awake()` thay vì `Start()` — **45/45 test hỏng cùng
+>    một dòng**. Đây là quy tắc chính dự án này đã ghi từ M2 và tôi vừa tái phạm.
+> 2. `GemYellow.png` sau khi áp bảng Mực & Son là **màu XÁM** (175,180,184), nằm trên sàn
+>    xám thì gần như vô hình. `rule_for()` xếp `Items/` vào tầng "thế giới", nhưng Mảnh là
+>    **phần thưởng** — cùng tầng đọc với giao diện. Nhuộm vàng cùng tông nhãn "Mảnh".
+> 3. Viên bị hút quá nhanh nên không ảnh nào chụp được nó — phải thêm một mốc chụp cố tình
+>    đứng xa mới NHÌN được.
+>
+> **Tự khai một nới lỏng:** giết 5/6 con rồi chết thì giữ ~83% phần thưởng tầng, trong khi
+> trước đây chết = 0 Mảnh. `_paid` chặn ở đúng một phần thưởng mỗi lượt nên không thành lỗ
+> farm, nhưng nó là nới lỏng thật.
+
+### Nội dung gốc
 
 Đây là **bước 2 của vòng lặp năm bước ở `DESIGN.md:15`** ("đánh quái → rơi vật phẩm *cố định* → nâng cấp trang bị") đã bị xoá khỏi bản cài, là ý tưởng gốc của chủ dự án, và là câu trả lời **đúng nguyên văn** cho "tôi không thấy rơi vật phẩm". Nhịp trả thưởng đi từ 1 lần/49 giây xuống 1 lần/8 giây.
 

@@ -4,6 +4,7 @@ using TowerRpg.Combat;
 using TowerRpg.Core;
 using TowerRpg.Enemies;
 using TowerRpg.Juice;
+using TowerRpg.Loot;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using TowerRpg.UI;
@@ -613,6 +614,139 @@ namespace TowerRpg.Tests
             // mình đang thắng hay đang phí thời gian.
             Assert.AreEqual(0f, runner.BossHealthFraction, 0.001f,
                             "boss chết thì thanh phải về 0");
+        }
+
+        // ── Việc 5: Mảnh rơi từ từng con quái ─────────────────────────────────────
+        //
+        // MỌI test dưới đây giết quái THẬT (TakeDamage), không dùng EnemyRegistry.ClearAll.
+        // Đó là điểm mấu chốt: 30 test cũ đều đi đường ClearAll nên quái không bao giờ chết
+        // thật, và không test nào trong số đó đi qua được đường rơi đồ.
+
+        private static void KillAll()
+        {
+            foreach (Enemy e in Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+                if (e.IsAlive) e.TakeDamage(1e9f, false);
+        }
+
+        [UnityTest]
+        public IEnumerator Quai_chet_thi_ROI_RA_Manh()
+        {
+            var drops = Object.FindFirstObjectByType<ShardDropSpawner>();
+            Assert.IsNotNull(drops, "không có ShardDropSpawner");
+            yield return null; yield return null;
+
+            Assert.AreEqual(0, drops.LiveCount, "chưa giết gì thì chưa có viên nào");
+
+            var enemy = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)[0];
+            enemy.TakeDamage(1e9f, false);
+            yield return null;
+
+            // ĐÂY LÀ BƯỚC 2 CỦA VÒNG LẶP Ở DESIGN.md:15 mà bản cài từng bỏ mất:
+            // "đánh quái -> RƠI VẬT PHẨM -> nâng cấp trang bị".
+            Assert.AreEqual(1, drops.LiveCount,
+                "giết một con mà không rơi viên nào — đúng câu chủ dự án phàn nàn: "
+                + "'tôi không thấy rơi vật phẩm'");
+        }
+
+        [UnityTest]
+        public IEnumerator Mot_luot_tang_tra_DUNG_MOT_phan_thuong()
+        {
+            yield return null; yield return null;
+            float before = _gs.Shards;
+            float want = _gs.ShardReward(_gs.Floor);
+
+            KillAll();
+
+            float t = 0f;
+            while (_gs.Floor == 1 && t < 12f) { t += Time.deltaTime; yield return null; }
+
+            // BẤT BIẾN TRUNG TÂM: chia nhỏ phần thưởng ra từng con quái KHÔNG được đổi
+            // TỔNG. can-bang.xlsx dựa trên ShardReward(tầng); lệch là 420.000 cấu hình
+            // phải chạy lại. Mảnh rơi là cách CHIA khoản cũ, không phải nguồn mới.
+            float got = _gs.Shards - before;
+            Assert.AreEqual(want, got, want * 0.01f,
+                $"một lượt tầng phải trả đúng {want:F0} Mảnh, thực nhận {got:F0}");
+        }
+
+        [UnityTest]
+        public IEnumerator Chet_giua_tang_roi_danh_lai_KHONG_tra_thuong_hai_lan()
+        {
+            yield return null; yield return null;
+            float before = _gs.Shards;
+            float want = _gs.ShardReward(1);
+
+            // Giết một nửa rồi tự sát: đây là đường mà 30 test cũ chưa từng đi qua.
+            Enemy[] all = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length / 2; i++) all[i].TakeDamage(1e9f, false);
+            yield return null;
+
+            var hp = Object.FindFirstObjectByType<PlayerHealth>();
+            hp.TakeDamage(1e9f);
+
+            float t = 0f;
+            while (EnemyRegistry.Count < 2 && t < 8f) { t += Time.deltaTime; yield return null; }
+            yield return null;
+
+            Assert.AreEqual(1, _gs.Floor, "chết thì ở nguyên tầng (§5.8 van 3)");
+
+            KillAll();
+            t = 0f;
+            while (_gs.Floor == 1 && t < 12f) { t += Time.deltaTime; yield return null; }
+
+            float got = _gs.Shards - before;
+            Assert.LessOrEqual(got, want * 1.02f,
+                $"chết rồi đánh lại trả {got:F0} Mảnh trong khi một lượt tầng chỉ đáng "
+                + $"{want:F0} — chết-rồi-thử-lại đang là cách farm nhanh nhất game");
+        }
+
+        [UnityTest]
+        public IEnumerator Vien_con_tren_san_bi_BO_khi_bay_lai_tang()
+        {
+            var drops = Object.FindFirstObjectByType<ShardDropSpawner>();
+            yield return null; yield return null;
+
+            Enemy[] all = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            for (int i = 0; i < 3; i++) all[i].TakeDamage(1e9f, false);
+            yield return null;
+            Assert.AreEqual(3, drops.LiveCount, "phải có 3 viên nằm trên sàn");
+
+            float before = _gs.Shards;
+            var hp = Object.FindFirstObjectByType<PlayerHealth>();
+            hp.TakeDamage(1e9f);
+
+            float t = 0f;
+            while (drops.LiveCount > 0 && t < 8f) { t += Time.deltaTime; yield return null; }
+
+            // ĐƯỜNG RÒ THỨ BA: EnemyRegistry.ClearAll() chỉ dọn QUÁI. Viên Mảnh của lượt
+            // trước vẫn nằm trên sàn, và nếu không DiscardAll thì chúng được cộng vào hũ
+            // của lượt mới — cộng thêm phần đã trả một lần rồi.
+            Assert.AreEqual(0, drops.LiveCount, "bày lại tầng phải dọn sạch viên cũ");
+            Assert.AreEqual(before, _gs.Shards, 1f,
+                "viên bị dọn KHÔNG được cộng Mảnh — DiscardAll chứ không phải FlushAll");
+        }
+
+        [UnityTest]
+        public IEnumerator Nguoi_choi_lai_gan_thi_vien_bay_toi_va_vao_vi()
+        {
+            var drops = Object.FindFirstObjectByType<ShardDropSpawner>();
+            var ctrl = Object.FindFirstObjectByType<PlayerController>();
+            yield return null; yield return null;
+
+            var enemy = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)[0];
+            Vector3 where = enemy.transform.position;
+            float before = _gs.Shards;
+            enemy.TakeDamage(1e9f, false);
+            yield return null;
+            Assert.AreEqual(1, drops.LiveCount);
+
+            // Đứng ngay chỗ viên rơi: bán kính hút phải kéo nó vào ví.
+            ctrl.transform.position = where;
+
+            float t = 0f;
+            while (drops.LiveCount > 0 && t < 6f) { t += Time.deltaTime; yield return null; }
+
+            Assert.AreEqual(0, drops.LiveCount, "lại gần mà viên không bay tới");
+            Assert.Greater(_gs.Shards, before, "nhặt viên rồi mà Mảnh không tăng");
         }
 
         // ── Save ──────────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ using System.Text;
 using TowerRpg.Core;
 using TowerRpg.Enemies;
 using TowerRpg.Juice;
+using TowerRpg.Loot;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using TowerRpg.UI;
@@ -41,7 +42,8 @@ namespace TowerRpg.EditorTools
 
             // ── tham chiếu ─────────────────────────────────────────────────────────────
             log.AppendLine("\nTHAM CHIẾU");
-            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "bossSprite");
+            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "bossSprite", "drops");
+            fail += Check<ShardDropSpawner>(log, "pickupPrefab");
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
                                       "sweepFill", "auto", "autoButton", "autoLabel", "runner");
@@ -145,6 +147,32 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, "prefab DamagePopup có TMP_Text",
                            popupPrefab != null && popupPrefab.GetComponent<TMPro.TMP_Text>() != null,
                            popupPrefab == null ? "không có" : "ok");
+
+            var shardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/ShardPickup.prefab");
+            var shardSr = shardPrefab != null ? shardPrefab.GetComponent<SpriteRenderer>() : null;
+            fail += Assert(log, "prefab viên Mảnh có sprite",
+                           shardSr != null && shardSr.sprite != null,
+                           shardPrefab == null ? "không có prefab" : "thiếu sprite");
+
+            // Cùng bài học với thanh máu: "có sprite" KHÁC "nhìn thấy được". Một
+            // AssetPostprocessor hay một PPU sai là nó teo còn vài pixel mà mọi kiểm
+            // tra khác vẫn xanh. Đo bề rộng THẬT theo đơn vị thế giới.
+            float shardW = shardSr != null ? shardSr.bounds.size.x : 0f;
+            fail += Assert(log, "viên Mảnh to nhìn thấy được (>= 0,5 đơn vị)",
+                           shardW >= 0.5f, $"{shardW:0.00} đơn vị");
+
+            fail += Assert(log, "viên Mảnh vẽ trên sàn và trên quái",
+                           shardSr != null && shardSr.sortingOrder > 5,
+                           shardSr == null ? "không có" : $"{shardSr.sortingOrder}");
+
+            // Viên Mảnh phải NỔI trên nền sàn. Sprite gốc tên "GemYellow" nhưng bảng màu
+            // Mực & Son remap nó thành xám — trùng tông với sàn, và không kiểm tra nào
+            // khác phát hiện được vì nó vẫn render đúng, vẫn đủ to, vẫn đúng thứ tự vẽ.
+            var floorSr2 = GameObject.Find("Floor")?.GetComponent<SpriteRenderer>();
+            bool warmEnough = shardSr != null &&
+                              shardSr.color.r > shardSr.color.b + 0.2f;   // ngả ấm rõ rệt
+            fail += Assert(log, "viên Mảnh nhuộm tông ấm để không hoà vào sàn", warmEnough,
+                           shardSr == null ? "không có" : $"màu {shardSr.color}");
 
             bool csv = System.IO.File.Exists("Assets/StreamingAssets/m1-balance.csv");
             fail += Assert(log, "m1-balance.csv có trong StreamingAssets", csv, csv ? "có" : "THIẾU");

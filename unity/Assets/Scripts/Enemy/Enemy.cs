@@ -34,6 +34,8 @@ namespace TowerRpg.Enemies
         private float _attackCooldown;
         private bool _armed;
         private float _deathSeconds = 0.22f;
+        private float _shardValue;
+        private Loot.ShardDropSpawner _drops;
 
         /// <summary>Boss hay quái thường. Chỉ đổi cách hiển thị và cách tính điểm rơi — §5.10.</summary>
         public bool IsBoss { get; private set; }
@@ -52,9 +54,12 @@ namespace TowerRpg.Enemies
 
         /// <summary>Gọi bởi FloorRunner SAU khi số liệu cân bằng đã nạp xong.</summary>
         public void Initialise(float maxHp, float damage, float attacksPerSecond, float attackRange,
-                               bool isBoss = false)
+                               bool isBoss = false, float shardValue = 0f,
+                               Loot.ShardDropSpawner drops = null)
         {
             IsBoss = isBoss;
+            _shardValue = shardValue;
+            _drops = drops;
             _hp = maxHp;
             _maxHp = maxHp;
             _damage = damage;
@@ -134,6 +139,7 @@ namespace TowerRpg.Enemies
             _armed = false;
             EnemyRegistry.Unregister(this);
             Juice.SfxPlayer.Play(Juice.Sfx.EnemyDie, IsBoss ? 1f : 0.8f);
+            _drops?.Drop(transform.position, _shardValue);
 
             // TUYỆT ĐỐI KHÔNG chuyển phần này sang OnDestroy: EnemyRegistry.ClearAll() huỷ
             // quái ở MỌI lần SpawnFloor, kể cả đường Retry lúc người chơi chết. Đặt ở đó là

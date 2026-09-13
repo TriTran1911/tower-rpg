@@ -19,6 +19,7 @@ namespace TowerRpg.Progression
         [SerializeField] private Enemy enemyPrefab;
         [SerializeField] private Transform arenaCentre;
         [SerializeField] private PlayerHealth playerHealth;
+        [SerializeField] private Loot.ShardDropSpawner drops;
 
         [Header("Boss — §5.10")]
         [SerializeField] private Sprite bossSprite;
@@ -43,6 +44,17 @@ namespace TowerRpg.Progression
 
         private Enemy _boss;
 
+        // ── HŨ MẢNH ──────────────────────────────────────────────────────────────
+        // Bất biến phải giữ: MỖI LƯỢT TẦNG trả đúng ShardReward(tầng), không hơn một xu.
+        // Toàn bộ 420.000 cấu hình của can-bang.xlsx dựa trên con số đó; lệch là phải
+        // chạy lại hết. Nên Mảnh rơi ra KHÔNG phải nguồn mới — nó là cách CHIA NHỎ đúng
+        // khoản cũ ra từng con quái, để nhịp trả thưởng xuống từ 1 lần/49 giây còn 1 lần/8 giây.
+        //
+        // _paid đếm số đã vào ví cho tầng đang tính sổ, TÍNH CẢ những lượt đã chết và thử
+        // lại. Không có nó thì chết-rồi-thử-lại là cách farm nhanh nhất game.
+        private int _paidFloor = -1;
+        private float _paid;
+
         /// <summary>
         /// Máu boss 0..1 cho thanh trên đỉnh màn hình. Boss mất 75-193 giây (§5.1 chốt
         /// 200 giây cho boss tầng 100), và MỘT TRẬN DÀI THẾ MÀ KHÔNG CÓ VẠCH TIẾN TRÌNH
@@ -60,6 +72,13 @@ namespace TowerRpg.Progression
         private void OnDestroy()
         {
             if (playerHealth != null) playerHealth.Died -= OnPlayerDied;
+            if (drops != null) drops.Collected -= OnShardCollected;
+        }
+
+        private void OnShardCollected(float value)
+        {
+            _paid += value;
+            GameState.Instance?.AddShards(value);
         }
 
         private void Configure(BalanceConfig b)
@@ -81,6 +100,14 @@ namespace TowerRpg.Progression
 
             if (playerHealth == null) playerHealth = PlayerHealth.Current;
             if (playerHealth != null) playerHealth.Died += OnPlayerDied;
+
+            if (drops != null) drops.Collected += OnShardCollected;
+
+            // Khôi phục hũ đang dở: thoát app giữa tầng mà không nhớ hai số này thì mở lại
+            // game là hũ đầy lại, và lượt tầng đó trả thưởng hai lần.
+            SaveData d = SaveSystem.Load();
+            _paidFloor = d.paidFloor;
+            _paid = Mathf.Max(0f, d.paidShards);
 
             StartCoroutine(Run());
         }
@@ -113,15 +140,22 @@ namespace TowerRpg.Progression
                     }
                 }
 
+                // Hút nốt viên còn trên sàn (Collected -> _paid tăng), rồi trả PHẦN CÒN NỢ.
+                // Sai số dấu phẩy động của phép chia cho số quái đổ hết vào đây, nên tổng
+                // mỗi lượt tầng bằng ĐÚNG ShardReward theo cấu trúc chứ không theo làm tròn.
+                if (drops != null) drops.FlushAll();
+
                 float reward = GameState.Instance.ShardReward(floor);
-                GameState.Instance.AddShards(reward);
+                float rest = Mathf.Max(0f, reward - _paid);
+                if (rest > 0f) { GameState.Instance.AddShards(rest); _paid += rest; }
+
                 GameState.Instance.MarkCleared(floor);
-                GameState.Instance.Save();
                 // Success1.wav dài 0,45s — jingle NGẮN NHẤT trong 15 cái. Cố ý: dọn tầng lặp
                 // mỗi ~45 giây, một jingle 2 giây sẽ còn đang kêu lúc tầng sau đã bày xong.
                 // Tầng boss bỏ qua vì đã có tiếng BossDown to hơn ngay trước đó.
                 if (!GameState.Instance.IsBossFloor(floor))
                     Juice.SfxPlayer.Play(Juice.Sfx.FloorClear);
+                SaveProgress(floor);
                 FloorCleared?.Invoke(floor, reward);
 
                 yield return new WaitForSeconds(clearDelay);
@@ -145,6 +179,14 @@ namespace TowerRpg.Progression
             InBossFight = boss;
             _boss = null;
 
+            // Lượt tầng MỚI thì hũ mở lại từ 0. Cùng một tầng (đường Retry) thì giữ nguyên
+            // _paid — đó là thứ chặn chết-rồi-thử-lại thành máy in Mảnh.
+            if (floor != _paidFloor) { _paidFloor = floor; _paid = 0f; }
+
+            // BẮT BUỘC: ClearAll() dưới đây chỉ dọn QUÁI. Viên Mảnh của lượt trước vẫn nằm
+            // trên sàn, và nếu để lại thì chúng được cộng vào hũ của lượt này.
+            if (drops != null) drops.DiscardAll();
+
             float totalHp  = _hp1  * Mathf.Pow(1f + _hpG,  floor - 1);
             float totalDps = _dps1 * Mathf.Pow(1f + _dpsG, floor - 1);
 
@@ -163,6 +205,12 @@ namespace TowerRpg.Progression
 
             float hpEach  = totalHp / count;
             float dmgEach = _rate > 0f ? totalDps / count / _rate : 0f;
+
+            // Chỉ chia phần CÒN NỢ: chết ở nửa tầng rồi thử lại thì mỗi con chỉ còn mang
+            // phần chưa trả. Boss có count = 1 nên nó ôm trọn hũ.
+            float pot = GameState.Instance != null
+                      ? Mathf.Max(0f, GameState.Instance.ShardReward(floor) - _paid) : 0f;
+            float share = pot / count;
 
             Vector3 centre = arenaCentre != null ? arenaCentre.position : Vector3.zero;
             for (int i = 0; i < count; i++)
@@ -185,9 +233,17 @@ namespace TowerRpg.Progression
                     e.transform.localScale *= bossScale;
                 }
 
-                e.Initialise(hpEach, dmgEach, _rate, range, boss);
+                e.Initialise(hpEach, dmgEach, _rate, range, boss, share, drops);
                 if (boss) _boss = e;
             }
+        }
+
+        /// <summary>Lưu tiến trình KÈM hũ Mảnh đang dở.</summary>
+        private void SaveProgress(int floor)
+        {
+            if (GameState.Instance == null) return;
+            GameState.Instance.SetFloorPot(_paidFloor, _paid);
+            GameState.Instance.Save();
         }
 
         private void OnPlayerDied()

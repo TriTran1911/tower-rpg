@@ -35,9 +35,10 @@ namespace TowerRpg.Tests
             (3.0f, "3-giua-tran"),
             (5.0f, "4-sau-5s"),
             (8.0f, "5-sau-8s"),
+            (9.0f, "5b-vien-manh"),   // ngay sau khi con đầu tiên gục — để NHÌN thấy viên rơi
         };
 
-        private static readonly string[] Extra = { "6-nang-cap", "7-nhan-vat" };
+        private static readonly string[] Extra = { "5c-vien-tren-san", "6-nang-cap", "7-nhan-vat" };
 
         /// <summary>Đọc khung hình đang có trong RenderTexture ra file PNG.</summary>
         private static void Shot(RenderTexture rt, string name)
@@ -147,6 +148,23 @@ namespace TowerRpg.Tests
                 Shot(rt, "6-nang-cap");
                 up.Toggle();
                 yield return null;
+            }
+
+            // ── một khung có VIÊN MẢNH đang nằm trên sàn ─────────────────────────
+            // Ở lối chơi bình thường viên bị hút gần như tức thì (đúng thiết kế), nên để
+            // NHÌN được nó phải cố tình đứng xa. Không có ảnh này thì "viên Mảnh có hiện
+            // ra không" là câu chưa ai trả lời — đúng cái bẫy của thanh máu ở Việc 4.
+            var farEnemy = Object.FindObjectsByType<TowerRpg.Enemies.Enemy>(FindObjectsSortMode.None);
+            if (farEnemy.Length > 0 && ctrl != null)
+            {
+                Vector3 spot = farEnemy[0].transform.position;
+                ctrl.transform.position = spot + Vector3.down * 4f;   // ngoài bán kính hút
+                yield return null;
+                farEnemy[0].TakeDamage(1e9f, false);
+                yield return null; yield return null; yield return null;
+                ctrl.transform.position = spot + Vector3.down * 2.2f; // kéo camera lại gần
+                yield return null;
+                Shot(rt, "5c-vien-tren-san");
             }
 
             // ── màn hình nhân vật (M3) ───────────────────────────────────────────

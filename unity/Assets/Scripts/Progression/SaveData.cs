@@ -31,5 +31,12 @@ namespace TowerRpg.Progression
         // trên tổng tích luỹ cả đời chứ không phải trong một phiên.
         public float shardsClimbed;     // Mảnh kiếm từ LEO (dọn tầng)
         public float shardsSwept;       // Mảnh kiếm từ QUÉT
+
+        // "Hũ Mảnh" của tầng đang chơi dở. Đường rò thứ tư của Việc 5: thoát app giữa
+        // tầng mà không lưu hai số này thì mở lại game là hũ đầy lại, và lượt tầng đó
+        // trả thưởng hai lần. KHÔNG cần tăng version: bản v3 cũ nạp lên có paidFloor = 0,
+        // mà SpawnFloor coi "tầng khác với tầng đang tính sổ" là bắt đầu lượt mới — đúng.
+        public int paidFloor;           // tầng đang tính sổ
+        public float paidShards;        // Mảnh của tầng đó ĐÃ vào ví trong cả lượt
     }
 }
