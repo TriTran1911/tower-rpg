@@ -261,12 +261,23 @@ namespace TowerRpg.Tests
 
         // ── Quét nhanh và tự đánh ─────────────────────────────────────────────────
 
+        /// <summary>
+        /// Dọn sạch một tầng như FloorRunner làm thật: cộng Mảnh TRƯỚC rồi mới đánh dấu.
+        /// Chỉ gọi MarkCleared là mô phỏng thiếu — từ Việc 2, quét còn cần NGÂN SÁCH, mà
+        /// ngân sách sinh ra từ Mảnh leo được chứ không từ cái dấu đã-dọn.
+        /// </summary>
+        private void ClearFloor(int floor)
+        {
+            _gs.AddShards(_gs.ShardReward(floor));
+            _gs.MarkCleared(floor);
+        }
+
         [UnityTest]
         public IEnumerator Quet_nhanh_chi_mo_o_tang_DA_don_sach()
         {
             Assert.IsFalse(_gs.CanSweep(1), "chưa dọn tầng nào thì chưa quét được");
 
-            _gs.MarkCleared(1);
+            ClearFloor(1);
             yield return null;
 
             Assert.IsTrue(_gs.CanSweep(1), "dọn xong tầng 1 thì quét được tầng 1");
@@ -290,6 +301,97 @@ namespace TowerRpg.Tests
             Assert.IsTrue(auto.Enabled);
         }
 
+        // ── Việc 2: hai ô đã lệch so với can-bang.xlsx ────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Quai_ngoai_tam_thi_hoi_chieu_DONG_BANG()
+        {
+            var hp = Object.FindFirstObjectByType<PlayerHealth>();
+            var ctrl = Object.FindFirstObjectByType<PlayerController>();
+            Assert.IsNotNull(hp); Assert.IsNotNull(ctrl);
+
+            float range = BalanceConfig.Instance.Get("enemy.attackRange");
+            float interval = 1f / BalanceConfig.Instance.Get("enemy.attacksPerSecond");
+
+            // Đứng THẬT XA, lâu hơn nhiều lần một nhịp đánh của quái.
+            ctrl.transform.position = new Vector3(0f, -60f, 0f);
+            yield return new WaitForSeconds(interval * 3f);
+            hp.ResetHealth();
+            yield return null;
+
+            float full = hp.Fraction;
+            Assert.AreEqual(1f, full, 0.001f, "ở xa thì không được mất máu");
+
+            // Bước vào sát một con quái. ĐÂY LÀ CHỖ LỖI CŨ NẰM: hồi chiêu từng tụt âm
+            // sâu trong lúc ở xa, nên vừa vào tầm là ăn đòn NGAY khung hình đó.
+            IDamageable near = EnemyRegistry.Nearest(Vector3.zero, 999f);
+            Assert.IsNotNull(near, "cần ít nhất một con quái");
+            ctrl.transform.position = near.Position - Vector3.up * (range * 0.5f);
+
+            // Ngay sau khi vào tầm, phải còn được một khoảng ân huệ bằng gần một nhịp.
+            yield return new WaitForSeconds(interval * 0.4f);
+            Assert.AreEqual(1f, hp.Fraction, 0.001f,
+                "vừa vào tầm đã ăn đòn ngay — hồi chiêu quái vẫn chạy lúc ở ngoài tầm, "
+                + "tức là di chuyển KHÔNG né được gì và §5.3 mất hết ý nghĩa không gian");
+
+            // ...nhưng đứng đủ lâu thì vẫn phải ăn đòn, nếu không là thành bất tử.
+            yield return new WaitForSeconds(interval * 1.5f);
+            Assert.Less(hp.Fraction, 1f, "đứng trong tầm đủ lâu thì PHẢI mất máu");
+        }
+
+        [UnityTest]
+        public IEnumerator Quet_nhanh_dung_lai_khi_het_ngan_sach()
+        {
+            float mult = BalanceConfig.Instance.Get("sweep.totalMult");
+
+            ClearFloor(1);
+            yield return null;
+
+            float climbed = _gs.ShardsClimbed;
+            Assert.Greater(climbed, 0f, "test này cần người chơi đã leo được ít nhất một tầng");
+
+            float budget = _gs.SweepBudgetLeft;
+            Assert.AreEqual(climbed * (mult - 1f), budget, 1f,
+                            "trần quét phải đúng (hệ số - 1) lần Mảnh đã leo");
+            Assert.IsTrue(_gs.CanSweep(1), "còn ngân sách thì quét được");
+
+            // Tiêu sạch ngân sách.
+            _gs.AddShards(budget, fromSweep: true);
+            yield return null;
+
+            Assert.AreEqual(0f, _gs.SweepBudgetLeft, 0.01f, "phải hết ngân sách");
+            Assert.IsFalse(_gs.CanSweep(1),
+                "ĐÂY LÀ TRẦN CỦA §5.6: hết ngân sách thì quét phải dừng, nếu không quét "
+                + "thành máy in Mảnh vô hạn và toàn bộ đường cong chi phí mất nghĩa");
+
+            // Leo thêm thì trần tự nới ra — quét là NÉN THỜI GIAN, không phải nguồn thứ hai.
+            _gs.AddShards(1000f);
+            yield return null;
+            Assert.Greater(_gs.SweepBudgetLeft, 0f, "leo thêm phải nới được trần");
+            Assert.IsTrue(_gs.CanSweep(1));
+        }
+
+        [UnityTest]
+        public IEnumerator Tong_Manh_khong_bao_gio_vuot_he_so_cay_lai()
+        {
+            float mult = BalanceConfig.Instance.Get("sweep.totalMult");
+            for (int f = 1; f <= 5; f++) ClearFloor(f);
+            yield return null;
+
+            // Cố tình quét tham lam hơn ngân sách rất nhiều lần.
+            for (int i = 0; i < 50; i++)
+            {
+                float left = _gs.SweepBudgetLeft;
+                if (left <= 0f) break;
+                _gs.AddShards(Mathf.Min(_gs.ShardReward(5), left), fromSweep: true);
+            }
+            yield return null;
+
+            float total = _gs.ShardsClimbed + _gs.ShardsSwept;
+            Assert.LessOrEqual(total, _gs.ShardsClimbed * mult + 1f,
+                $"tổng Mảnh vượt {mult}x Mảnh leo — đúng ô 'Thông số'!B32 bị phá");
+        }
+
         // ── Save ──────────────────────────────────────────────────────────────────
 
         [UnityTest]
@@ -308,6 +410,7 @@ namespace TowerRpg.Tests
 
             SaveData d = SaveSystem.Load();
             Assert.AreEqual(SaveData.CurrentVersion, d.version, "phải lưu ở version hiện tại");
+            Assert.AreEqual(_gs.ShardsClimbed, d.shardsClimbed, 1f, "Mảnh-đã-leo phải được lưu");
             Assert.AreEqual(cores, d.cores, "Lõi còn lại phải được lưu");
             Assert.AreEqual(1, d.bossesKilled, "số boss đã hạ phải được lưu");
             Assert.AreEqual(1, d.gearTiers[(int)Slot.Glove], "bậc đột phá phải được lưu");

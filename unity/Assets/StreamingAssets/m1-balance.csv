@@ -102,6 +102,12 @@ sweep.unlockOnClear,1,1 = clear tầng lần đầu là mở quét nhanh cho t�
 # đánh tay; max cả bốn ô trong 2,6 phút). Hồi 3 giây không chặn được vì thưởng bám
 # HighestCleared. CHƯA SỬA — Việc 2 của docs/KE-HOACH-NHIP-DO.md: trần 2× mỗi tầng.
 sweep.seconds,3,Giây mỗi lần quét một tầng
+# TRẦN NGÂN SÁCH, không phải hồi chiêu. Lấy thẳng từ ô 'Thông số'!B32 = 2 của
+# can-bang.xlsx ("Hệ số cày lại"), và 'Đường cong tầng'!E = D x B32 — tức tổng Mảnh
+# người chơi có LUÔN là gấp đôi Mảnh leo, và cột cấp trang bị kỳ vọng suy từ chính E/4.
+# Nên 2 KHÔNG phải con số tôi bịa: siết về 2 là đưa mã VỀ đúng ô đã chốt.
+# Quét được phép kiếm thêm (totalMult - 1) x Mảnh-đã-leo. Hết thì nút báo HẾT NGÂN SÁCH.
+sweep.totalMult,2,Tổng Mảnh tối đa so với Mảnh kiếm được từ leo
 
 # ── TỰ ĐỘNG CHIẾN ĐẤU §5.2 ───────────────────────────────────────────────────
 auto.unlockFloor,20,Hoàn thành tầng này thì mở auto-battle

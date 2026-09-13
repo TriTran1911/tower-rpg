@@ -12,7 +12,7 @@ namespace TowerRpg.Progression
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         public int version = CurrentVersion;
         public int floor = 1;           // tầng đang đứng
@@ -26,5 +26,10 @@ namespace TowerRpg.Progression
         public int highestCleared;      // tầng cao nhất từng dọn sạch — mốc mở quét nhanh
         public int respecs;             // số lần đã tẩy điểm, để tính giá lần sau
         public int characterIndex;      // nhân vật đang dùng (§5.5b)
+
+        // Tách nguồn Mảnh để áp trần quét ('Thông số'!B32 = 2). Phải LƯU, vì trần tính
+        // trên tổng tích luỹ cả đời chứ không phải trong một phiên.
+        public float shardsClimbed;     // Mảnh kiếm từ LEO (dọn tầng)
+        public float shardsSwept;       // Mảnh kiếm từ QUÉT
     }
 }

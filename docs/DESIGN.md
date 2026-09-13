@@ -541,7 +541,11 @@ thao túng người chơi.
   10,3% · thủ dày 19,4%.
 - **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
   thì phá §5.1. Chưa có lời giải rẻ.
-- ⚠️ **QUÉT NHANH ĐANG VƯỢT TRẦN CỦA BẢNG TÍNH — sửa trước M4.** Quyết định #27 viết rằng
+- ~~⚠️ **QUÉT NHANH ĐANG VƯỢT TRẦN CỦA BẢNG TÍNH**~~ — **ĐÃ SỬA** (Việc 2). Trần ngân sách
+  `sweep.totalMult = 2` lấy thẳng từ ô `B32`: quét kiếm thêm được tối đa `(2−1) × Mảnh-đã-leo`,
+  hết thì nút báo *HẾT NGÂN SÁCH*, leo thêm thì trần tự nới. Save lên v3 để lưu hai nguồn Mảnh
+  riêng, có di trú dựng lại `shardsClimbed` cho bản cũ. Ba test khoá: `Quet_nhanh_dung_lai_khi_
+  het_ngan_sach`, `Tong_Manh_khong_bao_gio_vuot_he_so_cay_lai`. Nội dung cũ: Quyết định #27 viết rằng
   `can-bang.xlsx` "chưa bao giờ tính farm". **Câu đó sai**, và tôi đã đọc lại bảng để xác nhận:
   ô `'Thông số'!B32 = 2` nhãn *"Hệ số cày lại (quét nhanh)"*, chú thích *"1.0 = chỉ clear mỗi
   tầng một lần"*, và `'Đường cong tầng'!E = D × B32`. Bảng tính CÓ mô hình farm, ở đúng **2×**
@@ -549,7 +553,35 @@ thao túng người chơi.
   133 Mảnh/giây khi quét so với 9,6 khi đánh tay (**13,9 lần**), max cả bốn ô lên cấp 10 trong
   **2,6 phút** giữ nút ở tầng 1. Hồi 3 giây không chặn được gì. Cách sửa đã rõ: trần ngân sách
   2× `ShardReward` mỗi tầng.
-- ⚠️ **NÉ ĐÒN KHÔNG CÓ TÁC DỤNG — boss tầng 10 hiện KHÔNG THẮNG NỔI bằng đường leo.**
+- ⚠️ **NÉ ĐÒN: đã sửa một nửa, NỬA CÒN LẠI LÀ LỖI CỦA BẢNG TÍNH.** Việc 2 đã đảo thứ tự trong
+  `Enemy.Update()` nên hồi chiêu quái đóng băng khi người chơi ngoài tầm. Đo bằng mô phỏng vòng
+  chiến đấu thật (dt 10ms) tại boss 1:
+
+  | Lối chơi | Biên TRƯỚC | Biên SAU |
+  |---|---|---|
+  | đứng lì | 0,75 | 0,75 |
+  | đứng 1s lùi 1s | **0,60** | **0,75** |
+  | đứng 1s lùi 2s | **0,60** | **0,75** |
+
+  Tức là trước đây di chuyển bị phạt HAI lần (mất DPS mà vẫn ăn đủ đòn); giờ né là trung tính.
+  **Nhưng biên vẫn bất biến 0,75, không đạt 1,50.** Và nó bất biến vì một lý do cấu trúc: §5.3
+  khoá *sát thương gây ra* và *sát thương nhận vào* vào **cùng một đại lượng** — thời gian đứng
+  yên trong tầm. Gọi f là tỉ lệ đó thì giết mất `Q/(N·f)` còn chết mất `P/(R·f)`, f triệt tiêu.
+  Không lối chơi nào đổi được biên.
+
+  **Chỗ sai nằm ở bảng tính, không ở mã.** `'Kiểm chứng build'!T5 = P5/(R5 × B9)` dùng B9 = 0,5
+  cùng lúc với `S5 = Q5/N5` dùng DPS ĐẦY ĐỦ — tức giả định *vừa né nửa đòn vừa đánh full*. Đo
+  hình học thì B9 = 0,5 **đúng cho tầng thường**: 6 quái trải trên vòng bán kính 3,5 mà tầm quái
+  2,8, nên đứng đánh một con thì chỉ **1/6** con với tới được — ăn 17% tổng dps của tầng, còn
+  rộng tay hơn 0,5. Nhưng **tầng boss chỉ có 1 con**, đứng đánh nó là ăn 100%. Bảng đã đem một
+  hằng số của ĐÁM ĐÔNG áp vào bối cảnh ĐƠN MỤC TIÊU.
+
+  **Chưa chốt cách sửa** — ba hướng, đều đụng cân bằng nên không tự quyết: (a) nhận B9 chỉ dành
+  cho tầng thường, tính lại cột boss với B9 = 1,0 rồi hạ hệ số máu boss cho khớp; (b) cho quái
+  có nhịp vung tay, rời tầm trong lúc vung thì đòn trượt — làm B9 đạt được thật, nhưng kế hoạch
+  đã loại vì coi là "hoàn tiền chứ không phải né"; (c) tăng máu nền hoặc hạ máu boss 1.
+
+  Nội dung chẩn đoán gốc:
   Ô `'Thông số'!B9 = 0,5` nhãn *"Tỉ lệ sát thương thực nhận — nhờ luật di chuyển ở mục 5.3"*,
   và dòng 7 ghi 3 dps là *"nếu người chơi đứng yên hoàn toàn"*. Nhưng `Enemy.Update()` trừ hồi
   chiêu **bất kể người chơi ở đâu**, và ra ngoài tầm thì `return` mà không reset — hồi chiêu âm

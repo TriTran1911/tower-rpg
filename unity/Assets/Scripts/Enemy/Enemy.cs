@@ -77,11 +77,25 @@ namespace TowerRpg.Enemies
             PlayerHealth player = PlayerHealth.Current;
             if (player == null || !player.IsAlive) return;
 
-            _attackCooldown -= Time.deltaTime;
-            if (_attackCooldown > 0f) return;
-
+            // ĐỐI XỨNG VỚI AutoAttack: người chơi di chuyển thì hồi chiêu ĐỨNG YÊN;
+            // quái ngoài tầm thì hồi chiêu cũng phải ĐỨNG YÊN. Thứ tự hai khối này là
+            // toàn bộ vấn đề, không phải một chi tiết.
+            //
+            // Bản cũ trừ hồi chiêu BẤT KỂ người chơi ở đâu, rồi ra ngoài tầm thì return
+            // mà KHÔNG reset -> hồi chiêu tụt âm sâu -> người chơi vừa bước vào lại là
+            // ăn đòn NGAY khung hình đó. Lùi ra dưới một nhịp né được ĐÚNG 0 đòn, nên
+            // di chuyển chỉ tổ mất DPS: bị phạt hai lần, thưởng không lần nào.
+            //
+            // Sau khi đảo, sát thương nhận TỈ LỆ THUẬN với thời gian đứng trong tầm.
+            // Đó là điều ô 'Thông số'!B9 = 0,5 của can-bang.xlsx mô tả.
+            //
+            // KHÔNG reset _attackCooldown khi ra ngoài tầm: làm thế là tặng một cửa sổ
+            // ân huệ đầy mỗi lần quay lại, tức nới biên thật chứ không phải vá lỗi.
             float sqr = (player.transform.position - transform.position).sqrMagnitude;
             if (sqr > _attackRange * _attackRange) return;
+
+            _attackCooldown -= Time.deltaTime;
+            if (_attackCooldown > 0f) return;
 
             player.TakeDamage(_damage);
             _attackCooldown = _attackInterval;

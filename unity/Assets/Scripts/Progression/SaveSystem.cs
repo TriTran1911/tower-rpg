@@ -98,6 +98,19 @@ namespace TowerRpg.Progression
                           $"{d.floor}, {d.shards:0} Mảnh, cấp {string.Join("/", d.gearLevels)}.");
             }
 
+            if (d.version < 3)
+            {
+                // Bản cũ không tách nguồn Mảnh. Dựng lại "đã leo" từ các tầng đã dọn:
+                // không có bước này thì SweepBudgetLeft = 0 và nút quét CHẾT CỨNG với
+                // mọi người chơi cũ — họ sẽ tưởng là mất tính năng.
+                // Cần công thức thưởng nên nhận qua tham số thay vì gọi GameState
+                // (GameState chưa chắc đã sẵn sàng lúc Load chạy).
+                d.shardsSwept = 0f;
+                d.shardsClimbed = -1f;   // dấu hiệu "chưa dựng lại" — GameState lo nốt
+                Debug.Log($"[SaveSystem] Nâng save v{d.version} -> v3. Sẽ dựng lại " +
+                          $"Mảnh-đã-leo từ {d.highestCleared} tầng đã dọn.");
+            }
+
             d.version = SaveData.CurrentVersion;
             return d;
         }

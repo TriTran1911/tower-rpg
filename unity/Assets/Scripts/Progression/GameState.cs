@@ -35,8 +35,22 @@ namespace TowerRpg.Progression
         public event Action Changed;        // tiến trình đổi — giao diện nghe cái này
         public event Action<int> CharacterChanged;   // đổi nhân vật — chỉ hình dạng đổi
 
-        private float _shardBase, _shardGrowth, _respecBase, _respecGrowth;
+        private float _shardBase, _shardGrowth, _respecBase, _respecGrowth, _sweepTotalMult;
         private int _corePerBoss;
+
+        /// <summary>Mảnh kiếm được bằng cách LEO (dọn tầng). Mẫu số của trần quét.</summary>
+        public float ShardsClimbed { get; private set; }
+
+        /// <summary>Mảnh kiếm được bằng QUÉT NHANH.</summary>
+        public float ShardsSwept { get; private set; }
+
+        /// <summary>
+        /// Còn quét thêm được bao nhiêu Mảnh — ô 'Thông số'!B32 = 2 của can-bang.xlsx.
+        /// Tổng Mảnh cả đời bị chặn ở totalMult lần Mảnh-đã-leo, nên quét là CÁCH NÉN
+        /// THỜI GIAN chứ không phải nguồn Mảnh thứ hai. Leo thêm thì trần tự nới ra.
+        /// </summary>
+        public float SweepBudgetLeft =>
+            Mathf.Max(0f, ShardsClimbed * (_sweepTotalMult - 1f) - ShardsSwept);
 
         private void Awake()
         {
@@ -61,6 +75,7 @@ namespace TowerRpg.Progression
             _corePerBoss = Mathf.Max(0, b.GetInt("core.perBoss"));
             _respecBase   = b.Get("respec.costBase");
             _respecGrowth = b.Get("respec.costGrowth");
+            _sweepTotalMult = Mathf.Max(1f, b.Get("sweep.totalMult"));
 
             CharacterRoster.Configure(b);
 
@@ -77,6 +92,20 @@ namespace TowerRpg.Progression
             BossesKilled   = Mathf.Max(0, d.bossesKilled);
             HighestCleared = Mathf.Clamp(d.highestCleared, 0, TowerFloors);
             Respecs        = Mathf.Max(0, d.respecs);
+            ShardsSwept    = Mathf.Max(0f, d.shardsSwept);
+
+            // Save v2 trở về trước không tách nguồn Mảnh; SaveSystem đánh dấu -1 để đây
+            // dựng lại từ số tầng đã dọn. Làm ở đây chứ không ở SaveSystem vì cần
+            // ShardReward, mà nó phụ thuộc số liệu cân bằng vừa nạp xong ở trên.
+            if (d.shardsClimbed < 0f)
+            {
+                float rebuilt = 0f;
+                for (int f = 1; f <= HighestCleared; f++) rebuilt += ShardReward(f);
+                ShardsClimbed = rebuilt;
+                Debug.Log($"[GameState] Dựng lại Mảnh-đã-leo cho save cũ: {rebuilt:N0} " +
+                          $"từ {HighestCleared} tầng -> trần quét {SweepBudgetLeft:N0}.");
+            }
+            else ShardsClimbed = d.shardsClimbed;
             CharacterIndex = CharacterRoster.IsUnlocked(d.characterIndex, BossesKilled)
                            ? d.characterIndex : 0;
 
@@ -93,10 +122,16 @@ namespace TowerRpg.Progression
         public float ShardReward(int floor) =>
             _shardBase * Mathf.Pow(1f + _shardGrowth, Mathf.Max(0, floor - 1));
 
-        public void AddShards(float amount)
+        /// <param name="fromSweep">
+        /// Quét nhanh phải khai báo, vì nó tiêu vào TRẦN chứ không nới trần. Quên cờ này
+        /// là quét tự cấp ngân sách cho chính nó và trần mất tác dụng hoàn toàn.
+        /// </param>
+        public void AddShards(float amount, bool fromSweep = false)
         {
             if (amount <= 0f) return;
             Shards += amount;
+            if (fromSweep) ShardsSwept += amount;
+            else           ShardsClimbed += amount;
             Changed?.Invoke();
         }
 
@@ -182,8 +217,9 @@ namespace TowerRpg.Progression
             return true;
         }
 
-        /// <summary>Quét nhanh mở cho tầng đã dọn sạch ít nhất một lần (§5.2).</summary>
-        public bool CanSweep(int floor) => floor >= 1 && floor <= HighestCleared;
+        /// <summary>Quét nhanh mở cho tầng đã dọn sạch ít nhất một lần (§5.2), và còn ngân sách.</summary>
+        public bool CanSweep(int floor) =>
+            floor >= 1 && floor <= HighestCleared && SweepBudgetLeft > 0f;
 
         /// <summary>Tự động chiến đấu mở khi đã dọn tới tầng mốc.</summary>
         public bool AutoUnlocked(int atFloor) => HighestCleared >= atFloor;
@@ -228,6 +264,8 @@ namespace TowerRpg.Progression
             highestCleared = HighestCleared,
             respecs = Respecs,
             characterIndex = CharacterIndex,
+            shardsClimbed = ShardsClimbed,
+            shardsSwept = ShardsSwept,
         });
 
         // iOS giết app trong nền mà không báo — đây là chỗ DUY NHẤT chắc chắn còn chạy.

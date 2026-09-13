@@ -46,9 +46,10 @@ namespace TowerRpg.Core
             "core.perBoss", "core.gate1", "core.gate2",
             "core.gate3", "core.gate4", "core.gate5",
             "core.capStep", "respec.costBase", "respec.costGrowth",
-            "sweep.unlockOnClear", "sweep.seconds", "auto.unlockFloor",
-            "juice.shakeDuration", "juice.shakeMagnitude", "juice.shakeYRatio",
-            "juice.popupRiseSpeed", "juice.popupLifetime", "juice.popupDecimalBelow",
+            "sweep.unlockOnClear", "sweep.seconds", "sweep.totalMult",
+            "auto.unlockFloor", "juice.shakeDuration", "juice.shakeMagnitude",
+            "juice.shakeYRatio", "juice.popupRiseSpeed", "juice.popupLifetime",
+            "juice.popupDecimalBelow",
         };
 
         private void Awake()

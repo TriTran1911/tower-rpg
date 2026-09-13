@@ -76,8 +76,14 @@ namespace TowerRpg.Progression
                 }
 
                 int floor = TargetFloor;
-                float reward = GameState.Instance.ShardReward(floor);
-                GameState.Instance.AddShards(reward);
+
+                // Cắt phần thưởng cuối cho vừa ngân sách còn lại, thay vì bỏ luôn lượt:
+                // bỏ lượt thì người chơi mất công chờ 3 giây mà không nhận gì.
+                float budget = GameState.Instance.SweepBudgetLeft;
+                if (budget <= 0f) break;
+
+                float reward = Mathf.Min(GameState.Instance.ShardReward(floor), budget);
+                GameState.Instance.AddShards(reward, fromSweep: true);
                 GameState.Instance.Save();
                 Swept?.Invoke(floor, reward);
                 Progress?.Invoke(0f);
