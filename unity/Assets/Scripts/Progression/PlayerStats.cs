@@ -38,12 +38,22 @@ namespace TowerRpg.Progression
         private Equipment Gear => GameState.Instance != null ? GameState.Instance.Gear : null;
         private int Floor => GameState.Instance != null ? GameState.Instance.Floor : 1;
 
-        public float Damage         => _baseDmg * (Gear?.Mult(Slot.Weapon) ?? 1f);
+        private int CharIndex => GameState.Instance != null ? GameState.Instance.CharacterIndex : 0;
+
+        /// <summary>Hệ số k của nhân vật (§5.5b). Nhân vào sát thương...</summary>
+        private float CharDamage => CharacterRoster.DamageMult(CharIndex);
+
+        /// <summary>...và chia vào máu. Tích CharDamage × CharHealth luôn = 1, nên biên
+        /// an toàn ở §5.10 không đổi một chữ số dù đổi nhân vật nào.</summary>
+        private float CharHealth => CharacterRoster.HealthMult(CharIndex);
+
+        public float Damage         => _baseDmg * (Gear?.Mult(Slot.Weapon) ?? 1f) * CharDamage;
         public float AttacksPerSec  => _baseAs  * (Gear?.Mult(Slot.Glove)  ?? 1f);
         public float CritMultiplier => _baseCrit * (Gear?.Mult(Slot.Ring)  ?? 1f);
 
         /// <summary>Máu nền tăng theo tầng ĐÃ QUA — van an toàn #4 của §5.8 — rồi nhân Giáp.</summary>
         public float MaxHp =>
-            _baseHp * Mathf.Pow(1f + _hpPerFloor, Mathf.Max(0, Floor - 1)) * (Gear?.Mult(Slot.Armor) ?? 1f);
+            _baseHp * Mathf.Pow(1f + _hpPerFloor, Mathf.Max(0, Floor - 1))
+                    * (Gear?.Mult(Slot.Armor) ?? 1f) * CharHealth;
     }
 }

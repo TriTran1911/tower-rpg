@@ -47,7 +47,63 @@ shard.perFloor1,400,Mảnh rơi ở tầng 1
 shard.growth,0.09,Mảnh tăng mỗi tầng
 
 # ── THÁP ──────────────────────────────────────────────────────────────────────
-tower.floors,20,Số tầng của M2. Bản đầy đủ là 100 tầng ở M4
+# M3 nâng 20 -> 40 tầng VÌ MỘT LÝ DO ĐO ĐƯỢC, không phải cho nhiều nội dung hơn:
+# ở 20 tầng người chơi chỉ dư 836 Mảnh, mà cấp 10->11 tốn 1.097. Nâng trần bằng Lõi
+# mở ra một cấp KHÔNG AI MUA NỔI -> Lõi vô nghĩa (chênh build đúng x1,00).
+# Đo lại theo độ sâu: 20 tầng x1,00 · 30 tầng x1,85 · 40 tầng x3,30 · 50 tầng x5,90.
+# Chọn 40: x3,30 đã gần trọn dải x3,9 mà §5.11 chốt cho cả 100 tầng.
+tower.floors,40,Số tầng hiện có. Bản đầy đủ là 100 tầng ở M4
+tower.bossEvery,10,Cứ N tầng có một boss
+
+# ── BOSS §5.10 ────────────────────────────────────────────────────────────────
+# Hệ số máu 10 boss đã chốt: 1.56 2.20 3.14 4.42 4.62 4.31 4.07 3.45 2.36 1.50
+# M3 mới có 2 boss (tầng 10, 20) nên chỉ dùng hai số đầu.
+boss.hpMult1,1.56,Hệ số máu boss 1 — tầng 10
+boss.hpMult2,2.20,Hệ số máu boss 2 — tầng 20
+boss.hpMult3,3.14,Hệ số máu boss 3 — tầng 30
+boss.hpMult4,4.42,Hệ số máu boss 4 — tầng 40
+boss.count,1,Số quái ở tầng boss — một mình nó
+# Boss đánh lâu LÀ CHỦ Ý, không phải lỗi: §5.1 chốt 200 giây cho boss tầng 100,
+# §5.5b liệt kê 87s (Sát thủ) đến 314s (Tăng). M3 đo được 75s/112s/158s/193s — trong dải.
+boss.attackRangeMult,1.4,Tầm đánh boss so với quái thường — lùi ra vẫn bị với tới
+
+# ── NHÂN VẬT §5.5b — chỉ đổi HÌNH DẠNG, không đổi SỨC MẠNH ────────────────────
+# Mỗi nhân vật nhân sát thương lên k và chia máu cho k. Tích dmg×hp KHÔNG ĐỔI nên
+# biên an toàn ở §5.10 không suy suyển một chữ số. Khác biệt nằm ở TAY NGƯỜI CHƠI:
+# k cao giết nhanh nhưng sai một nhịp là chết; k thấp tha thứ sai lầm.
+# Mở khoá: giết boss lần đầu -> mở một nhân vật. Xác định, không quay số.
+character.k0,1.00,Cân bằng — có sẵn từ đầu
+character.k1,1.35,Kiếm sĩ — mở sau boss 1
+character.k2,1.80,Sát thủ — mở sau boss 2
+character.k3,0.70,Vệ binh — mở sau boss 3
+character.k4,0.50,Tăng — mở sau boss 4
+
+# ── LÕI §5.6 — trục LỰA CHỌN, hữu hạn tuyệt đối ──────────────────────────────
+# Chỉ rơi từ boss, và CHỈ lần giết đầu tiên. Quét lại boss KHÔNG cho Lõi.
+core.perBoss,3,Lõi mỗi boss
+core.gate1,1,Lõi để đột phá bậc 1 — trần 10 lên 20
+core.gate2,2,Bậc 2 — trần 20 lên 30
+core.gate3,3,Bậc 3 — trần 30 lên 40
+core.gate4,4,Bậc 4 — trần 40 lên 50
+core.gate5,5,Bậc 5 — trần 50 lên 60
+core.capStep,10,Mỗi lần đột phá nâng trần thêm bao nhiêu cấp
+
+# ── TẨY ĐIỂM §5.8 van 2 — chống bế tắc vĩnh viễn ─────────────────────────────
+# Hoàn 100% Lõi nhưng tốn RẤT NHIỀU Mảnh. Người cày chăm sửa được sai lầm;
+# người lười phải sống với nó. Quyết định vẫn có sức nặng, nhưng tính bằng thời gian.
+respec.costBase,20000,Mảnh cho lần tẩy điểm đầu
+respec.costGrowth,1.0,Mỗi lần tẩy sau đắt gấp đôi
+
+# ── QUÉT NHANH §5.2 ───────────────────────────────────────────────────────────
+sweep.unlockOnClear,1,1 = clear tầng lần đầu là mở quét nhanh cho tầng đó
+# §5.2 nói quét nhanh CÓ THỂ bấm lại — nhưng mô hình kinh tế ở can-bang.xlsx chỉ tính
+# Mảnh theo việc LEO, chưa bao giờ tính farm. Quét tức thời + bấm vô hạn = Mảnh vô hạn,
+# đường cong chi phí chết. Nên quét có hồi: 3 giây so với ~45 giây đánh tay = nén 15 lần.
+# Vẫn đúng tinh thần "farm không thành cực hình", mà không phá kinh tế. Mở ở §7.
+sweep.seconds,3,Giây mỗi lần quét một tầng
+
+# ── TỰ ĐỘNG CHIẾN ĐẤU §5.2 ───────────────────────────────────────────────────
+auto.unlockFloor,20,Hoàn thành tầng này thì mở auto-battle
 
 # ── HIỆU ỨNG (thẩm mỹ, không phải cân bằng nhưng để ngoài cho tiện chỉnh) ─────
 juice.shakeDuration,0.18,Thời gian rung màn hình khi chí mạng

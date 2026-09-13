@@ -102,7 +102,7 @@ tài nguyên hiếm. Toàn bộ đường cong tiến trình neo vào đây.
 
 | Cơ chế | Mở khi nào | Tác dụng |
 |---|---|---|
-| **Quét nhanh** | Clear một tầng lần đầu | Tầng đó bấm một nút là nhận thưởng, không đánh lại. Khiến việc farm không thành cực hình |
+| **Quét nhanh** | Clear một tầng lần đầu | Tầng đó bấm một nút là nhận thưởng, không đánh lại. Khiến việc farm không thành cực hình. **Có hồi 3 giây** — xem quyết định #27 |
 | **Tự động chiến đấu** | Hoàn thành chương 1 (tầng 20) | Nhân vật tự đánh tầng mới. Cột mốc lớn — cần màn hình chúc mừng riêng |
 
 **Vì sao mốc auto là tầng 20:** đủ lâu để người chơi hiểu hệ thống bằng tay và thấy
@@ -393,6 +393,21 @@ Với sản phẩm portfolio, một người xem demo gặp đúng tình huống
    khi dựng mô hình: không có nó, build nhẹ Giáp chết tức khắc ở tầng cao và điều kiện trên
    không bao giờ thỏa.
 
+#### Ghi chú M3 — thời gian hạ boss đã đo được
+
+Cài xong mới đo được bằng số thật. Với tháp 40 tầng và dàn trang bị dồn sát thương:
+
+| Boss | Tầng | Máu | Thời gian hạ |
+|---|---|---|---|
+| 1 | 10 | 1.229 | 75s |
+| 2 | 20 | 2.872 | 112s |
+| 3 | 30 | 6.760 | 158s |
+| 4 | 40 | 15.912 | 193s |
+
+**Nằm trong dải đã thiết kế, không phải lỗi.** §5.1 lấy mốc 200 giây cho boss tầng 100,
+và bảng §5.5b liệt kê từ 87s (Sát thủ) tới 314s (Tăng). Boss là bài kiểm tra sức bền —
+dài hơn hẳn quái thường là đúng chủ ý. Đã suýt "sửa" cho nhanh lại trước khi đọc lại §5.1.
+
 ### 5.10 Độ khó nằm ở boss, không ở quái thường
 
 Hệ quả không tránh được của việc cấp trần Lõi phải có ý nghĩa: quái thường **sẽ** dễ dần
@@ -493,6 +508,11 @@ thao túng người chơi.
 | 22 | **Đổi nhân vật (§5.5b), KHÔNG phải đội hình** | Đội hình 3-6 người cùng đánh *(loại: buộc bỏ §5.3, vì không đặt vị trí từng người trên màn hình dọc được — nó thành auto-battle, và đó là đổi thể loại chứ không phải thêm tính năng)*; gacha rút nhân vật *(loại: trái nguyên tắc nền)*; mỗi nhân vật một bộ trang bị riêng *(loại: nhân số ô cân bằng lên 10 lần, phạt người chơi thử nghiệm)* | Người dùng muốn **cảm giác mở khoá**, không phải chiến thuật ghép đội — hỏi rõ trước khi thiết kế. Lời giải: một nhân vật trên màn hình như cũ, trang bị dùng chung, nhân vật chỉ đổi HÌNH DẠNG chỉ số (nhân sát thương `k`, chia máu `k`). Biên an toàn tỉ lệ với TÍCH hai thừa số nên `k` triệt tiêu — **kiểm 5 nhân vật × 5 build × 10 boss, trùng khít tới 6 chữ số thập phân.** Chi phí: 0 cân bằng, 0 đồ hoạ (89 nhân vật có sẵn, cùng tác giả), ~150 dòng code. **Một nhận định sai đã sửa:** trước đó tôi kết luận bộ asset chỉ có 1 nhân vật đủ hoạt ảnh — sai, vì chỉ nhìn thư mục `CharacterAnimated` mà bỏ qua `Character` |
 | 23 | **Hệ giao diện: tầng đọc THỨ TƯ, tông ấm, không đổi theo chương** | Phong cách công nghiệp *(loại: kim loại và đinh tán lệch tông với sprite ninja — đúng cái bẫy quyết định #13)*; để giao diện trong tầng "thế giới" như hiện tại *(loại: thanh máu sẽ ngả ô-liu ở chương 3 và ngả tím ở chương 5)*; tự vẽ giao diện mới *(loại: bộ asset đã có 43 file Theme Wood + 62 icon, cùng tác giả)* | Người chơi học giao diện MỘT LẦN rồi dùng suốt 100 tầng — cùng lý do quái luôn đỏ và nhân vật luôn lam. Tông ấm gỗ/vàng đồng là khoảng trống duy nhất còn lại (xám đã là thế giới, đỏ là quái, lam là nhân vật). Lưới 32px, lề 64px, vùng chạm 144px (Android 48dp ≈ 132px). **Hai quyết định đáng nói:** thanh chí mạng chia đúng 5 vạch để ĐẾM được thay vì ước lượng — đó là toàn bộ lý do chọn thanh dồn thay vì xác suất; và cần gạt ĐỘNG hiện ra nơi ngón chạm, vì bản M1 đặt cố định góc trái mà phần lớn người cầm máy tay phải. Chi tiết ở `docs/GIAO-DIEN.md` |
 | 24 | **M2 dừng ĐÚNG ở bức tường trần cấp** | Cho Lõi vào luôn M2 *(loại: M3 mất lý do tồn tại, và đột phá là hệ thống lớn cần cân bằng riêng)*; bỏ trần cấp ở M2 *(loại: người chơi nâng vô hạn, không bao giờ cảm thấy cần Lõi)* | Với đường cong Mảnh thật, người chơi chạm trần cấp 10 vào khoảng tầng 18–20 rồi **không nâng được nữa dù còn thừa Mảnh**. Đó chính xác là câu hỏi mà M3 trả lời. Có một test khoá điều này: `Cham_tran_cap_thi_dung_lai_du_con_Manh`. Kiểm bằng bảng tính: 42–53 giây mỗi tầng (khớp §5.1), biên an toàn 1,5–1,9 |
+| 25 | **Tháp M3 nâng 20 → 40 tầng, vì nếu không thì Lõi VÔ NGHĨA** | Giữ 20 tầng *(loại: đo được chênh build đúng **×1,00** — nâng trần mở ra một cấp không ai mua nổi)*; 30 tầng *(×1,85, có tác dụng nhưng chưa tới)*; 50 tầng *(×5,90, nhưng dài quá cho một mốc)* | Ở 20 tầng người chơi chỉ dư **836 Mảnh** mà cấp 10→11 tốn **1.097**. Đột phá nâng trần rồi vẫn không mua nổi cấp kế — cả hệ thống Lõi thành đồ trang trí, và không test nào phát hiện được vì mọi hàm đều chạy đúng. Đo lại theo độ sâu: 20 tầng ×1,00 · 30 tầng ×1,85 · **40 tầng ×3,30** · 50 tầng ×5,90. Chọn 40 vì ×3,30 đã gần trọn dải ×3,9 mà §5.11 chốt cho cả 100 tầng — tức M3 chạy được gần hết biên độ của hệ thống, đúng tiêu chí "toàn bộ hệ thống đã đủ". **Bài học: hệ thống chạy đúng ≠ hệ thống có tác dụng.** Chỉ mô phỏng kinh tế mới thấy |
+| 26 | **Một nút, hai nghĩa: chưa chạm trần thì NÂNG (Mảnh), chạm trần thì ĐỘT PHÁ (Lõi)** | Hai nút riêng cạnh nhau *(loại: nút đột phá nằm đó xám ngoét suốt 10 cấp đầu, và lúc cần thì người chơi đã quen mắt bỏ qua)*; một màn hình đột phá riêng *(loại: bức tường ở màn này, lối ra ở màn kia — người chơi phải tự đoán ra là có lối)* | Bức tường và lối thoát khỏi bức tường phải nằm **đúng một chỗ**. Chạm trần là nút tự đổi chữ, đổi sắc nền sang son, đổi đơn vị giá từ Mảnh sang Lõi — không phải đi tìm. Phân biệt bằng **sắc nền** chứ không bằng màu chữ, vì chữ trên gỗ sáng bắt buộc phải là mực mới đọc nổi (xem #28) |
+| 27 | **Quét nhanh có hồi 3 giây, không phải tức thời** | Tức thời, bấm bao nhiêu lần cũng được *(loại: Mảnh vô hạn, toàn bộ đường cong chi phí ở §5.6 mất nghĩa)*; chỉ quét được một lần mỗi tầng *(loại: không giải quyết được việc farm, tức là không làm đúng việc §5.2 giao)* | §5.2 nói quét nhanh bấm lại được, nhưng `can-bang.xlsx` **chỉ mô hình hoá Mảnh theo việc LEO, chưa bao giờ tính farm**. Đây là lỗ hổng của mô hình chứ không phải của §5.2. 3 giây so với ~45 giây đánh tay vẫn là **nén 15 lần** — đủ để "farm không thành cực hình" mà không thủng kinh tế. Ghi vào §7 vì con số 3 chưa có mô hình đỡ lưng |
+| 28 | **Chữ trên gỗ sáng phải là MỰC — đo tương phản chứ không ướm mắt** | Giữ chữ giấy cho đồng bộ với HUD *(loại: đo được **1,85:1**, dưới xa mức 4,5:1 và thực tế là không đọc được)* | `nine_path_panel.png` có **ruột cam sáng (243,140,76)**. 9-patch kéo giãn phần ruột, nên panel nhỏ trông tối (viền chiếm hết) còn panel to trông sáng chói — cùng một sprite, hai kết quả ngược nhau. Chốt: mảng lớn dùng `nine_path_bg` (tối, chữ giấy 7,87:1), nút nhỏ giữ `nine_path_panel` (cam) nhưng chữ là mực (7,41:1). Kéo sáng luôn `dim` 2,94→4,61 và `son` 2,07→4,67. **Kèm theo, một lỗi có từ M2:** viền 9-patch đặt 5 trong khi ruột chỉ đồng màu từ cột 6 — cột bevel lọt vào vùng kéo giãn và nhoè thành vệt nâu chiếm ~20% bề ngang mọi nút rộng. Sửa 5→6 |
+| 29 | **Ba lớp kiểm vẫn để lọt, phải NHÌN ẢNH mới thấy** | Tin vào 30 test xanh + 37 mục kiểm scene *(loại: cả ba lỗi dưới đây đều lọt qua sạch sẽ)* | Lần thứ ba trong dự án này: **nối đúng ≠ chạy đúng ≠ nhìn được**. Ba lỗi chỉ ảnh chụp mới bắt được: (1) ô icon bị đẩy xuống dưới nền dòng nên **biến mất hoàn toàn** — tham chiếu vẫn đủ 4/4 nên verifier báo đạt; (2) dòng Nhẫn **đè lên nút tẩy điểm 144px**, thuần số học mà không ai kiểm; (3) dấu `÷` không có trong font dự phòng của TMP nên hiện thành `+`, làm câu "máu ÷k" đọc ra **ngược hẳn nghĩa**. Đã thêm hai ảnh chụp tự động (`6-nang-cap` dựng đúng cảnh chạm trần, `7-nhan-vat`) vào bộ test |
 
 ---
 
@@ -501,9 +521,8 @@ thao túng người chơi.
 - Tên game.
 - Bộ asset pack cụ thể (quyết định này khóa luôn phong cách hình ảnh — chọn sớm).
 - Boss có cơ chế riêng hay chỉ là quái nhiều máu?
-  *(Bộ asset có 20 mục boss với Idle/Walk/Hit — đủ cho 10 mốc boss của §5.6, kể cả khi loại các biến thể màu.)* *(Khuyến nghị: chương 1–2 chỉ nhiều
-  máu, từ chương 3 mới thêm cơ chế — để bản chơi được ra sớm.)*
-- Nhạc và âm thanh: lấy từ đâu.
+  *(M3 cài theo hướng "nhiều máu + tầm đánh xa hơn 1,4 lần". Đo được 75–193 giây mỗi con,
+  nằm trong dải §5.1 đã chốt. Từ chương 3 mới thêm cơ chế — để bản chơi được ra sớm.)*
 - ~~Hệ số máu 10 con boss~~ — **đã chốt**, xem §5.10.
 - ~~Bộ asset pack cụ thể~~ — **đã chốt**: Ninja Adventure, CC0. Xem §3 giả định 8.
 - ~~Nhạc và âm thanh lấy từ đâu~~ — **đã chốt**: cùng bộ asset, cũng CC0.
@@ -522,6 +541,14 @@ thao túng người chơi.
   10,3% · thủ dày 19,4%.
 - **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
   thì phá §5.1. Chưa có lời giải rẻ.
+- ⚠️ **QUÉT NHANH CHƯA CÓ TRONG MÔ HÌNH KINH TẾ** (quyết định #27). `can-bang.xlsx` tính Mảnh
+  theo việc LEO, chưa bao giờ tính farm. M3 tạm chặn bằng hồi 3 giây mỗi lượt — nén 15 lần so
+  với đánh tay, đủ dùng mà không thủng ngay. Nhưng con số 3 là **phỏng đoán có cơ sở, không
+  phải kết quả mô hình**: người chơi cày 1 giờ quét được 1.200 lượt tầng cao nhất. Trước M4
+  phải đưa farm vào bảng tính, rồi chốt lại — cùng lúc với hút máu.
+- **Tháp mới có 40/100 tầng và 4/10 boss.** Đúng phạm vi M3 (§8 giao "hệ thống đủ, thiếu nội
+  dung"), nhưng nghĩa là sáu cổng đột phá cuối và sáu nhân vật cuối **chưa từng chạy thật**.
+  Hệ số máu boss 5–10 ở §5.10 vẫn chỉ là số trên giấy.
 
 ---
 
@@ -534,7 +561,7 @@ Lộ trình dưới đây thiết kế để luôn có thứ chạy được tr�
 |---|---|---|
 | ~~**M1 — Vòng lặp sống**~~ ✅ | 1 tầng, 1 loại quái, di chuyển + tự đánh, thanh chí mạng | Đánh được, thấy vui hoặc không vui. **Nếu không vui, dừng lại và sửa ở đây** |
 | ~~**M2 — Tiến trình**~~ | 20 tầng, rơi Mảnh, nâng cấp 4 ô trang bị, save/load | ✅ **XONG** — 17/17 test PlayMode |
-| **M3 — Xương sống** | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle, **mở khoá và đổi nhân vật (§5.5b)** | Toàn bộ hệ thống đã đủ; chỉ còn thiếu nội dung |
+| ~~**M3 — Xương sống**~~ | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle, **mở khoá và đổi nhân vật (§5.5b)** | ✅ **XONG** — 30/30 test PlayMode, 37 mục kiểm scene. Tháp 40 tầng, 4 boss, 12 Lõi, 5 nhân vật |
 | **M4 — Nội dung** | 100 tầng, 5 chương, 10 boss | Chơi hết được từ đầu đến cuối |
 | **M5 — Bóng bẩy** | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | Trông như sản phẩm thật. **Đây là phần quyết định giá trị portfolio** |
 

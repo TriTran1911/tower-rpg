@@ -39,6 +39,14 @@ namespace TowerRpg.Core
             "enemy.dpsFloor1", "enemy.dpsGrowth", "enemy.count",
             "enemy.spawnRadius", "enemy.attacksPerSecond", "enemy.attackRange",
             "shard.perFloor1", "shard.growth", "tower.floors",
+            "tower.bossEvery", "boss.hpMult1", "boss.hpMult2",
+            "boss.hpMult3", "boss.hpMult4", "boss.count",
+            "boss.attackRangeMult", "character.k0", "character.k1",
+            "character.k2", "character.k3", "character.k4",
+            "core.perBoss", "core.gate1", "core.gate2",
+            "core.gate3", "core.gate4", "core.gate5",
+            "core.capStep", "respec.costBase", "respec.costGrowth",
+            "sweep.unlockOnClear", "sweep.seconds", "auto.unlockFloor",
             "juice.shakeDuration", "juice.shakeMagnitude", "juice.shakeYRatio",
             "juice.popupRiseSpeed", "juice.popupLifetime",
         };
@@ -177,6 +185,14 @@ namespace TowerRpg.Core
         }
 
         public int GetInt(string key) => Mathf.RoundToInt(Get(key));
+
+        /// <summary>
+        /// Khoá có tồn tại không — KHÔNG kêu ca nếu thiếu.
+        /// Dùng cho nhóm khoá đánh số mà số lượng thay đổi theo nội dung (boss.hpMult1..N):
+        /// đọc tới khi hết thay vì viết cứng số boss ở hai nơi rồi để chúng lệch nhau.
+        /// Mọi trường hợp khác dùng Get — thiếu khoá PHẢI kêu to.
+        /// </summary>
+        public bool Has(string key) => _values.ContainsKey(key);
 
         /// <summary>
         /// Lối vào chung cho mọi script cần số liệu. Báo lỗi RÕ RÀNG nếu thiếu component

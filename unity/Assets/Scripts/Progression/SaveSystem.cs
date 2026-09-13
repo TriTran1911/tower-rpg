@@ -66,13 +66,40 @@ namespace TowerRpg.Progression
                 var d = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
                 if (d == null || d.version <= 0) return null;
                 if (d.gearLevels == null || d.gearLevels.Length != Equipment.SlotCount) return null;
-                return d;
+                return Migrate(d);
             }
             catch (Exception e)
             {
                 Debug.LogError($"[SaveSystem] Đọc '{path}' thất bại: {e.Message}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Nâng save cũ lên cấu trúc hiện tại. Người chơi M2 mở bản M3 phải giữ nguyên
+        /// tiến trình — mất 20 giờ cày là gỡ game (§4).
+        ///
+        /// v1 -> v2: chưa có Lõi nên mọi trường M3 để 0, TRỪ highestCleared: người chơi
+        /// v1 đã đi tới `floor` nên các tầng dưới đó coi như đã dọn, quét nhanh mở luôn.
+        /// </summary>
+        private static SaveData Migrate(SaveData d)
+        {
+            if (d.version >= SaveData.CurrentVersion) return d;
+
+            if (d.version < 2)
+            {
+                d.gearTiers = new[] { 0, 0, 0, 0 };
+                d.cores = 0;
+                d.bossesKilled = 0;
+                d.respecs = 0;
+                d.characterIndex = 0;
+                d.highestCleared = Mathf.Max(0, d.floor - 1);
+                Debug.Log($"[SaveSystem] Nâng save v{d.version} -> v2. Giữ nguyên tầng " +
+                          $"{d.floor}, {d.shards:0} Mảnh, cấp {string.Join("/", d.gearLevels)}.");
+            }
+
+            d.version = SaveData.CurrentVersion;
+            return d;
         }
 
         /// <summary>Xoá sạch tiến trình. Dùng cho test và nút chơi lại.</summary>

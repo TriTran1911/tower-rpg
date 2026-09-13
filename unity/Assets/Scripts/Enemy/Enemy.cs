@@ -30,6 +30,9 @@ namespace TowerRpg.Enemies
         private float _attackCooldown;
         private bool _armed;
 
+        /// <summary>Boss hay quái thường. Chỉ đổi cách hiển thị và cách tính điểm rơi — §5.10.</summary>
+        public bool IsBoss { get; private set; }
+
         public bool IsAlive => _hp > 0f;
         public Vector3 Position => transform.position;
 
@@ -42,9 +45,11 @@ namespace TowerRpg.Enemies
             _baseColor = _sprite.color;
         }
 
-        /// <summary>Gọi bởi EnemySpawner SAU khi số liệu cân bằng đã nạp xong.</summary>
-        public void Initialise(float maxHp, float damage, float attacksPerSecond, float attackRange)
+        /// <summary>Gọi bởi FloorRunner SAU khi số liệu cân bằng đã nạp xong.</summary>
+        public void Initialise(float maxHp, float damage, float attacksPerSecond, float attackRange,
+                               bool isBoss = false)
         {
+            IsBoss = isBoss;
             _hp = maxHp;
             _maxHp = maxHp;
             _damage = damage;

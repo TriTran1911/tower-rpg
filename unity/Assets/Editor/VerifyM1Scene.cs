@@ -41,10 +41,17 @@ namespace TowerRpg.EditorTools
 
             // ── tham chiếu ─────────────────────────────────────────────────────────────
             log.AppendLine("\nTHAM CHIẾU");
-            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth");
-            fail += Check<HudUI>(log, "floorNumber", "shardCount");
+            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "bossSprite");
+            fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
+                                      "bossBanner", "sweep", "sweepButton", "sweepLabel",
+                                      "sweepFill", "auto", "autoButton", "autoLabel", "runner");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
-                                              "panelSprite", "cellSprite");
+                                              "panelSprite", "bgSprite", "cellSprite",
+                                              "coreLabel", "respecButton", "respecLabel");
+            fail += Check<CharacterScreen>(log, "root", "cardParent", "hintLabel",
+                                                "panelSprite", "bgSprite", "cellSprite");
+            fail += Check<AutoBattle>(log, "player", "joystick");
+            fail += Check<PlayerAppearance>(log, "target");
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
             fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
@@ -134,12 +141,83 @@ namespace TowerRpg.EditorTools
                            up != null && !(upSo.FindProperty("root").objectReferenceValue as GameObject).activeSelf,
                            "đang mở");
 
+            // ── M3 ────────────────────────────────────────────────────────────────────
+            var ch = Object.FindFirstObjectByType<CharacterScreen>();
+            var chSo = ch != null ? new SerializedObject(ch) : null;
+            fail += Assert(log, "màn nhân vật đóng lúc bắt đầu",
+                           chSo != null &&
+                           !(chSo.FindProperty("root").objectReferenceValue as GameObject).activeSelf,
+                           "đang mở");
+
+            SerializedProperty faces = chSo?.FindProperty("portraits");
+            int faceCount = 0;
+            if (faces != null)
+                for (int i = 0; i < faces.arraySize; i++)
+                    if (faces.GetArrayElementAtIndex(i).objectReferenceValue != null) faceCount++;
+            fail += Assert(log, $"đủ {CharacterRoster.Count} chân dung nhân vật",
+                           faceCount == CharacterRoster.Count,
+                           $"{faceCount}/{CharacterRoster.Count}");
+
+            var look = Object.FindFirstObjectByType<PlayerAppearance>();
+            var lookSo = look != null ? new SerializedObject(look) : null;
+            SerializedProperty looks = lookSo?.FindProperty("sprites");
+            int lookCount = 0;
+            if (looks != null)
+                for (int i = 0; i < looks.arraySize; i++)
+                    if (looks.GetArrayElementAtIndex(i).objectReferenceValue != null) lookCount++;
+            fail += Assert(log, $"đủ {CharacterRoster.Count} hình người chơi",
+                           lookCount == CharacterRoster.Count,
+                           $"{lookCount}/{CharacterRoster.Count}");
+
+            fail += Assert(log, "có SweepRunner trong scene",
+                           Object.FindFirstObjectByType<SweepRunner>() != null, "không có");
+
+            // Nút phải BẤM ĐƯỢC. Vùng chạm cần gạt trong suốt và phủ nửa dưới màn hình;
+            // nếu nó là anh em SAU một cái nút thì nó nuốt cú chạm, nút thành vô dụng.
+            // Kiểm thứ tự anh em chứ KHÔNG kiểm hình học: hình học phụ thuộc tỉ lệ màn
+            // hình thật (batchmode chạy ở độ phân giải khác hẳn 1080x1920), còn thứ tự
+            // anh em thì đúng ở mọi máy.
+            var zone = Object.FindFirstObjectByType<VirtualJoystick>();
+            RectTransform zoneRt = null;
+            if (zone != null)
+                zoneRt = new SerializedObject(zone).FindProperty("touchZone")
+                             .objectReferenceValue as RectTransform;
+
+            int zoneOrder = zoneRt != null ? zoneRt.GetSiblingIndex() : -1;
+            foreach (string n in new[] { "GearButton", "CharButton", "SweepButton", "AutoButton" })
+            {
+                RectTransform b = FindRect(scene, n);
+                bool ok = b != null && zoneRt != null &&
+                          b.parent == zoneRt.parent && b.GetSiblingIndex() > zoneOrder;
+                fail += Assert(log, $"{n} nằm TRÊN vùng chạm cần gạt (bấm được)", ok,
+                               b == null ? "không thấy nút"
+                                         : $"thứ tự {b.GetSiblingIndex()} <= vùng chạm {zoneOrder}");
+            }
+
             log.AppendLine(fail == 0
                 ? "\n===== TẤT CẢ ĐỀU ĐẠT ====="
                 : $"\n===== {fail} MỤC KHÔNG ĐẠT =====");
             Debug.Log("[VerifyM1Scene]\n" + log);
 
             if (fail > 0) EditorApplication.Exit(1);
+        }
+
+        /// <summary>Tìm theo tên kể cả đối tượng đang tắt — GameObject.Find bỏ qua chúng.</summary>
+        private static RectTransform FindRect(Scene scene, string name)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+                foreach (RectTransform rt in root.GetComponentsInChildren<RectTransform>(true))
+                    if (rt.name == name) return rt;
+            return null;
+        }
+
+        private static bool Overlaps(RectTransform a, RectTransform b)
+        {
+            var ca = new Vector3[4]; var cb = new Vector3[4];
+            a.GetWorldCorners(ca); b.GetWorldCorners(cb);
+            var ra = new Rect(ca[0].x, ca[0].y, ca[2].x - ca[0].x, ca[2].y - ca[0].y);
+            var rb = new Rect(cb[0].x, cb[0].y, cb[2].x - cb[0].x, cb[2].y - cb[0].y);
+            return ra.Overlaps(rb);
         }
 
         private static void Dump(Transform t, StringBuilder log, int depth)

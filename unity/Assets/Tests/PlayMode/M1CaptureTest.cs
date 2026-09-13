@@ -37,12 +37,28 @@ namespace TowerRpg.Tests
             (8.0f, "5-sau-8s"),
         };
 
+        private static readonly string[] Extra = { "6-nang-cap", "7-nhan-vat" };
+
+        /// <summary>Đọc khung hình đang có trong RenderTexture ra file PNG.</summary>
+        private static void Shot(RenderTexture rt, string name)
+        {
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            tex.Apply();
+            File.WriteAllBytes(Path.Combine(OutDir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(tex);
+            RenderTexture.active = prev;
+            Debug.Log($"[chụp] {name}");
+        }
+
         [UnityTest]
         public IEnumerator Chup_anh_van_hanh()
         {
             Directory.CreateDirectory(OutDir);
             // Chỉ xoá ảnh CỦA MÌNH — dọn cả thư mục sẽ nuốt luôn ảnh ghép tay để trong đó.
-            foreach ((float _, string n) in Shots)
+            foreach (string n in Shots.Select(s => s.name).Concat(Extra))
             {
                 string old = Path.Combine(OutDir, n + ".png");
                 if (File.Exists(old)) File.Delete(old);
@@ -105,14 +121,16 @@ namespace TowerRpg.Tests
                           $"máu={hp.Fraction:0.00}  thanhCM={meter.Fill01:0.00}");
             }
 
-            // ── thêm một ảnh màn hình nâng cấp (M2) ──────────────────────────────
+            // ── màn hình nâng cấp, dựng đúng CẢNH BỨC TƯỜNG của M2/M3 ────────────
+            // Một ô chạm trần (nút đổi thành ĐỘT PHÁ), một ô còn nâng bằng Mảnh được —
+            // để nhìn thấy cả hai nghĩa của cùng một cái nút trong MỘT tấm ảnh.
             if (GameState.Instance != null)
             {
-                GameState.Instance.AddShards(48_000f);
-                GameState.Instance.TryUpgrade(Slot.Weapon);
-                GameState.Instance.TryUpgrade(Slot.Weapon);
+                GameState.Instance.AddShards(400_000f);
+                while (GameState.Instance.TryUpgrade(Slot.Weapon)) { }   // kịch trần
                 GameState.Instance.TryUpgrade(Slot.Armor);
                 GameState.Instance.TryUpgrade(Slot.Glove);
+                GameState.Instance.AwardBoss(10);                        // có Lõi để đột phá
             }
 
             var up = Object.FindFirstObjectByType<UpgradeScreen>();
@@ -120,20 +138,24 @@ namespace TowerRpg.Tests
             {
                 up.Toggle();
                 yield return null; yield return null; yield return null;
+                Shot(rt, "6-nang-cap");
+                up.Toggle();
+                yield return null;
+            }
 
-                RenderTexture p2 = RenderTexture.active;
-                RenderTexture.active = rt;
-                var t2 = new Texture2D(W, H, TextureFormat.RGB24, false);
-                t2.ReadPixels(new Rect(0, 0, W, H), 0, 0);
-                t2.Apply();
-                File.WriteAllBytes(Path.Combine(OutDir, "6-nang-cap.png"), t2.EncodeToPNG());
-                Object.Destroy(t2);
-                RenderTexture.active = p2;
-                Debug.Log("[chụp] 6-nang-cap  màn hình nâng cấp");
+            // ── màn hình nhân vật (M3) ───────────────────────────────────────────
+            var ch = Object.FindFirstObjectByType<CharacterScreen>();
+            if (ch != null)
+            {
+                ch.Toggle();
+                yield return null; yield return null; yield return null;
+                Shot(rt, "7-nhan-vat");
+                ch.Toggle();
+                yield return null;
             }
 
             cam.targetTexture = null;
-            foreach ((float _, string n) in Shots)
+            foreach (string n in Shots.Select(s => s.name).Concat(Extra))
                 Assert.IsTrue(File.Exists(Path.Combine(OutDir, n + ".png")), $"thiếu ảnh {n}.png");
         }
     }

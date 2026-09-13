@@ -18,6 +18,13 @@ namespace TowerRpg.Player
 
         public bool IsMoving { get; private set; }
 
+        // Đầu vào do AutoBattle đẩy vào. Để null nghĩa là "máy không lái" — phải phân biệt
+        // được với Vector2.zero, vì zero là một MỆNH LỆNH hợp lệ ("đứng yên mà đánh").
+        private Vector2? _autoInput;
+
+        public void SetAutoInput(Vector2 v) => _autoInput = v;
+        public void ClearAutoInput() => _autoInput = null;
+
         private void Awake() => _body = GetComponent<Rigidbody2D>();
 
         private void Start()
@@ -39,7 +46,10 @@ namespace TowerRpg.Player
         {
             if (!_ready) return;
 
-            Vector2 input = joystick != null ? joystick.Value : Vector2.zero;
+            Vector2 stick = joystick != null ? joystick.Value : Vector2.zero;
+            // Ngón tay thắng máy: chỉ dùng đầu vào của auto khi cần gạt đang nghỉ.
+            Vector2 input = stick.sqrMagnitude > 0f ? stick : (_autoInput ?? Vector2.zero);
+
             IsMoving = input.sqrMagnitude > _deadzone * _deadzone;
 
             _body.linearVelocity = IsMoving ? input * _moveSpeed : Vector2.zero;

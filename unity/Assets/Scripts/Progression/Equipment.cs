@@ -17,8 +17,9 @@ namespace TowerRpg.Progression
     /// Trang bị: bốn ô, mỗi ô một cấp. Không có ô nào "tốt hơn" ô nào — chúng nhân vào
     /// bốn thừa số khác nhau của công thức ở §5.7.
     ///
-    /// M2 chưa có Lõi nên mọi ô đều chung một trần (`gear.maxLevel`). Từ M3, Lõi nâng
-    /// trần riêng cho từng ô — đó là toàn bộ cuộc chơi phân bổ ở §5.6.
+    /// Từ M3 mỗi ô có TRẦN RIÊNG, nâng bằng Lõi: trần = maxLevel + bậc × capStep.
+    /// Đó là toàn bộ cuộc chơi phân bổ ở §5.6 — Lõi hữu hạn tuyệt đối, tiêu vào ô nào
+    /// là đóng cánh cửa của ô kia.
     /// </summary>
     [Serializable]
     public sealed class Equipment
@@ -26,16 +27,71 @@ namespace TowerRpg.Progression
         public const int SlotCount = 4;
 
         [SerializeField] private int[] levels = { 1, 1, 1, 1 };
+        [SerializeField] private int[] tiers  = { 0, 0, 0, 0 };   // bậc đột phá từng ô
 
         private float _costBase, _costGrowth;
         private float[] _perLevel = new float[SlotCount];
         private int _maxLevel = 1;
+        private int _capStep = 10;
+        private float[] _gateCost = new float[MaxTier];
 
+        /// <summary>Số bậc đột phá tối đa — năm cổng của §5.6.</summary>
+        public const int MaxTier = 5;
+
+        /// <summary>Trần NỀN, khi chưa đột phá. Giữ tên cũ vì test và giao diện đang dùng.</summary>
         public int MaxLevel => _maxLevel;
+
+        public int Tier(Slot s) => tiers[(int)s];
+
+        /// <summary>Trần thật của một ô — cái quyết định AtCap.</summary>
+        public int CapOf(Slot s) => _maxLevel + tiers[(int)s] * _capStep;
+
+        public bool AtMaxTier(Slot s) => tiers[(int)s] >= MaxTier;
+
+        /// <summary>Lõi cần cho lần đột phá kế tiếp của ô. Trả về -1 khi đã hết cổng.</summary>
+        public int NextTierCost(Slot s) =>
+            AtMaxTier(s) ? -1 : Mathf.RoundToInt(_gateCost[tiers[(int)s]]);
+
+        public bool Breakthrough(Slot s)
+        {
+            if (AtMaxTier(s)) return false;
+            tiers[(int)s]++;
+            return true;
+        }
+
+        /// <summary>Tổng Lõi đã tiêu — tẩy điểm hoàn lại đúng chừng này (§5.8 van 2).</summary>
+        public int CoresSpent()
+        {
+            int total = 0;
+            for (int i = 0; i < SlotCount; i++)
+                for (int t = 0; t < tiers[i]; t++)
+                    total += Mathf.RoundToInt(_gateCost[t]);
+            return total;
+        }
+
+        /// <summary>Hạ mọi bậc về 0 và ép cấp về trần nền. Cấp vượt trần bị CẮT, không hoàn Mảnh.</summary>
+        public void ResetTiers()
+        {
+            for (int i = 0; i < SlotCount; i++)
+            {
+                tiers[i] = 0;
+                levels[i] = Mathf.Clamp(levels[i], 1, _maxLevel);
+            }
+        }
+
+        public int[] TierSnapshot() => (int[])tiers.Clone();
+
+        public void RestoreTiers(int[] saved)
+        {
+            if (saved == null || saved.Length != SlotCount) return;
+            for (int i = 0; i < SlotCount; i++) tiers[i] = Mathf.Clamp(saved[i], 0, MaxTier);
+        }
 
         public void Configure(BalanceConfig b)
         {
             _maxLevel   = Mathf.Max(1, b.GetInt("gear.maxLevel"));
+            _capStep    = Mathf.Max(1, b.GetInt("core.capStep"));
+            for (int t = 0; t < MaxTier; t++) _gateCost[t] = b.Get($"core.gate{t + 1}");
             _costBase   = b.Get("gear.costBase");
             _costGrowth = b.Get("gear.costGrowth");
 
@@ -50,11 +106,11 @@ namespace TowerRpg.Progression
                                  "§5.5 dựa trên việc hai số này BẰNG NHAU — hoán vị Lõi giữa Vũ khí " +
                                  "và Giáp sẽ không còn cho biên như nhau.");
 
-            for (int i = 0; i < SlotCount; i++) levels[i] = Mathf.Clamp(levels[i], 1, _maxLevel);
+            for (int i = 0; i < SlotCount; i++) levels[i] = Mathf.Clamp(levels[i], 1, CapOf((Slot)i));
         }
 
         public int Level(Slot s) => levels[(int)s];
-        public bool AtCap(Slot s) => levels[(int)s] >= _maxLevel;
+        public bool AtCap(Slot s) => levels[(int)s] >= CapOf(s);
 
         /// <summary>Mảnh để lên cấp kế tiếp. Trả về -1 khi đã chạm trần.</summary>
         public float NextCost(Slot s)
