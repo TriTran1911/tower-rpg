@@ -1,8 +1,9 @@
 # Hệ giao diện
 
-> Trạng thái: **concept đã chốt hướng, chưa cài vào Unity.**
-> Giao diện hiện tại trong scene M1 là hình chữ nhật màu phẳng dựng bằng code — programmer art,
-> không có thiết kế. Tài liệu này thay thế nó.
+> Trạng thái: **ĐÃ CÀI VÀO UNITY.** Scene M1 dùng asset thật, 9-patch, cần gạt động,
+> thanh chí mạng chia vạch. Kiểm chứng: 14/14 mục của `VerifyM1Scene`, 9/9 test PlayMode.
+
+![Giao diện trong game](giao-dien-trong-game.png)
 
 ![HUD chiến đấu](giao-dien-hud.png)
 ![Màn hình nâng cấp](giao-dien-nang-cap.png)
@@ -105,13 +106,31 @@ cần 60 — người chơi **phải** hiểu điều đó trước khi bấm, n
 > Sửa sai: §7 từng ghi bộ này **không có** icon cho Giáp/Găng/Nhẫn và khuyên mua bộ khác.
 > Sai — tôi chỉ nhìn `Items/` mà bỏ qua `Ui/Skill Icon/`.
 
-## 6. Việc phải làm khi cài
+## 6. Đã cài
 
-1. **Tách giao diện khỏi quy tắc "world"** trong `tools/doi-bang-mau.py` — thêm nhánh `ui`
-   giữ nguyên tông ấm, rồi sinh lại toàn bộ
-2. Thay `Image` phẳng bằng 9-patch từ `Theme Wood` *(Unity: Sprite Editor → Border)*
-3. Đổi cần gạt cố định thành cần gạt động
-4. Chia thanh chí mạng thành đúng `crit.meterSize` vạch — **đọc từ CSV**, không viết cứng
-5. Dùng `Ui/Font/NormalFont.ttf` cho HUD; **không** dùng font pixel 5px ở cỡ gốc cho số bay lên
+| | Trạng thái |
+|---|---|
+| Tách giao diện khỏi quy tắc "world" | ✅ `rule_for()` có nhánh `ui` — **359 file** giữ nguyên tông ấm |
+| 9-patch từ `Theme Wood` | ✅ `UiSprite()` đặt viền rồi reimport; `Image.Type.Sliced` |
+| Cần gạt động | ✅ `VirtualJoystick` viết lại — hiện ra nơi ngón chạm, ẩn khi nhấc |
+| Thanh chí mạng chia vạch | ✅ `CritMeterUI` dựng đúng `crit.meterSize` vạch, **đọc từ CSV** |
+| Chữ TẦNG và số máu | ✅ TextMeshPro |
+| Font `NormalFont.ttf` | ⬜ **chưa** — đang dùng LiberationSans mặc định |
+
+### Điểm kỹ thuật dễ sai nhất
+
+**`Canvas.referencePixelsPerUnit` phải là 64.** Sprite giao diện có PPU 16 (do
+`PixelArtImportSettings` ép). Tỉ lệ phóng = 64 / 16 = **đúng 4× nguyên**. Để mặc định 100
+thì ra 6,25× — pixel art nhoè ngay, mà nhìn lướt rất khó nhận ra.
+
+`VerifyM1Scene` có một mục kiểm riêng cho con số này.
+
+### Hai lỗi gặp trong lúc cài
+
+**Cần gạt lưu vào scene ở trạng thái đang hiện** — bị ẩn lúc `Awake` nên nó loé lên một khung
+hình khi tải. Phải `SetActive(false)` ngay khi dựng scene.
+
+**`GameObject.Find` không tìm được đối tượng đang tắt.** Vừa ẩn cần gạt đi là bộ kiểm báo
+"không có" — lỗi của bộ kiểm, không phải của scene. Đã đổi sang đọc qua `SerializedProperty`.
 
 Mockup sinh lại bất cứ lúc nào: `python3 tools/ui/hud.py` và `tools/ui/upgrade.py`.

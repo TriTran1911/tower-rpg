@@ -508,8 +508,8 @@ thao túng người chơi.
 - ~~Nhạc và âm thanh lấy từ đâu~~ — **đã chốt**: cùng bộ asset, cũng CC0.
 - ~~Icon cho ba ô Giáp / Găng / Nhẫn~~ — **đã có sẵn**, tôi tìm nhầm chỗ: chúng nằm ở
   `Ui/Skill Icon/` chứ không phải `Items/`. Xem §5 của `GIAO-DIEN.md`.
-- **Tách giao diện khỏi quy tắc "world"** trong `tools/doi-bang-mau.py` — hiện thanh máu và
-  icon đang bị xám hoá và sẽ đổi màu theo chương. Xem `GIAO-DIEN.md` §1.
+- ~~Tách giao diện khỏi quy tắc "world"~~ — **đã làm**, 359 file giữ nguyên tông ấm.
+- **Font HUD** — đang dùng LiberationSans; bộ asset có `Ui/Font/NormalFont.ttf` chưa dùng.
 - **Hoạt ảnh chết cho quái và boss** — bộ asset không có. Kế hoạch hiện tại là dùng FX khói/nổ
   có sẵn. Chấp nhận được cho M1-M4; cân nhắc lại ở M5 nếu thấy chưa đã.
 - ⚠️ **HÚT MÁU CHƯA CÓ TRONG MÔ HÌNH — phải chốt trước mốc M4.** §5.5 ghi Giáp cho "máu +

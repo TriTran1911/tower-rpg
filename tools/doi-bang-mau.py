@@ -142,9 +142,11 @@ PALETTES.update(CHUONG)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BA TẦNG ĐỌC (xem §5.3 và giả định §3 — màn hình dọc nhỏ)
-#   thế giới  -> xám trung tính, không tranh sự chú ý
+#   thế giới  -> xám trung tính, không tranh sự chú ý (ĐỔI theo chương)
 #   quái      -> ĐỎ, luôn nổi bật, kể cả con vốn màu xanh/lam
 #   nhân vật  -> LAM NGỌC, màu duy nhất không ai khác có
+#   giao diện -> GIỮ NGUYÊN tông ấm gốc, KHÔNG đổi theo chương (xem docs/GIAO-DIEN.md §1)
+#                Người chơi học giao diện một lần rồi dùng suốt 100 tầng.
 #
 # Không dựa vào màu gốc nữa: quy tắc áp theo THƯ MỤC. Bản đầu chỉ "giữ màu đỏ"
 # nên 41/66 con quái bị chìm vào nền xám — lỗi đã sửa ở đây.
@@ -192,6 +194,7 @@ if __name__ == "__main__":
     def rule_for(path):
         """-> (ten_quy_tac, khoa_lech_sac). Khoá là tên thư mục loài."""
         parts = path.replace("\\", "/").split("/")
+        if "Ui" in parts: return "ui", ""          # giao diện: giữ nguyên, không đụng
         if "CharacterAnimated" in parts: return "hero", ""
         for anchor, rule in (("Monster", "threat"), ("Boss", "boss")):
             if anchor in parts:
@@ -223,7 +226,8 @@ if __name__ == "__main__":
             key = (r, g, b)
             v = cache.get(key)
             if v is None:
-                if   rule == "hero":   v = hero_tint(key)
+                if   rule == "ui":     v = key            # nguyên trạng
+                elif rule == "hero":   v = hero_tint(key)
                 elif rule == "threat": v = threat_tint(key, tint_key)
                 elif rule == "boss":   v = boss_tint(key, tint_key)
                 else:                  v = map_color(key, cfg)
@@ -244,6 +248,6 @@ if __name__ == "__main__":
         shutil.copy2(f, o)
 
     print(f"xong: {changed} PNG đổi màu, {len(others)} file chép nguyên")
-    for k in ("world", "threat", "boss", "hero"):
+    for k in ("world", "ui", "threat", "boss", "hero"):
         if k in stats: print(f"  {k:<7}: {stats[k]:>5} file")
     print(f"  -> {dst}")

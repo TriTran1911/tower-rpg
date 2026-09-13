@@ -1,3 +1,4 @@
+using TMPro;
 using TowerRpg.Player;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,7 @@ namespace TowerRpg.UI
     {
         [SerializeField] private PlayerHealth health;
         [SerializeField] private Image fillImage;
+        [SerializeField] private TMP_Text label;
 
         private void Start()
         {
@@ -24,6 +26,7 @@ namespace TowerRpg.UI
             if (health == null || fillImage == null) return;
 
             fillImage.fillAmount = health.Fraction;
+            if (label != null) label.text = $"{health.Hp:0} / {health.MaxHp:0}";
         }
     }
 }

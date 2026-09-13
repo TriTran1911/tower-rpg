@@ -45,19 +45,38 @@ namespace TowerRpg.EditorTools
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
             fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
-            fail += Check<CritMeterUI>(log, "meter", "fillImage");
+            fail += Check<CritMeterUI>(log, "meter", "segmentRoot", "segmentPrefab");
             fail += Check<PlayerHealthUI>(log, "health", "fillImage");
-            fail += Check<VirtualJoystick>(log, "background", "handle", "canvas");
+            fail += Check<VirtualJoystick>(log, "touchZone", "visual", "handle", "canvas");
             fail += Check<CameraShake>(log, "target");
 
             // ── những thứ dễ dựng sai ──────────────────────────────────────────────────
             log.AppendLine("\nKIỂM RIÊNG");
 
             var joy = Object.FindFirstObjectByType<VirtualJoystick>();
-            var joyRt = joy != null ? joy.GetComponent<RectTransform>() : null;
-            fail += Assert(log, "cần gạt có kích thước thật (neo kéo giãn -> bán kính 0)",
-                           joyRt != null && joyRt.rect.width > 1f,
-                           joyRt == null ? "không có" : $"rect.width = {joyRt.rect.width}");
+            // Lấy qua THAM CHIẾU chứ không GameObject.Find — Find bỏ qua đối tượng đang tắt,
+            // mà cần gạt thì đúng ra PHẢI tắt lúc chưa chạm.
+            RectTransform joyVis = null;
+            if (joy != null)
+            {
+                var jso = new SerializedObject(joy);
+                joyVis = jso.FindProperty("visual")?.objectReferenceValue as RectTransform;
+            }
+            fail += Assert(log, "phần nhìn của cần gạt có kích thước thật",
+                           joyVis != null && joyVis.rect.width > 1f,
+                           joyVis == null ? "không có" : $"rect.width = {joyVis.rect.width}");
+            fail += Assert(log, "cần gạt ẩn khi chưa chạm",
+                           joyVis != null && !joyVis.gameObject.activeSelf,
+                           joyVis == null ? "không có" : "đang hiện");
+
+            var cv = Object.FindFirstObjectByType<CanvasScaler>();
+            fail += Assert(log, "Canvas referencePixelsPerUnit = 64 (phóng 4x nguyên)",
+                           cv != null && Mathf.Approximately(cv.referencePixelsPerUnit, 64f),
+                           cv == null ? "không có" : cv.referencePixelsPerUnit.ToString());
+
+            int sliced = Object.FindObjectsByType<Image>(FindObjectsSortMode.None)
+                               .Count(i => i.sprite != null && i.type == Image.Type.Sliced);
+            fail += Assert(log, "có ảnh 9-patch dùng sprite thật", sliced > 0, $"{sliced} ảnh");
 
             var rb = Object.FindFirstObjectByType<PlayerController>()?.GetComponent<Rigidbody2D>();
             fail += Assert(log, "Rigidbody2D: gravityScale = 0",
@@ -68,7 +87,7 @@ namespace TowerRpg.EditorTools
                            rb == null ? "không có" : $"{rb.constraints}");
 
             foreach (Image img in Object.FindObjectsByType<Image>(FindObjectsSortMode.None)
-                                        .Where(i => i.name is "CritFill" or "HealthBar"))
+                                        .Where(i => i.name is "HealthBar"))
                 fail += Assert(log, $"{img.name}: Image.Type = Filled",
                                img.type == Image.Type.Filled, img.type.ToString());
 

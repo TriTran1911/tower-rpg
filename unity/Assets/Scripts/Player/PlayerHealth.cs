@@ -19,6 +19,8 @@ namespace TowerRpg.Player
 
         public bool IsAlive => _hp > 0f;
         public float Fraction => _maxHp > 0f ? Mathf.Clamp01(_hp / _maxHp) : 0f;
+        public float Hp => _hp;
+        public float MaxHp => _maxHp;
 
         /// <summary>Bắn khi người chơi chết. GameBootstrap nghe sự kiện này để bày lại đợt quái.</summary>
         public event Action Died;

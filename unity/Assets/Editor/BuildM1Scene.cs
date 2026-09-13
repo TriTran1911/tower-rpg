@@ -34,6 +34,17 @@ namespace TowerRpg.EditorTools
         private const string PrefabDir  = "Assets/Prefabs";
 
         private const int Cell = 16;              // kích thước ô của bộ asset
+
+        // Hệ thiết kế giao diện — docs/GIAO-DIEN.md §2
+        private const int   UiRefW = 1080, UiRefH = 1920;  // độ phân giải thiết kế
+        private const float UiPpu  = 64f;   // sprite PPU 16 × 64/16 = phóng ĐÚNG 4x nguyên
+        private const int   Unit   = 32;    // đơn vị khoảng cách
+        private const int   Edge   = 64;    // lề an toàn
+        private const int   Touch  = 144;   // vùng chạm tối thiểu (Android 48dp ≈ 132px)
+
+        // Tầng giao diện: ẤM, KHÔNG đổi theo chương (docs/GIAO-DIEN.md §1)
+        private static readonly Color UiPaper = new Color(0.91f, 0.88f, 0.81f);
+        private static readonly Color UiGold  = new Color(0.91f, 0.70f, 0.29f);
         private const float ArenaSize = 14f;      // bề rộng sàn, đơn vị Unity
         private const float OrthoSize = 7.2f;     // bề rộng 8.1 đơn vị: đủ chỗ cho quái ở bán kính 3.5
                                           // cộng nửa sprite, không bị cắt mép
@@ -97,55 +108,121 @@ namespace TowerRpg.EditorTools
             var meter  = playerGo.AddComponent<CritMeter>();
             var attack = playerGo.AddComponent<AutoAttack>();
 
-            // thanh chí mạng ngay dưới chân nhân vật (§5.4)
+            // thanh chí mạng ngay dưới chân nhân vật (§5.4) — CHIA VẠCH, không liền mạch
             var critCanvasGo = new GameObject("CritBarCanvas");
             critCanvasGo.transform.SetParent(playerGo.transform, false);
-            critCanvasGo.transform.localPosition = new Vector3(0f, -0.75f, 0f);
+            critCanvasGo.transform.localPosition = new Vector3(0f, -0.78f, 0f);
             critCanvasGo.transform.localScale = Vector3.one * 0.01f;
             var critCanvas = critCanvasGo.AddComponent<Canvas>();
             critCanvas.renderMode = RenderMode.WorldSpace;
             critCanvas.sortingOrder = 20;
             var critRt = critCanvasGo.GetComponent<RectTransform>();
-            critRt.sizeDelta = new Vector2(120f, 14f);
+            critRt.sizeDelta = new Vector2(150f, 20f);
 
-            Image critBg   = MakeImage("CritBg",   critCanvasGo.transform, new Color(0f, 0f, 0f, 0.55f));
-            critBg.rectTransform.sizeDelta = new Vector2(120f, 14f);
-            Image critFill = MakeImage("CritFill", critCanvasGo.transform, new Color(0.55f, 0.75f, 1f));
-            critFill.rectTransform.sizeDelta = new Vector2(120f, 14f);
-            critFill.type = Image.Type.Filled;
-            critFill.fillMethod = Image.FillMethod.Horizontal;
-            critFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            critFill.fillAmount = 0f;
+            Image critBg = MakeImage("CritBg", critCanvasGo.transform, new Color(0.06f, 0.05f, 0.04f, 0.85f));
+            critBg.rectTransform.anchorMin = Vector2.zero;
+            critBg.rectTransform.anchorMax = Vector2.one;
+            critBg.rectTransform.offsetMin = new Vector2(-4f, -4f);
+            critBg.rectTransform.offsetMax = new Vector2(4f, 4f);
+
+            var segRootGo = new GameObject("Segments", typeof(RectTransform));
+            segRootGo.transform.SetParent(critCanvasGo.transform, false);
+            var segRoot = segRootGo.GetComponent<RectTransform>();
+            segRoot.anchorMin = Vector2.zero;
+            segRoot.anchorMax = Vector2.one;
+            segRoot.offsetMin = segRoot.offsetMax = Vector2.zero;
+
+            // mẫu vạch — CritMeterUI nhân bản nó ra đúng crit.meterSize cái
+            Image segPrefab = MakeImage("SegmentPrefab", segRoot, Color.white);
+            segPrefab.rectTransform.sizeDelta = new Vector2(20f, 20f);
+            segPrefab.gameObject.SetActive(false);
+
             var critUi = critCanvasGo.AddComponent<CritMeterUI>();
 
-            // ── Giao diện màn hình ────────────────────────────────────────────────────
+            // ── Giao diện màn hình — docs/GIAO-DIEN.md ────────────────────────────────
+            Sprite panelSp = UiSprite("Theme/Theme Wood/nine_path_panel.png", 5);
+            Sprite bgSp    = UiSprite("Theme/Theme Wood/nine_path_bg.png", 4);
+            Sprite heartSp = UiSprite("Receptacle/IconHeart.png");
+
             var canvasGo = new GameObject("Canvas");
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            // 64 / sprite PPU 16 = phóng ĐÚNG 4x nguyên. Lệch số này là pixel art nhoè.
+            canvas.referencePixelsPerUnit = UiPpu;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);   // màn hình dọc, §3
+            scaler.referenceResolution = new Vector2(UiRefW, UiRefH);
             scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = UiPpu;
             canvasGo.AddComponent<GraphicRaycaster>();
 
-            // thanh máu — nửa còn lại của luật §5.3 phải nhìn thấy được
-            Image hpBg = MakeImage("HealthBg", canvasGo.transform, new Color(0f, 0f, 0f, 0.6f));
-            Anchor(hpBg.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(760f, 46f));
-            Image hpFill = MakeImage("HealthBar", canvasGo.transform, new Color(0.85f, 0.25f, 0.3f));
-            Anchor(hpFill.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(760f, 46f));
+            // khung số tầng, góc trên-trái
+            Image floorPanel = UiImage("FloorPanel", canvasGo.transform, panelSp);
+            Anchor(floorPanel.rectTransform, new Vector2(0f, 1f), new Vector2(Edge, -Edge), new Vector2(240, 128));
+            floorPanel.rectTransform.pivot = new Vector2(0f, 1f);
+
+            var floorLabel = UiText("FloorLabel", floorPanel.transform, "TẦNG", 26f, UiGold);
+            Anchor(floorLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(200, 30));
+            var floorNum = UiText("FloorNumber", floorPanel.transform, "01", 50f, UiPaper);
+            Anchor(floorNum.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -62f), new Vector2(200, 56));
+
+            // thanh máu — khung gỗ 9-patch + ruột đầy vơi
+            Image hpFrame = UiImage("HealthFrame", canvasGo.transform, panelSp);
+            int hpX = Edge + 240 + Unit, hpW = UiRefW - hpX - Edge;
+            Anchor(hpFrame.rectTransform, new Vector2(0f, 1f), new Vector2(hpX, -Edge), new Vector2(hpW, 128));
+            hpFrame.rectTransform.pivot = new Vector2(0f, 1f);
+
+            Image hpTrack = UiImage("HealthTrack", hpFrame.transform, bgSp);
+            Anchor(hpTrack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(28f, -6f), new Vector2(hpW - 112, 48));
+            hpTrack.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+
+            Image hpFill = UiImage("HealthBar", hpTrack.transform, null, new Color(0.80f, 0.24f, 0.26f), false);
+            hpFill.rectTransform.anchorMin = new Vector2(0f, 0f);
+            hpFill.rectTransform.anchorMax = new Vector2(1f, 1f);
+            hpFill.rectTransform.offsetMin = new Vector2(6f, 6f);
+            hpFill.rectTransform.offsetMax = new Vector2(-6f, -6f);
             hpFill.type = Image.Type.Filled;
             hpFill.fillMethod = Image.FillMethod.Horizontal;
             hpFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+
+            Image heart = UiImage("Heart", hpFrame.transform, heartSp, null, false);
+            Anchor(heart.rectTransform, new Vector2(0f, 0.5f), new Vector2(22f, 0f), new Vector2(56, 56));
+            heart.rectTransform.pivot = new Vector2(0f, 0.5f);
+
+            var hpText = UiText("HealthText", hpTrack.transform, "120 / 120", 30f, UiPaper);
+            hpText.rectTransform.anchorMin = Vector2.zero;
+            hpText.rectTransform.anchorMax = Vector2.one;
+            hpText.rectTransform.offsetMin = hpText.rectTransform.offsetMax = Vector2.zero;
+
             var hpUi = canvasGo.AddComponent<PlayerHealthUI>();
 
-            // cần gạt ảo — PHẢI có kích thước cụ thể, neo kéo giãn làm bán kính = 0
-            Image joyBg = MakeImage("Joystick", canvasGo.transform, new Color(1f, 1f, 1f, 0.16f));
-            Anchor(joyBg.rectTransform, new Vector2(0f, 0f), new Vector2(70f, 90f), new Vector2(400f, 400f));
-            Image joyHandle = MakeImage("Handle", joyBg.transform, new Color(1f, 1f, 1f, 0.42f));
+            // ── CẦN GẠT ĐỘNG ─────────────────────────────────────────────────────────
+            // Vùng chạm phủ nửa dưới màn hình; cần gạt hiện ra ngay nơi ngón đặt xuống.
+            var zoneGo = new GameObject("JoystickZone", typeof(RectTransform));
+            zoneGo.transform.SetParent(canvasGo.transform, false);
+            var zone = zoneGo.GetComponent<RectTransform>();
+            zone.anchorMin = new Vector2(0f, 0f);
+            zone.anchorMax = new Vector2(1f, 0.55f);
+            zone.offsetMin = zone.offsetMax = Vector2.zero;
+            var zoneImg = zoneGo.AddComponent<Image>();
+            zoneImg.color = new Color(0f, 0f, 0f, 0f);   // trong suốt nhưng vẫn nhận chạm
+            zoneImg.raycastTarget = true;
+
+            Image joyVisual = UiImage("JoystickVisual", zoneGo.transform, bgSp,
+                                      new Color(1f, 1f, 1f, 0.28f));
+            joyVisual.rectTransform.anchorMin = joyVisual.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            joyVisual.rectTransform.sizeDelta = new Vector2(300, 300);
+
+            Image joyHandle = UiImage("Handle", joyVisual.transform, panelSp,
+                                      new Color(1f, 1f, 1f, 0.60f));
             joyHandle.rectTransform.anchorMin = joyHandle.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            joyHandle.rectTransform.sizeDelta = new Vector2(Touch, Touch);
             joyHandle.rectTransform.anchoredPosition = Vector2.zero;
-            joyHandle.rectTransform.sizeDelta = new Vector2(160f, 160f);
-            var joystick = joyBg.gameObject.AddComponent<VirtualJoystick>();
+
+            // Lưu vào scene ở trạng thái ẨN — nếu không nó loé lên một khung hình khi tải.
+            joyVisual.gameObject.SetActive(false);
+
+            var joystick = zoneGo.AddComponent<VirtualJoystick>();
 
             var esGo = new GameObject("EventSystem");
             esGo.AddComponent<EventSystem>();
@@ -162,9 +239,10 @@ namespace TowerRpg.EditorTools
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
             Wire(ctrl,     ("joystick", joystick));
             Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups), ("cameraShake", shake));
-            Wire(critUi,   ("meter", meter), ("fillImage", critFill));
-            Wire(hpUi,     ("health", health), ("fillImage", hpFill));
-            Wire(joystick, ("background", joyBg.rectTransform), ("handle", joyHandle.rectTransform), ("canvas", canvas));
+            Wire(critUi,   ("meter", meter), ("segmentRoot", segRoot), ("segmentPrefab", segPrefab));
+            Wire(hpUi,     ("health", health), ("fillImage", hpFill), ("label", hpText));
+            Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
+                           ("handle", joyHandle.rectTransform), ("canvas", canvas));
             Wire(shake,    ("target", camGo.transform));
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
@@ -244,6 +322,67 @@ namespace TowerRpg.EditorTools
             }
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(target);
+        }
+
+        /// <summary>
+        /// Nạp một sprite giao diện, đặt viền 9-patch nếu có.
+        /// Viền phải đặt ở TextureImporter rồi reimport — không đặt được lúc chạy.
+        /// </summary>
+        private static Sprite UiSprite(string rel, int border = 0)
+        {
+            string path = $"{Art}/Ui/{rel}";
+            if (AssetImporter.GetAtPath(path) is not TextureImporter ti)
+            {
+                Debug.LogError($"[BuildM1Scene] Không thấy sprite giao diện: {path}");
+                return null;
+            }
+
+            ti.textureType = TextureImporterType.Sprite;
+            ti.spriteImportMode = SpriteImportMode.Single;
+
+            var st = new TextureImporterSettings();
+            ti.ReadTextureSettings(st);
+            st.spriteMeshType = SpriteMeshType.FullRect;   // bắt buộc cho Image.Type.Sliced
+            st.spriteBorder = border > 0
+                ? new Vector4(border, border, border, border)
+                : Vector4.zero;
+            ti.SetTextureSettings(st);
+
+            EditorUtility.SetDirty(ti);
+            ti.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        /// <summary>Chữ trong giao diện. Dùng TextMeshPro UI.</summary>
+        private static TextMeshProUGUI UiText(string name, Transform parent, string content,
+                                              float size, Color colour,
+                                              TextAlignmentOptions align = TextAlignmentOptions.Center)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var t = go.AddComponent<TextMeshProUGUI>();
+            t.text = content;
+            t.fontSize = size;
+            t.color = colour;
+            t.alignment = align;
+            t.raycastTarget = false;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            return t;
+        }
+
+        /// <summary>Ảnh giao diện dùng sprite thật; 9-patch khi có viền.</summary>
+        private static Image UiImage(string name, Transform parent, Sprite sprite,
+                                     Color? tint = null, bool sliced = true)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.sprite = sprite;
+            img.type = sliced && sprite != null && sprite.border != Vector4.zero
+                       ? Image.Type.Sliced : Image.Type.Simple;
+            img.color = tint ?? Color.white;
+            img.raycastTarget = false;
+            return img;
         }
 
         /// <summary>Cắt texture thành lưới ô vuông rồi trả về sprite thứ index.</summary>

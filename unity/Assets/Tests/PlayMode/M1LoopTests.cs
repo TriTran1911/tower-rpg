@@ -204,18 +204,41 @@ namespace TowerRpg.Tests
             return near is Enemies.Enemy e ? e.HealthFraction : -1f;
         }
 
-        /// <summary>Giả lập kéo cần gạt bằng sự kiện chuột — đúng đường VirtualJoystick nhận.</summary>
+        /// <summary>
+        /// Giả lập kéo cần gạt ĐỘNG: nhấn xuống một điểm, rồi kéo sang điểm khác.
+        /// Cần gạt động hiện ra NGAY TẠI điểm nhấn, nên nhấn và kéo cùng một chỗ
+        /// cho độ lệch bằng 0 — phải tách hai điểm ra.
+        /// </summary>
         private void PushJoystick(Vector2 dir)
         {
-            var rt = _joystick.GetComponent<RectTransform>();
-            Vector3 centre = rt.position;
-            float radius = rt.rect.width * 0.5f * rt.lossyScale.x;
-            var data = new PointerEventData(EventSystem.current)
+            var zone = _joystick.GetComponent<RectTransform>();
+            Vector2 down = new Vector2(zone.position.x, zone.position.y);
+
+            _joystick.OnPointerDown(new PointerEventData(EventSystem.current) { position = down });
+
+            // kéo ra xa đủ để vượt vùng chết (player.moveDeadzone)
+            var visual = new SerializedObjectProxy(_joystick).Visual;
+            float radius = visual != null ? visual.rect.width * 0.5f * visual.lossyScale.x : 100f;
+            Vector2 drag = down + dir.normalized * radius;
+
+            _joystick.OnDrag(new PointerEventData(EventSystem.current) { position = drag });
+        }
+
+        /// <summary>Đọc trường private 'visual' của cần gạt mà không cần đổi tầm vực.</summary>
+        private readonly struct SerializedObjectProxy
+        {
+            private readonly VirtualJoystick _j;
+            public SerializedObjectProxy(VirtualJoystick j) => _j = j;
+
+            public RectTransform Visual
             {
-                position = new Vector2(centre.x, centre.y) + dir.normalized * radius,
-            };
-            _joystick.OnPointerDown(data);
-            _joystick.OnDrag(data);
+                get
+                {
+                    var f = typeof(VirtualJoystick).GetField("visual",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    return f?.GetValue(_j) as RectTransform;
+                }
+            }
         }
 
         private void ReleaseJoystick() =>
