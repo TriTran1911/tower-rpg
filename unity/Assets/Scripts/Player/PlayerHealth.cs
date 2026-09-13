@@ -1,5 +1,6 @@
 using System;
 using TowerRpg.Core;
+using TowerRpg.Progression;
 using UnityEngine;
 
 namespace TowerRpg.Player
@@ -33,12 +34,25 @@ namespace TowerRpg.Player
             Died = null;
         }
 
-        private void Start() => BalanceConfig.TryUse(this, ApplyBalance);
+        private void Start() => BalanceConfig.TryUse(this, _ => Rescale());
 
-        private void ApplyBalance(BalanceConfig balance)
+        /// <summary>Máu tối đa phụ thuộc tầng và Giáp — gọi lại mỗi khi hai thứ đó đổi.</summary>
+        public void Rescale()
         {
-            _maxHp = balance.Get("player.maxHp");
-            _hp = _maxHp;
+            PlayerStats st = PlayerStats.Instance;
+            if (st == null || !st.Ready) return;      // Update sẽ thử lại
+
+            float old = _maxHp;
+            _maxHp = st.MaxHp;
+            _hp = old > 0f ? Mathf.Clamp(_hp / old * _maxHp, 1f, _maxHp) : _maxHp;  // giữ nguyên TỈ LỆ máu
+        }
+
+        // KHÔNG tin thứ tự Start: nếu PlayerStats chưa sẵn sàng lúc Start thì máu tối đa
+        // sẽ là 0 và người chơi đọc như đã chết — quái sẽ không thèm đánh. Thử lại tới khi được.
+        private void Update()
+        {
+            if (_maxHp > 0f) return;
+            Rescale();
         }
 
         public void TakeDamage(float amount)

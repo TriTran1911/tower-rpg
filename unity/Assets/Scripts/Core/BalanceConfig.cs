@@ -32,9 +32,13 @@ namespace TowerRpg.Core
         {
             "player.maxHp", "player.moveSpeed", "player.moveDeadzone",
             "player.attackDamage", "player.attacksPerSecond", "player.attackRange",
-            "crit.meterSize", "crit.multiplier",
-            "enemy.hp", "enemy.count", "enemy.spawnRadius",
-            "enemy.damage", "enemy.attacksPerSecond", "enemy.attackRange",
+            "player.hpPerFloor", "crit.meterSize", "crit.multiplier",
+            "gear.maxLevel", "gear.weapon.perLevel", "gear.armor.perLevel",
+            "gear.glove.perLevel", "gear.ring.perLevel", "gear.costBase",
+            "gear.costGrowth", "enemy.hpFloor1", "enemy.hpGrowth",
+            "enemy.dpsFloor1", "enemy.dpsGrowth", "enemy.count",
+            "enemy.spawnRadius", "enemy.attacksPerSecond", "enemy.attackRange",
+            "shard.perFloor1", "shard.growth", "tower.floors",
             "juice.shakeDuration", "juice.shakeMagnitude", "juice.shakeYRatio",
             "juice.popupRiseSpeed", "juice.popupLifetime",
         };

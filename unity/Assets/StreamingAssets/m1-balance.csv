@@ -1,27 +1,55 @@
-# Số liệu cân bằng M1. QUY TẮC CỨNG §9.2: không một con số cân bằng nào được viết trong .cs.
+# Số liệu cân bằng — QUY TẮC CỨNG §9.2: không một con số cân bằng nào được viết trong .cs.
 # Sửa file này rồi chạy lại — không cần biên dịch, không cần mở Unity.
-# Đây là SỐ M1, cố tình bịa cho dễ chơi. KHÔNG phải số trong can-bang.xlsx.
+#
+# Từ M2 trở đi đây là SỐ THẬT đã kiểm chứng trong docs/can-bang.xlsx,
+# không còn là số bịa cho dễ chơi của M1.
 #
 # TẦM ĐÁNH LÀ CHỖ SINH RA SỨC CĂNG CỦA §5.3:
-#   player.attackRange (2.0) PHẢI NHỎ HƠN enemy.attackRange (2.8).
-#   Vào được tầm đánh của mình cũng là vào tầm đánh của quái. Lùi ra thì an toàn nhưng
-#   không gây sát thương. Đảo ngược hai số này là giết sạch sức căng của M1.
+#   player.attackRange PHẢI NHỎ HƠN enemy.attackRange.
+#   Vào được tầm đánh của mình cũng là vào tầm đánh của quái.
 #
 # key,value,ghi chú
-player.maxHp,120,Máu người chơi
+
+# ── NGƯỜI CHƠI, chỉ số nền khi mọi trang bị ở cấp 1 ───────────────────────────
+player.maxHp,100,§5.7 baseHp
 player.moveSpeed,4.5,Tốc độ di chuyển
 player.moveDeadzone,0.15,Cần gạt lệch dưới mức này thì coi như ĐỨNG YÊN
-player.attackDamage,10,Sát thương mỗi đòn thường
-player.attacksPerSecond,2.0,Số đòn mỗi giây khi đứng yên
-player.attackRange,2.0,Tầm đánh của người chơi — phải NHỎ HƠN enemy.attackRange
-crit.meterSize,5,Cứ N đòn thì đòn thứ N chắc chắn chí mạng (§5.4)
-crit.multiplier,3.0,Hệ số nhân sát thương của đòn chí mạng
-enemy.hp,60,Máu một con quái
-enemy.count,6,Số quái trong đấu trường
-enemy.spawnRadius,3.5,Bán kính vòng tròn đặt quái — người chơi đứng giữa thì an toàn
-enemy.damage,6,Sát thương mỗi đòn của quái
+player.attackDamage,10,§5.7 baseDmg — sát thương mỗi đòn ở Vũ khí cấp 1
+player.attacksPerSecond,1.0,§5.7 baseAS — ở Găng cấp 1
+player.attackRange,2.0,PHẢI nhỏ hơn enemy.attackRange
+player.hpPerFloor,0.045,§5.7 — máu nền tăng theo tầng đã qua, van an toàn #4 của §5.8
+
+# ── CHÍ MẠNG, thanh dồn xác định §5.4 ────────────────────────────────────────
+crit.meterSize,5,Cứ N đòn thì đòn thứ N chắc chắn chí mạng
+crit.multiplier,2.0,§5.7 baseCrit — hệ số ở Nhẫn cấp 1
+
+# ── TRANG BỊ §5.5, §5.7 ───────────────────────────────────────────────────────
+gear.maxLevel,10,Trần cấp khi CHƯA đột phá. Lõi nâng trần này lên — thuộc M3
+gear.weapon.perLevel,0.04403,Vũ khí — sát thương mỗi cấp
+gear.armor.perLevel,0.04403,Giáp — máu mỗi cấp. BẤT BIẾN dmgL == hpL, xem §5.5
+gear.glove.perLevel,0.03441,Găng — tốc độ đánh mỗi cấp
+gear.ring.perLevel,0.03441,Nhẫn — hệ số chí mạng mỗi cấp
+gear.costBase,300,Mảnh để lên cấp 2
+gear.costGrowth,0.155,Chi phí nhân thêm mỗi cấp
+
+# ── QUÁI §5.7 ─────────────────────────────────────────────────────────────────
+enemy.hpFloor1,500,TỔNG máu toàn bộ quái ở tầng 1
+enemy.hpGrowth,0.0518,Máu quái mỗi tầng
+enemy.dpsFloor1,3,Tổng sát thương quái mỗi giây ở tầng 1
+enemy.dpsGrowth,0.04,Sát thương quái mỗi tầng
+enemy.count,6,Số quái mỗi tầng
+enemy.spawnRadius,3.5,Bán kính vòng tròn — người chơi đứng giữa thì an toàn
 enemy.attacksPerSecond,0.8,Nhịp đánh của quái
-enemy.attackRange,2.8,Tầm đánh của quái — phải LỚN HƠN player.attackRange
+enemy.attackRange,2.8,PHẢI lớn hơn player.attackRange
+
+# ── MẢNH §5.6 — trục thời gian, vô hạn ───────────────────────────────────────
+shard.perFloor1,400,Mảnh rơi ở tầng 1
+shard.growth,0.09,Mảnh tăng mỗi tầng
+
+# ── THÁP ──────────────────────────────────────────────────────────────────────
+tower.floors,20,Số tầng của M2. Bản đầy đủ là 100 tầng ở M4
+
+# ── HIỆU ỨNG (thẩm mỹ, không phải cân bằng nhưng để ngoài cho tiện chỉnh) ─────
 juice.shakeDuration,0.18,Thời gian rung màn hình khi chí mạng
 juice.shakeMagnitude,0.22,Biên độ rung
 juice.shakeYRatio,0.6,Tỉ lệ rung trục Y so với trục X

@@ -6,6 +6,7 @@ using TowerRpg.Core;
 using TowerRpg.Enemies;
 using TowerRpg.Juice;
 using TowerRpg.Player;
+using TowerRpg.Progression;
 using TowerRpg.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -90,9 +91,10 @@ namespace TowerRpg.EditorTools
             // ── Bootstrap ─────────────────────────────────────────────────────────────
             var bootGo   = new GameObject("Bootstrap");
             var balance  = bootGo.AddComponent<BalanceConfig>();
-            var spawner  = bootGo.AddComponent<EnemySpawner>();
+            var state    = bootGo.AddComponent<GameState>();
+            var pstats   = bootGo.AddComponent<PlayerStats>();
+            var runner   = bootGo.AddComponent<FloorRunner>();
             var popups   = bootGo.AddComponent<DamagePopupSpawner>();
-            var boot     = bootGo.AddComponent<GameBootstrap>();
 
             // ── Người chơi ────────────────────────────────────────────────────────────
             var playerGo = new GameObject("Player");
@@ -149,6 +151,8 @@ namespace TowerRpg.EditorTools
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             // 64 / sprite PPU 16 = phóng ĐÚNG 4x nguyên. Lệch số này là pixel art nhoè.
             canvas.referencePixelsPerUnit = UiPpu;
+            // Sprite thế giới có sortingOrder tới 10; giao diện phải vượt hẳn lên trên.
+            canvas.sortingOrder = 100;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(UiRefW, UiRefH);
@@ -196,6 +200,94 @@ namespace TowerRpg.EditorTools
 
             var hpUi = canvasGo.AddComponent<PlayerHealthUI>();
 
+            // ô Mảnh, ngay dưới thanh máu
+            Image shardPanel = UiImage("ShardPanel", canvasGo.transform, panelSp);
+            Anchor(shardPanel.rectTransform, new Vector2(0f, 1f),
+                   new Vector2(Edge, -(Edge + 128 + Unit)), new Vector2(360, 96));
+            shardPanel.rectTransform.pivot = new Vector2(0f, 1f);
+            var shardLbl = UiText("ShardLabel", shardPanel.transform, "Mảnh", 24f, UiGold,
+                                  TextAlignmentOptions.Left);
+            Anchor(shardLbl.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -20f), new Vector2(140, 28));
+            shardLbl.rectTransform.pivot = new Vector2(0f, 1f);
+            var shardVal = UiText("ShardCount", shardPanel.transform, "0", 34f, UiPaper,
+                                  TextAlignmentOptions.Right);
+            Anchor(shardVal.rectTransform, new Vector2(1f, 1f), new Vector2(-30f, -46f), new Vector2(300, 40));
+            shardVal.rectTransform.pivot = new Vector2(1f, 1f);
+
+            var hudUi = canvasGo.AddComponent<HudUI>();
+
+            // nút mở màn nâng cấp — góc trên-phải, vùng chạm đủ lớn
+            var gearBtnGo = new GameObject("GearButton", typeof(RectTransform));
+            gearBtnGo.transform.SetParent(canvasGo.transform, false);
+            var gbRt = gearBtnGo.GetComponent<RectTransform>();
+            gbRt.anchorMin = gbRt.anchorMax = new Vector2(1f, 1f);
+            gbRt.pivot = new Vector2(1f, 1f);
+            gbRt.anchoredPosition = new Vector2(-Edge, -(Edge + 128 + Unit));
+            gbRt.sizeDelta = new Vector2(Touch + 40, Touch);
+            var gbImg = gearBtnGo.AddComponent<Image>();
+            gbImg.sprite = panelSp;
+            gbImg.type = Image.Type.Sliced;
+            var gearBtn = gearBtnGo.AddComponent<Button>();
+            gearBtn.targetGraphic = gbImg;
+            var gbTxt = UiText("Label", gearBtnGo.transform, "TRANG\nBỊ", 28f, UiPaper);
+            gbTxt.rectTransform.anchorMin = Vector2.zero;
+            gbTxt.rectTransform.anchorMax = Vector2.one;
+            gbTxt.rectTransform.offsetMin = gbTxt.rectTransform.offsetMax = Vector2.zero;
+            gbTxt.textWrappingMode = TextWrappingModes.Normal;
+
+            // ── MÀN HÌNH NÂNG CẤP ────────────────────────────────────────────────────
+            var upGo = new GameObject("UpgradeScreen", typeof(RectTransform));
+            upGo.transform.SetParent(canvasGo.transform, false);
+            var upRt = upGo.GetComponent<RectTransform>();
+            upRt.anchorMin = Vector2.zero; upRt.anchorMax = Vector2.one;
+            upRt.offsetMin = upRt.offsetMax = Vector2.zero;
+
+            var dimImg = UiImage("Dim", upGo.transform, null, new Color(0.04f, 0.03f, 0.03f, 0.92f), false);
+            dimImg.rectTransform.anchorMin = Vector2.zero;
+            dimImg.rectTransform.anchorMax = Vector2.one;
+            dimImg.rectTransform.offsetMin = dimImg.rectTransform.offsetMax = Vector2.zero;
+            dimImg.raycastTarget = true;      // chặn chạm xuyên xuống game
+
+            var upHead = UiText("Title", upGo.transform, "TRANG BỊ", 44f, UiGold);
+            Anchor(upHead.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -320f), new Vector2(600, 60));
+
+            var upShards = UiText("Shards", upGo.transform, "0 Mảnh", 32f, UiPaper);
+            Anchor(upShards.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -388f), new Vector2(600, 44));
+
+            var rowParentGo = new GameObject("Rows", typeof(RectTransform));
+            rowParentGo.transform.SetParent(upGo.transform, false);
+            var rowParent = rowParentGo.GetComponent<RectTransform>();
+            rowParent.anchorMin = new Vector2(0f, 1f);
+            rowParent.anchorMax = new Vector2(1f, 1f);
+            rowParent.pivot = new Vector2(0.5f, 1f);
+            rowParent.offsetMin = new Vector2(Edge, 0f);
+            rowParent.offsetMax = new Vector2(-Edge, 0f);
+            rowParent.anchoredPosition = new Vector2(0f, -460f);
+            rowParent.sizeDelta = new Vector2(0f, 1200f);
+
+            var closeGo = new GameObject("Close", typeof(RectTransform));
+            closeGo.transform.SetParent(upGo.transform, false);
+            var cRt = closeGo.GetComponent<RectTransform>();
+            cRt.anchorMin = cRt.anchorMax = new Vector2(0.5f, 0f);
+            cRt.pivot = new Vector2(0.5f, 0f);
+            cRt.anchoredPosition = new Vector2(0f, Edge + 40);
+            cRt.sizeDelta = new Vector2(400, Touch);
+            var cImg = closeGo.AddComponent<Image>();
+            cImg.sprite = panelSp; cImg.type = Image.Type.Sliced;
+            var closeBtn = closeGo.AddComponent<Button>();
+            closeBtn.targetGraphic = cImg;
+            var cTxt = UiText("Label", closeGo.transform, "ĐÓNG", 32f, UiPaper);
+            cTxt.rectTransform.anchorMin = Vector2.zero; cTxt.rectTransform.anchorMax = Vector2.one;
+            cTxt.rectTransform.offsetMin = cTxt.rectTransform.offsetMax = Vector2.zero;
+
+            // Lưu vào scene ở trạng thái ĐÓNG — cùng lý do với cần gạt: ẩn trong Start()
+            // thì nó vẫn loé lên một khung hình khi tải.
+            upGo.SetActive(false);
+
+            var upScreen = canvasGo.AddComponent<UpgradeScreen>();
+            gearBtn.onClick.AddListener(upScreen.Toggle);
+            closeBtn.onClick.AddListener(upScreen.Toggle);
+
             // ── CẦN GẠT ĐỘNG ─────────────────────────────────────────────────────────
             // Vùng chạm phủ nửa dưới màn hình; cần gạt hiện ra ngay nơi ngón đặt xuống.
             var zoneGo = new GameObject("JoystickZone", typeof(RectTransform));
@@ -234,8 +326,8 @@ namespace TowerRpg.EditorTools
             GameObject popupPrefab = MakePopupPrefab();
 
             // ── Nối tham chiếu ────────────────────────────────────────────────────────
-            Wire(boot,     ("balance", balance), ("spawner", spawner), ("playerHealth", health));
-            Wire(spawner,  ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()), ("arenaCentre", null));
+            Wire(runner,   ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()),
+                           ("arenaCentre", null), ("playerHealth", health));
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
             Wire(ctrl,     ("joystick", joystick));
             Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups), ("cameraShake", shake));
@@ -244,6 +336,27 @@ namespace TowerRpg.EditorTools
             Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
                            ("handle", joyHandle.rectTransform), ("canvas", canvas));
             Wire(shake,    ("target", camGo.transform));
+            Wire(hudUi,    ("floorNumber", floorNum), ("shardCount", shardVal));
+            Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards));
+
+            // sprite dùng chung + 4 icon trang bị cho màn nâng cấp
+            var upSo = new SerializedObject(upScreen);
+            upSo.FindProperty("panelSprite").objectReferenceValue = panelSp;
+            upSo.FindProperty("cellSprite").objectReferenceValue =
+                UiSprite("Theme/Theme Wood/inventory_cell.png", 4);
+            SerializedProperty icons = upSo.FindProperty("slotIcons");
+            icons.arraySize = 4;
+            string[] iconPaths =
+            {
+                "Skill Icon/Spell/Cut.png",
+                "Skill Icon/Items & Weapon/Armor.png",
+                "Skill Icon/Job & Action/Punch.png",
+                "Skill Icon/Items & Weapon/Ring.png",
+            };
+            for (int i = 0; i < 4; i++)
+                icons.GetArrayElementAtIndex(i).objectReferenceValue = UiSprite(iconPaths[i]);
+            upSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(upScreen);
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);

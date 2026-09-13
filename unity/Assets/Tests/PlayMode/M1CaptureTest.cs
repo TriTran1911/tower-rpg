@@ -5,6 +5,8 @@ using NUnit.Framework;
 using TowerRpg.Combat;
 using TowerRpg.Core;
 using TowerRpg.Player;
+using TowerRpg.Progression;
+using TowerRpg.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -103,9 +105,36 @@ namespace TowerRpg.Tests
                           $"máu={hp.Fraction:0.00}  thanhCM={meter.Fill01:0.00}");
             }
 
+            // ── thêm một ảnh màn hình nâng cấp (M2) ──────────────────────────────
+            if (GameState.Instance != null)
+            {
+                GameState.Instance.AddShards(48_000f);
+                GameState.Instance.TryUpgrade(Slot.Weapon);
+                GameState.Instance.TryUpgrade(Slot.Weapon);
+                GameState.Instance.TryUpgrade(Slot.Armor);
+                GameState.Instance.TryUpgrade(Slot.Glove);
+            }
+
+            var up = Object.FindFirstObjectByType<UpgradeScreen>();
+            if (up != null)
+            {
+                up.Toggle();
+                yield return null; yield return null; yield return null;
+
+                RenderTexture p2 = RenderTexture.active;
+                RenderTexture.active = rt;
+                var t2 = new Texture2D(W, H, TextureFormat.RGB24, false);
+                t2.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+                t2.Apply();
+                File.WriteAllBytes(Path.Combine(OutDir, "6-nang-cap.png"), t2.EncodeToPNG());
+                Object.Destroy(t2);
+                RenderTexture.active = p2;
+                Debug.Log("[chụp] 6-nang-cap  màn hình nâng cấp");
+            }
+
             cam.targetTexture = null;
-            Assert.AreEqual(Shots.Length, Directory.GetFiles(OutDir, "*.png").Length,
-                            "thiếu ảnh");
+            foreach ((float _, string n) in Shots)
+                Assert.IsTrue(File.Exists(Path.Combine(OutDir, n + ".png")), $"thiếu ảnh {n}.png");
         }
     }
 }

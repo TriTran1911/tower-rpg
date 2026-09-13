@@ -5,6 +5,7 @@ using TowerRpg.Core;
 using TowerRpg.Enemies;
 using TowerRpg.Juice;
 using TowerRpg.Player;
+using TowerRpg.Progression;
 using TowerRpg.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -40,8 +41,10 @@ namespace TowerRpg.EditorTools
 
             // ── tham chiếu ─────────────────────────────────────────────────────────────
             log.AppendLine("\nTHAM CHIẾU");
-            fail += Check<GameBootstrap>(log, "balance", "spawner", "playerHealth");
-            fail += Check<EnemySpawner>(log, "enemyPrefab");
+            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth");
+            fail += Check<HudUI>(log, "floorNumber", "shardCount");
+            fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
+                                              "panelSprite", "cellSprite");
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
             fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
@@ -112,6 +115,24 @@ namespace TowerRpg.EditorTools
 
             bool csv = System.IO.File.Exists("Assets/StreamingAssets/m1-balance.csv");
             fail += Assert(log, "m1-balance.csv có trong StreamingAssets", csv, csv ? "có" : "THIẾU");
+
+            fail += Assert(log, "có GameState trong scene",
+                           Object.FindFirstObjectByType<GameState>() != null, "không có");
+            fail += Assert(log, "có PlayerStats trong scene",
+                           Object.FindFirstObjectByType<PlayerStats>() != null, "không có");
+
+            var up = Object.FindFirstObjectByType<UpgradeScreen>();
+            var upSo = up != null ? new SerializedObject(up) : null;
+            SerializedProperty icons = upSo?.FindProperty("slotIcons");
+            int iconCount = 0;
+            if (icons != null)
+                for (int i = 0; i < icons.arraySize; i++)
+                    if (icons.GetArrayElementAtIndex(i).objectReferenceValue != null) iconCount++;
+            fail += Assert(log, "đủ 4 icon trang bị", iconCount == 4, $"{iconCount}/4");
+
+            fail += Assert(log, "màn nâng cấp đóng lúc bắt đầu",
+                           up != null && !(upSo.FindProperty("root").objectReferenceValue as GameObject).activeSelf,
+                           "đang mở");
 
             log.AppendLine(fail == 0
                 ? "\n===== TẤT CẢ ĐỀU ĐẠT ====="

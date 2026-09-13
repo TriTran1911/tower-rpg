@@ -1,6 +1,7 @@
 using TowerRpg.Combat;
 using TowerRpg.Core;
 using TowerRpg.Juice;
+using TowerRpg.Progression;
 using UnityEngine;
 
 namespace TowerRpg.Player
@@ -18,10 +19,7 @@ namespace TowerRpg.Player
         [SerializeField] private DamagePopupSpawner popups;
         [SerializeField] private CameraShake cameraShake;
 
-        private float _damage;
-        private float _attacksPerSecond;
         private float _range;
-        private float _critMultiplier;
 
         private float _cooldown;
         private bool _ready;
@@ -46,10 +44,7 @@ namespace TowerRpg.Player
 
         private void ApplyBalance(BalanceConfig balance)
         {
-            _damage = balance.Get("player.attackDamage");
-            _attacksPerSecond = balance.Get("player.attacksPerSecond");
             _range = balance.Get("player.attackRange");
-            _critMultiplier = balance.Get("crit.multiplier");
             _ready = true;
         }
 
@@ -74,15 +69,19 @@ namespace TowerRpg.Player
             // Lấy vị trí TRƯỚC khi gây sát thương: TakeDamage có thể huỷ mục tiêu.
             Vector3 hitPosition = target.Position;
 
+            // Chỉ số lấy từ PlayerStats — MỘT chỗ tính duy nhất, gồm cả hệ số trang bị (§5.7)
+            PlayerStats st = PlayerStats.Instance;
+            if (st == null || !st.Ready) return;
+
             bool isCrit = critMeter != null && critMeter.RegisterAttack();
-            float amount = isCrit ? _damage * _critMultiplier : _damage;
+            float amount = isCrit ? st.Damage * st.CritMultiplier : st.Damage;
 
             target.TakeDamage(amount, isCrit);
 
             if (popups != null) popups.Show(hitPosition, amount, isCrit);
             if (isCrit && cameraShake != null) cameraShake.Shake();
 
-            _cooldown = _attacksPerSecond > 0f ? 1f / _attacksPerSecond : float.MaxValue;
+            _cooldown = st.AttacksPerSec > 0f ? 1f / st.AttacksPerSec : float.MaxValue;
         }
     }
 }

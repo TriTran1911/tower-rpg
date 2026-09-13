@@ -100,10 +100,18 @@ namespace TowerRpg.Tests
             int before = EnemyRegistry.Count;
             TeleportNextToNearestEnemy();
 
-            yield return new WaitForSeconds(6f);
+            // Với số liệu THẬT của M2 (quái tầng 1 có 500/6 ≈ 83 máu, người chơi cấp 1 đánh
+            // ~12 sát thương/giây) thì giết một con mất ~7 giây. Chờ rộng tay và bám sát
+            // con quái — nếu con gần nhất chết thì con kế tiếp ở xa, phải đi tới.
+            float t = 0f;
+            while (t < 14f && EnemyRegistry.Count >= before)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
 
             Assert.Less(EnemyRegistry.Count, before,
-                        "đứng yên trong tầm 6 giây mà không giết được con nào — §5.3 hỏng");
+                        $"đứng yên trong tầm {t:0}s mà không giết được con nào — §5.3 hỏng");
         }
 
         [UnityTest]
