@@ -315,7 +315,15 @@ namespace TowerRpg.UI
                          : nay
                        : nay;
 
-            string F(float v) => v >= 100f ? v.ToString("N0") : v.ToString("0.0");
+            // BA NHÁNH, không phải hai. Với một chữ số thập phân, Găng cấp 1→2 là
+            // 1,0 x 1,03441 = 1,034 -> in ra "1.0 → 1.0": người chơi trả 300 Mảnh, tức ba
+            // phần tư thu nhập cả tầng 1, để đổi một con số thành CHÍNH NÓ. Đúng cái bẫy
+            // mà m1-balance.csv đã viết hẳn một đoạn để phòng cho số sát thương bay lên,
+            // nhưng không phòng cho chính màn nâng cấp — và nó rơi trúng Găng, ô mà §5.5
+            // tự thú là "sai nhiều hơn đúng". Giao diện đang xác nhận hộ nghi ngờ tệ nhất.
+            string F(float v) => v >= 100f ? v.ToString("N0")
+                               : v >= 10f  ? v.ToString("0.0")
+                                           : v.ToString("0.00");
             return $"{Equipment.StatName(s)}  {F(nay)} → {F(buoc)}";
         }
 
@@ -323,11 +331,16 @@ namespace TowerRpg.UI
         {
             r.Button.interactable = on;
             r.ButtonBg.color = on ? tint : new Color(0.42f, 0.40f, 0.37f, 1f);
-            r.Action.color = on ? Ink : new Color(0.30f, 0.28f, 0.26f);
+            // Nền nút khoá bị nhân tối còn (102,56,28), nên chữ phải SÁNG — chữ mực trên
+            // nền đó chỉ đạt 1,07:1 so với ngưỡng 4,5 của chính dự án, tức "NÂNG" và cái
+            // giá "300" gần như vô hình đúng trong 42 giây người chơi mới quyết định game
+            // này có đáng chơi không. Cùng màu HudUI đã dùng cho nút khoá: 5,37:1.
+            r.Action.color = on ? Ink : InkOff;
             r.Cost.color = r.Action.color;
         }
 
         private static readonly Color Ink = new Color(0.10f, 0.09f, 0.08f);
+        private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
         private static readonly Color TintUpgrade = Color.white;                       // gỗ cam nguyên bản
         private static readonly Color TintBreak = new Color(1f, 0.72f, 0.66f, 1f);     // ngả son
         private static readonly Color TintDone  = new Color(0.78f, 0.72f, 0.66f, 1f);
@@ -353,13 +366,14 @@ namespace TowerRpg.UI
             if (gs == null || !gs.Ready || !_built) return;
 
             if (shardLabel != null) shardLabel.text = $"{gs.Shards:N0} Mảnh";
-            // "x / 30 cả game" — §5.6: Lõi hữu hạn TUYỆT ĐỐI, 10 boss x 3. Con số tổng
+            // "x / N cả game" — §5.6: Lõi hữu hạn TUYỆT ĐỐI. N suy từ tower.floors và
+            // tower.bossEvery chứ KHÔNG cắm cứng 100 như bản đầu (§9.2). Con số tổng
             // phải nằm cạnh con số đang có, nếu không người chơi không có cách nào biết
             // mình đã tiêu bao nhiêu phần của một nguồn không bao giờ sinh thêm.
             if (coreLabel != null)
             {
                 int daTieu = gs.Gear.CoresSpent();
-                int tongCaGame = gs.BossEvery > 0 ? (100 / gs.BossEvery) * 3 : 30;
+                int tongCaGame = gs.CoresTotalInGame;
                 coreLabel.text = $"{gs.Cores} Lõi  ·  đã tiêu {daTieu}/{tongCaGame} cả game";
             }
 

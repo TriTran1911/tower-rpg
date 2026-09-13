@@ -43,7 +43,12 @@ namespace TowerRpg.UI
             if (root == null) return;
 
             if (title  != null) title.text  = $"HẠ BOSS TẦNG {floor:00}";
-            if (detail != null) detail.text = $"+{cores} LÕI\nMỞ NHÂN VẬT: {character}";
+            // character = null nghĩa là boss này KHÔNG mở nhân vật nào (đã hết nhân vật).
+            // Thà không nhắc còn hơn hứa một cái tên rỗng.
+            if (detail != null)
+                detail.text = string.IsNullOrEmpty(character)
+                            ? $"+{cores} LÕI"
+                            : $"+{cores} LÕI\nMỞ NHÂN VẬT: {character}";
             if (hint   != null) hint.text   = "chạm để tiếp";
 
             root.SetActive(true);

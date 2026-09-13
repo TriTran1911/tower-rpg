@@ -36,6 +36,15 @@ namespace TowerRpg.Progression
 
         public int BossEvery { get; private set; } = 10;
 
+        /// <summary>
+        /// Tổng Lõi TỒN TẠI trong cả game — §5.6 dựa trên việc con số này hữu hạn tuyệt đối.
+        /// Suy từ số tầng và nhịp boss, KHÔNG cắm cứng: giao diện từng hiện "0/30" trong khi
+        /// tháp 40 tầng chỉ có 12 Lõi, tức báo sai mẫu số gấp 2,5 lần và làm người chơi đánh
+        /// giá sai sức nặng của mỗi quyết định đột phá. Sửa ở đây thì M4 tự đúng.
+        /// </summary>
+        public int CoresTotalInGame =>
+            BossEvery > 0 ? (TowerFloors / BossEvery) * _corePerBoss : 0;
+
         public event Action Changed;        // tiến trình đổi — giao diện nghe cái này
         public event Action<int> CharacterChanged;   // đổi nhân vật — chỉ hình dạng đổi
 

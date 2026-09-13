@@ -308,6 +308,95 @@ namespace TowerRpg.Tests
         }
 
         [UnityTest]
+        public IEnumerator Tong_Loi_ca_game_phai_khop_so_boss_that()
+        {
+            yield return null;
+            BalanceConfig b = BalanceConfig.Instance;
+            int tang = b.GetInt("tower.floors");
+            int nhip = b.GetInt("tower.bossEvery");
+            int moiBoss = b.GetInt("core.perBoss");
+            int dung = (tang / nhip) * moiBoss;
+
+            // Giao diện từng hiện "0/30 cả game" vì cắm cứng số 100 vào C#, trong khi tháp
+            // 40 tầng chỉ có 12 Lõi — sai mẫu số gấp 2,5 lần. §5.6 dựa trên việc người chơi
+            // CẢM ĐƯỢC rằng Lõi hữu hạn; báo sai mẫu số là phá đúng cảm giác đó. Và cắm số
+            // cân bằng vào .cs là vi phạm §9.2.
+            Assert.AreEqual(dung, _gs.CoresTotalInGame,
+                $"tháp {tang} tầng, boss mỗi {nhip} tầng, {moiBoss} Lõi/boss = {dung} Lõi, "
+                + $"nhưng game báo {_gs.CoresTotalInGame}");
+        }
+
+        [UnityTest]
+        public IEnumerator Moi_o_trang_bi_deu_phai_DOI_SO_khi_nang_cap()
+        {
+            _gs.AddShards(1_000_000f);
+            yield return null;
+            float nguong = BalanceConfig.Instance.Get("juice.popupDecimalBelow");
+
+            // Đúng hàm định dạng mà UpgradeScreen dùng.
+            string F(float v) => v >= 100f ? v.ToString("N0")
+                               : v >= 10f  ? v.ToString("0.0")
+                                           : v.ToString("0.00");
+
+            var st = PlayerStats.Instance;
+            for (int i = 0; i < Equipment.SlotCount; i++)
+            {
+                var s = (Slot)i;
+                float truoc = s switch
+                {
+                    Slot.Weapon => st.Damage, Slot.Armor => st.MaxHp,
+                    Slot.Glove => st.AttacksPerSec, _ => st.CritMultiplier,
+                };
+                string a = F(truoc);
+                Assert.IsTrue(_gs.TryUpgrade(s));
+                yield return null;
+                float sau = s switch
+                {
+                    Slot.Weapon => st.Damage, Slot.Armor => st.MaxHp,
+                    Slot.Glove => st.AttacksPerSec, _ => st.CritMultiplier,
+                };
+                string bb = F(sau);
+
+                // Găng cấp 1->2 là 1,0 x 1,03441 = 1,034. Với một chữ số thập phân nó in ra
+                // "1.0 → 1.0": trả 300 Mảnh để đổi một con số thành chính nó.
+                Assert.AreNotEqual(a, bb,
+                    $"ô {Equipment.DisplayName(s)} nâng cấp mà màn hình vẫn hiện '{a}' → '{bb}'");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Het_nhan_vat_thi_cot_moc_KHONG_hua_ten_rong()
+        {
+            var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();
+            GameObject chiTiet = null;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == "Detail") { chiTiet = t.gameObject; break; }
+            Assert.IsNotNull(ms); Assert.IsNotNull(chiTiet);
+            var label = chiTiet.GetComponent<TMPro.TMP_Text>();
+            yield return null;
+
+            // Boss còn nhân vật để mở: phải nêu tên.
+            ms.Show(10, 3, CharacterRoster.Name(1));
+            yield return null;
+            StringAssert.Contains("NHÂN VẬT", label.text);
+            yield return new WaitForSecondsRealtime(0.8f);
+            ms.Dong();
+            yield return null;
+
+            // MÌN M4: CharacterRoster.Name() trả "?" cho chỉ số >= 5. Tháp 100 tầng có 10
+            // boss nhưng chỉ 5 nhân vật, nên sáu lần cuối sẽ DỪNG HẲN GAME để khoe
+            // "MỞ NHÂN VẬT: ?". Hết nhân vật thì đừng nhắc tới nhân vật nữa.
+            ms.Show(60, 3, null);
+            yield return null;
+            StringAssert.DoesNotContain("?", label.text,
+                $"cột mốc hứa một cái tên rỗng: '{label.text}'");
+            StringAssert.Contains("LÕI", label.text, "vẫn phải nói về Lõi");
+            yield return new WaitForSecondsRealtime(0.8f);
+            ms.Dong();
+        }
+
+        [UnityTest]
         public IEnumerator Man_cot_moc_dung_game_roi_TRA_LAI_timeScale()
         {
             var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();

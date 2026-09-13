@@ -41,7 +41,9 @@ namespace TowerRpg.UI
         // QUYẾT ĐỊNH #28 áp cho cả HUD: nút dùng gỗ SÁNG (243,140,76), mà trên nền đó
         // vàng đạt 1,27:1 · ngọc 1,25:1 · mờ 1,45:1 — đều dưới xa 4,5:1, tức là không đọc
         // được. Chỉ MỰC đạt (7,41:1). Nên trạng thái nút phân biệt bằng SẮC NỀN, còn chữ
-        // luôn là mực. Đây đúng cái bẫy đã sửa ở UpgradeScreen mà HUD còn sót.
+        // luôn là mực. (Chú thích cũ ở đây ghi "cái bẫy đã sửa ở UpgradeScreen mà HUD còn
+        // sót" — NGƯỢC SỰ THẬT: HUD sửa trước, UpgradeScreen mới là chỗ còn sót, và nó sót
+        // thêm một đợt nữa mới có người soi ra.)
         // MÀU CHỮ ĐẢO THEO TRẠNG THÁI, và đây là chỗ trực giác dễ sai:
         //   nút MỞ  = gỗ cam nguyên bản (243,140,76) -> nền SÁNG -> chữ MỰC   (7,37:1)
         //   nút KHOÁ = cùng gỗ đó nhân TintLock      -> nền TỐI (112,62,32) -> chữ GIẤY (4,7:1)
@@ -159,8 +161,14 @@ namespace TowerRpg.UI
             // nối được overlay. Không chạy cả hai — hai thứ cùng nói một điều là ồn.
             if (milestone != null)
             {
+                // MÌN HẸN GIỜ CHO M4: CharacterRoster.Name() trả "?" cho chỉ số >= 5. Tháp
+                // hiện có 4 boss nên vừa đủ 4 nhân vật; khi tower.floors lên 100 thì boss
+                // 5-10 sẽ DỪNG HẲN GAME sáu lần để khoe "MỞ NHÂN VẬT: ?". Hết nhân vật thì
+                // cột mốc chỉ nói về Lõi — vẫn là cột mốc, chỉ là không hứa thứ không có.
                 GameState gs2 = GameState.Instance;
-                string ten = gs2 != null ? CharacterRoster.Name(gs2.BossesKilled) : "?";
+                int soBoss = gs2 != null ? gs2.BossesKilled : 0;
+                string ten = soBoss > 0 && soBoss < CharacterRoster.Count
+                           ? CharacterRoster.Name(soBoss) : null;
                 milestone.Show(floor, cores, ten);
             }
             else

@@ -550,6 +550,15 @@ thao túng người chơi.
   Bảng tính dùng **máu ĐẦY** ở `'Kiểm chứng build'!P` nên hồi đầy trước boss là đúng mô hình.
   Chưa sửa vì nó chồng lên ba lớp buff sinh tồn vừa thêm (van #4, `dpsFloor1` 1,5, đóng băng
   hồi chiêu) — phải nhân ra một lần rồi mới quyết.
+- ⚠️ **HAI TÍNH NĂNG ĐANG MỞ THÌ CÂM, HAI TÍNH NĂNG ĐANG KHOÁ THÌ NÓI NHIỀU.** Nhóm điều
+  tra chỉ ra một bất đối xứng không ai để ý: QUÉT NHANH và TỰ ĐÁNH (đang khoá) được chăm
+  từng li — đổi nền, đổi màu chữ, đếm ngược *"CÒN 20 TẦNG"*. Còn TRANG BỊ và NHÂN VẬT
+  (đang MỞ từ giây 0) thì `HudUI` không giữ nổi một tham chiếu, và `BuildM1Scene.cs:345`
+  vứt luôn tham chiếu nhãn nút NHÂN VẬT (`(Button charBtn, TMP_Text _)`) nên nhãn đó **về
+  mặt kỹ thuật không đổi được lúc chạy**. Hệ quả: bấm NHÂN VẬT ở giây 0 ra **5 thẻ chết
+  trên 5**, kéo dài 8 phút, và thẻ khoá ghi *"Hạ boss 2 để mở"* mà không nói boss 2 là
+  tầng 20 — đúng câu chủ dự án hỏi, màn hình từ chối trả lời. Chưa sửa (chủ dự án chọn chỉ
+  vá bốn lỗi trước); gói giao tiếp còn nguyên trong `docs/KE-HOACH-NHIP-DO.md`.
 - **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
   thì phá §5.1. Chưa có lời giải rẻ.
 - ~~⚠️ **QUÉT NHANH ĐANG VƯỢT TRẦN CỦA BẢNG TÍNH**~~ — **ĐÃ SỬA** (Việc 2). Trần ngân sách
