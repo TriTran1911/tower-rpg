@@ -576,7 +576,37 @@ thao túng người chơi.
   rộng tay hơn 0,5. Nhưng **tầng boss chỉ có 1 con**, đứng đánh nó là ăn 100%. Bảng đã đem một
   hằng số của ĐÁM ĐÔNG áp vào bối cảnh ĐƠN MỤC TIÊU.
 
-  **Chưa chốt cách sửa** — ba hướng, đều đụng cân bằng nên không tự quyết: (a) nhận B9 chỉ dành
+  **CẬP NHẬT — nhóm phản biện đã bác bỏ hai lần cách tôi giải thích nguyên nhân, và tìm ra
+  một lỗi thứ ba.** Con số 0,75 thì ba lần dựng lại độc lập đều xác nhận. Nhưng:
+
+  1. *"Không lối chơi nào đổi được / f triệt tiêu"* — **SAI**. `AutoAttack.cs` trừ hồi chiêu
+     chỉ với guard `IsMoving`, **không có guard tầm** — đứng yên NGOÀI tầm boss vẫn nạp đòn
+     miễn phí. Hai đồng hồ tách rời, f không triệt tiêu. Đánh-rồi-chạy có lãi khi
+     `2×(tầm địch − tầm mình)/tốc độ < nhịp đánh`. Ở quái thường: 0,356s < 0,816s → **có lãi**.
+     Ở boss: 0,853s > 0,816s → **lỗ**, hụt đúng 4,5%. Thứ phá bất đẳng thức đó là
+     `boss.attackRangeMult = 1,4` — **một khoá tôi tự thêm ở M3, không có trong bảng tính**.
+  2. *"B9 là hằng số đám đông bị áp nhầm vào đơn mục tiêu"* — **SAI về sự kiện**. B9 xuất hiện
+     đúng **66 ô, cả 66 đều là ô boss**. Không một ô tầng thường nào dùng nó. B9 sinh ra đã là
+     hằng số né **riêng cho boss**.
+  3. **LỖI THỨ BA, đã sửa:** `PlayerHealth` cache `_maxHp` và chỉ gọi `Rescale()` lúc Start /
+     mua Giáp / tẩy điểm / đổi nhân vật — **không bao giờ khi lên tầng**. Ai leo một mạch tới
+     tầng 10 mà không mở màn nâng cấp thì đánh boss bằng máu tầng 1, mất trọn **1,486 lần**.
+     Van an toàn #4 của §5.8 đã im lặng không chạy suốt từ M2. Test khoá:
+     `Mau_nen_PHAI_tang_theo_tang_da_qua`.
+
+  **Biên thật, ở đúng cấp trang bị bảng kỳ vọng:**
+
+  | Boss | Tầng | Trước khi sửa | Sau khi sửa van #4 | Nếu gộp thêm B9 vào CSV |
+  |---|---|---|---|---|
+  | 1 | 10 | 0,51 | 0,75 | **1,50** |
+  | 2 | 20 | 0,33 | 0,75 | **1,50** |
+  | 3 | 30 | 0,21 | 0,75 | **1,50** |
+  | 4 | 40 | 0,14 | 0,77 | **1,54** |
+
+  Hai lỗi cộng lại cho đúng 1,50 ở cả bốn boss — đường cong máu boss được giải ngược với giả
+  định CẢ HAI đều chạy. **Còn một quyết định chưa chốt:** `enemy.dpsFloor1` nên là 3 (số thô,
+  ô B7) hay 1,5 (đã gộp B9, đúng thứ công thức biên dùng). Đây là lựa chọn thiết kế, không
+  phải lỗi — xem ba hướng dưới: (a) nhận B9 chỉ dành
   cho tầng thường, tính lại cột boss với B9 = 1,0 rồi hạ hệ số máu boss cho khớp; (b) cho quái
   có nhịp vung tay, rời tầm trong lúc vung thì đòn trượt — làm B9 đạt được thật, nhưng kế hoạch
   đã loại vì coi là "hoàn tiền chứ không phải né"; (c) tăng máu nền hoặc hạ máu boss 1.

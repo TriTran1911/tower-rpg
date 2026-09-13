@@ -392,6 +392,32 @@ namespace TowerRpg.Tests
                 $"tổng Mảnh vượt {mult}x Mảnh leo — đúng ô 'Thông số'!B32 bị phá");
         }
 
+        [UnityTest]
+        public IEnumerator Mau_nen_PHAI_tang_theo_tang_da_qua()
+        {
+            var hp = Object.FindFirstObjectByType<PlayerHealth>();
+            Assert.IsNotNull(hp);
+            yield return null;
+
+            float atFloor1 = hp.MaxHp;
+            Assert.Greater(atFloor1, 0f);
+
+            // Leo lên tầng 10 mà KHÔNG mở màn nâng cấp, KHÔNG mua Giáp — đúng cách một
+            // người chơi mới đi tới boss đầu tiên.
+            while (_gs.Floor < 10) _gs.AdvanceFloor();
+            yield return null; yield return null;
+
+            float growth = BalanceConfig.Instance.Get("player.hpPerFloor");
+            float want = atFloor1 * Mathf.Pow(1f + growth, 9);
+
+            // VAN AN TOÀN #4 CỦA §5.8. PlayerHealth cache _maxHp; nếu quên gọi lại Rescale
+            // khi đổi tầng thì van này im lặng không chạy và người chơi đánh boss 1 bằng
+            // máu của tầng 1 — đo được biên 0,51 thay vì 0,75.
+            Assert.AreEqual(want, hp.MaxHp, want * 0.01f,
+                $"máu tối đa ở tầng 10 phải là {want:F1} (gấp {Mathf.Pow(1f + growth, 9):F3} lần "
+                + $"tầng 1) nhưng đang là {hp.MaxHp:F1} — van an toàn #4 của §5.8 không chạy");
+        }
+
         // ── Save ──────────────────────────────────────────────────────────────────
 
         [UnityTest]
