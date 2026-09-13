@@ -110,7 +110,14 @@ namespace TowerRpg.Enemies
             _sprite.color = hitFlashColor;
             _flashTimer = hitFlashSeconds;
 
-            if (_hp <= 0f) Destroy(gameObject);
+            if (_hp <= 0f)
+            {
+                // Trước Việc 3, quái chết là Destroy() trong im lặng hoàn toàn — không hiệu
+                // ứng, không xác, không tiếng. Sáu lần mỗi tầng, không lần nào để lại dấu
+                // vết trong trí nhớ. Hoạt ảnh chết là Việc 4; tiếng thì rẻ và làm được ngay.
+                Juice.SfxPlayer.Play(Juice.Sfx.EnemyDie, IsBoss ? 1f : 0.8f);
+                Destroy(gameObject);
+            }
         }
 
         // Một chỗ gỡ đăng ký duy nhất — chạy cho cả khi chết lẫn khi bị huỷ theo scene.

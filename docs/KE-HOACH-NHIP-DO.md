@@ -187,7 +187,32 @@ GameState.Instance.AddShards(reward, fromSweep: true);
 
 ---
 
-## VIỆC 3 — ÂM THANH (≈ 0,75 ngày, trong đó 60 phút là NGHE THỬ)
+## ~~VIỆC 3 — ÂM THANH~~ ✅ XONG
+
+> **Đã cài, 37/37 test, 39 mục kiểm scene.** `SfxPlayer.cs` với 8 nguồn quay vòng, nối đủ
+> 7 chỗ. Kiểm end-to-end: gọi `Play` xong thì **8/8 nguồn thật sự đang phát** — không dừng
+> ở "không ném lỗi".
+>
+> **CÒN LẠI CHO BẠN, VÀ KHÔNG AI LÀM THAY ĐƯỢC: nghe thử.** Tôi không nghe được. 8 clip
+> dưới đây chọn bằng SỐ ĐO (độ dài, đỉnh, độ sắc phổ), không phải bằng tai:
+>
+> | Sự kiện | Clip | Vì sao chọn (số đo) |
+> |---|---|---|
+> | Trúng đòn | `Hit & Impact/Hit1.wav` | 0,34s · độ sắc 0,065 = đục, tiếng "thịch" |
+> | Chí mạng | `Whoosh & Slash/Slash.wav` | 0,34s · độ sắc **0,448** — khác hẳn đòn thường |
+> | Quái chết | `Hit & Impact/Impact.wav` | 0,24s — ngắn nhất nhóm Impact |
+> | Nhặt Mảnh | `Bonus/Coin.wav` | 0,29s · chưa ai gọi, chờ Việc 5 |
+> | Dọn tầng | `Jingles/Success1.wav` | 0,45s — **ngắn nhất trong 15 jingle** |
+> | Hạ boss | `Jingles/LevelUp1.wav` | 1,18s — hiếm nên dài được |
+> | Nâng cấp | `Bonus/PowerUp1.wav` | 0,47s |
+> | Bị đánh | `Hit & Impact/Hit5.wav` | 0,33s · phát ở âm lượng 0,4 |
+>
+> Đổi clip nào không ưng: sửa đúng một dòng trong mảng ở `BuildM1Scene.WireClips` rồi dựng
+> lại scene. Thư mục còn 139 file chưa dùng.
+>
+> **Chưa làm:** nhạc nền (41 file `.ogg`) — Đợt 2, và phải đặt Load Type *Streaming*.
+
+### Nội dung gốc
 
 `grep -rniE "AudioSource|AudioClip|PlayOneShot"` trên `Scripts/` + `Editor/` = **0 dòng**. `AudioListener` đã nằm sẵn ở `BuildM1Scene.cs:104`. 147 file .wav + 41 .ogg CC0 đã có giấy phép, chưa dùng một file nào.
 

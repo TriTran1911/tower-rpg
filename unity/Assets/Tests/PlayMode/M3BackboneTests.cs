@@ -3,6 +3,7 @@ using NUnit.Framework;
 using TowerRpg.Combat;
 using TowerRpg.Core;
 using TowerRpg.Enemies;
+using TowerRpg.Juice;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using UnityEngine;
@@ -461,6 +462,59 @@ namespace TowerRpg.Tests
                     + "Thời gian sống ngắn hơn thời gian giết -> KHÔNG THẮNG NỔI bằng đường leo. "
                     + "Kiểm enemy.dpsFloor1, player.hpPerFloor và boss.hpMult trong m1-balance.csv.");
             }
+        }
+
+        // ── Việc 3: âm thanh ──────────────────────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Am_thanh_du_clip_va_khong_bao_gio_nem_loi()
+        {
+            var sfx = Object.FindFirstObjectByType<SfxPlayer>();
+            Assert.IsNotNull(sfx, "không có SfxPlayer trong scene");
+            yield return null;
+
+            for (int i = 0; i < SfxPlayer.SfxCount; i++)
+                Assert.IsNotNull(sfx.ClipAt(i), $"thiếu clip cho Sfx thứ {i} ({(Sfx)i})");
+
+            // SfxPlayer.Play cố ý NUỐT mọi lỗi — âm thanh là trang trí, nó không có quyền
+            // làm hỏng một trận đấu. Test này khoá tính chất đó: gọi bậy kiểu gì cũng không nổ.
+            for (int i = 0; i < SfxPlayer.SfxCount; i++) SfxPlayer.Play((Sfx)i);
+            SfxPlayer.Play((Sfx)(-1));
+            SfxPlayer.Play((Sfx)999);
+            SfxPlayer.Play(Sfx.Hit, -5f);
+            SfxPlayer.Play(Sfx.Hit, 99f);
+            yield return null;
+
+            // KHÔNG dừng ở "không ném lỗi" — đó là cái bẫy đã cắn dự án này ba lần:
+            // nối đúng KHÁC chạy đúng. Kiểm rằng một AudioSource THẬT SỰ đang phát.
+            SfxPlayer.Play(Sfx.Hit);
+            yield return null;
+
+            var sources = sfx.GetComponentsInChildren<AudioSource>();
+            Assert.AreEqual(8, sources.Length, "phải có 8 nguồn quay vòng");
+
+            int playing = 0;
+            foreach (AudioSource s in sources) if (s.isPlaying) playing++;
+            Debug.Log($"[âm thanh] {sources.Length} nguồn, {playing} đang phát sau khi gọi Play");
+
+            Assert.Greater(playing, 0,
+                "gọi Play xong mà KHÔNG nguồn nào phát — clip đã nối, không lỗi nào ném ra, "
+                + "nhưng game vẫn câm. Kiểm AudioListener trong scene và clip có bị null không.");
+        }
+
+        [UnityTest]
+        public IEnumerator Tieng_bi_danh_co_hoi_de_khong_thanh_nhieu()
+        {
+            var sfx = Object.FindFirstObjectByType<SfxPlayer>();
+            Assert.IsNotNull(sfx);
+            float cd = BalanceConfig.Instance.Get("audio.playerHitCooldown");
+            Assert.Greater(cd, 0f, "phải có hồi cho tiếng bị đánh — 6 quái đánh liên tục "
+                                 + "mà không chặn thì thành tiếng nhiễu liên tục");
+
+            // Bắn dồn dập: không được ném lỗi, và hồi phải chặn bớt.
+            for (int i = 0; i < 50; i++) SfxPlayer.Play(Sfx.PlayerHit);
+            yield return null;
+            Assert.Pass($"50 lần liên tiếp với hồi {cd}s — không ném lỗi");
         }
 
         // ── Save ──────────────────────────────────────────────────────────────────

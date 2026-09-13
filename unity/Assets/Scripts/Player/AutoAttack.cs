@@ -78,6 +78,11 @@ namespace TowerRpg.Player
 
             target.TakeDamage(amount, isCrit);
 
+            // Chí mạng dùng tiếng CHÉM sắc (độ sắc đo được 0,448) còn đòn thường dùng tiếng
+            // ĐẤM đục (0,065). Chênh lệch đó là chủ ý: §5.4 chọn thanh dồn XÁC ĐỊNH để người
+            // chơi ĐẾM được, nên đòn thứ 5 phải nghe khác hẳn chứ không chỉ to hơn.
+            Juice.SfxPlayer.Play(isCrit ? Juice.Sfx.Crit : Juice.Sfx.Hit);
+
             if (popups != null) popups.Show(hitPosition, amount, isCrit);
             if (isCrit && cameraShake != null) cameraShake.Shake();
 

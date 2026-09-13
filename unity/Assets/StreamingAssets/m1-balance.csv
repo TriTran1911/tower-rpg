@@ -136,3 +136,12 @@ juice.popupLifetime,0.7,Số sát thương tồn tại bao lâu
 # Đây KHÔNG phải đổi cân bằng: ràng buộc §5.11 khoá con số 4,4%, không khoá cách in nó.
 # Ngưỡng 100 để sát thương tầng cao (~600) không thành rác chữ số.
 juice.popupDecimalBelow,100,Dưới mức này thì in số sát thương kèm một chữ số thập phân
+
+# ── ÂM THANH ──────────────────────────────────────────────────────────────────
+# Bộ asset có 147 .wav + 41 .ogg, cùng giấy phép CC0 với phần hình (quyết định #18),
+# và trước Việc 3 thì KHÔNG một file nào được dùng: grep AudioSource trên toàn Scripts/
+# ra 0 dòng. Quái chết là Destroy(gameObject) trong im lặng tuyệt đối.
+audio.sfxVolume,0.7,Âm lượng tiếng động 0..1
+# Sáu con quái cùng đánh thì tiếng "bị đánh" chồng lên nhau thành nhiễu. 0,15s là
+# khoảng ngắn nhất mà tai còn tách được hai tiếng rời nhau.
+audio.playerHitCooldown,0.15,Giây tối thiểu giữa hai tiếng người chơi bị đánh

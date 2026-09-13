@@ -276,6 +276,8 @@ namespace TowerRpg.UI
             bool ok = gs.Gear.AtCap(slot) ? gs.TryBreakthrough(slot) : gs.TryUpgrade(slot);
             if (!ok) return;
 
+            Juice.SfxPlayer.Play(Juice.Sfx.Upgrade);
+
             // Giáp đổi -> máu tối đa đổi. Không gọi lại là thanh máu nói dối.
             if (slot == Slot.Armor) PlayerHealth.Current?.Rescale();
         }

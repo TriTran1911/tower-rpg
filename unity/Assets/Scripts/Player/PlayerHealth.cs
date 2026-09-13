@@ -75,6 +75,9 @@ namespace TowerRpg.Player
             if (!IsAlive || _maxHp <= 0f) return;
 
             _hp = Mathf.Max(0f, _hp - amount);
+            // Nhỏ hơn hẳn tiếng đánh trúng: đây là tin xấu nền, không phải sự kiện chính.
+            // SfxPlayer tự chặn tiếng này ở 0,15 giây/lần nên nhiều quái không thành nhiễu.
+            Juice.SfxPlayer.Play(Juice.Sfx.PlayerHit, 0.4f);
 
             if (_hp <= 0f) Died?.Invoke();
         }

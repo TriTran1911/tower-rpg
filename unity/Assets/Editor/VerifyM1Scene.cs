@@ -172,6 +172,34 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, "có SweepRunner trong scene",
                            Object.FindFirstObjectByType<SweepRunner>() != null, "không có");
 
+            // Âm thanh: thiếu MỘT clip là im lặng ở đúng chỗ đó, và không gì báo cho biết —
+            // SfxPlayer.Play cố ý nuốt lỗi để âm thanh không bao giờ làm hỏng một trận đấu.
+            var sfxPlayer = Object.FindFirstObjectByType<SfxPlayer>();
+            int clipCount = 0;
+            if (sfxPlayer != null)
+                for (int i = 0; i < SfxPlayer.SfxCount; i++)
+                    if (sfxPlayer.ClipAt(i) != null) clipCount++;
+            fail += Assert(log, $"đủ {SfxPlayer.SfxCount} clip âm thanh",
+                           clipCount == SfxPlayer.SfxCount,
+                           sfxPlayer == null ? "không có SfxPlayer"
+                                             : $"{clipCount}/{SfxPlayer.SfxCount}");
+
+            // Mono + nén trong RAM: mặc định của Unity là giải nén sẵn, phình RAM trên máy thật.
+            int badImport = 0;
+            if (sfxPlayer != null)
+                for (int i = 0; i < SfxPlayer.SfxCount; i++)
+                {
+                    AudioClip clip = sfxPlayer.ClipAt(i);
+                    if (clip == null) continue;
+                    if (AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(clip)) is not AudioImporter ai)
+                        continue;
+                    if (!ai.forceToMono ||
+                        ai.defaultSampleSettings.loadType != AudioClipLoadType.CompressedInMemory)
+                        badImport++;
+                }
+            fail += Assert(log, "clip âm thanh: mono + nén trong RAM",
+                           badImport == 0, $"{badImport} clip sai thiết lập");
+
             // Nút phải BẤM ĐƯỢC. Vùng chạm cần gạt trong suốt và phủ nửa dưới màn hình;
             // nếu nó là anh em SAU một cái nút thì nó nuốt cú chạm, nút thành vô dụng.
             // Kiểm thứ tự anh em chứ KHÔNG kiểm hình học: hình học phụ thuộc tỉ lệ màn

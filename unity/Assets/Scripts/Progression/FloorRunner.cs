@@ -97,13 +97,21 @@ namespace TowerRpg.Progression
                 {
                     int before = GameState.Instance.Cores;
                     if (GameState.Instance.AwardBoss(floor))
+                    {
+                        Juice.SfxPlayer.Play(Juice.Sfx.BossDown);
                         BossDefeated?.Invoke(floor, GameState.Instance.Cores - before);
+                    }
                 }
 
                 float reward = GameState.Instance.ShardReward(floor);
                 GameState.Instance.AddShards(reward);
                 GameState.Instance.MarkCleared(floor);
                 GameState.Instance.Save();
+                // Success1.wav dài 0,45s — jingle NGẮN NHẤT trong 15 cái. Cố ý: dọn tầng lặp
+                // mỗi ~45 giây, một jingle 2 giây sẽ còn đang kêu lúc tầng sau đã bày xong.
+                // Tầng boss bỏ qua vì đã có tiếng BossDown to hơn ngay trước đó.
+                if (!GameState.Instance.IsBossFloor(floor))
+                    Juice.SfxPlayer.Play(Juice.Sfx.FloorClear);
                 FloorCleared?.Invoke(floor, reward);
 
                 yield return new WaitForSeconds(clearDelay);

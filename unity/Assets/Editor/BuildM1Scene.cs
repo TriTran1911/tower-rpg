@@ -120,6 +120,7 @@ namespace TowerRpg.EditorTools
             var runner   = bootGo.AddComponent<FloorRunner>();
             var popups   = bootGo.AddComponent<DamagePopupSpawner>();
             var sweep    = bootGo.AddComponent<SweepRunner>();
+            var sfx      = bootGo.AddComponent<SfxPlayer>();
 
             // ── Người chơi ────────────────────────────────────────────────────────────
             var playerGo = new GameObject("Player");
@@ -504,6 +505,20 @@ namespace TowerRpg.EditorTools
                            ("respecLabel", respecTxt));
             Wire(chScreen, ("root", chGo), ("cardParent", chRows), ("hintLabel", chHint));
 
+            // ── ÂM THANH ─────────────────────────────────────────────────────────────
+            // Thứ tự PHẢI khớp enum Sfx. Chọn bằng số đo, không bằng cảm tính — xem chú thích.
+            WireClips(sfx, new[]
+            {
+                "Sounds/Hit & Impact/Hit1.wav",      // Hit       0,34s · đục (sắc 0,065)
+                "Sounds/Whoosh & Slash/Slash.wav",   // Crit      0,34s · SẮC (0,448) — khác hẳn Hit
+                "Sounds/Hit & Impact/Impact.wav",    // EnemyDie  0,24s · ngắn nhất nhóm Impact
+                "Sounds/Bonus/Coin.wav",             // Pickup    0,29s · chờ Việc 5 gọi
+                "Jingles/Success1.wav",              // FloorClear 0,45s · NGẮN NHẤT trong 15 jingle
+                "Jingles/LevelUp1.wav",              // BossDown  1,18s · hiếm nên dài được
+                "Sounds/Bonus/PowerUp1.wav",         // Upgrade   0,47s
+                "Sounds/Hit & Impact/Hit5.wav",      // PlayerHit 0,33s · phát ở vol 0,4
+            });
+
             // sprite dùng chung + 4 icon trang bị cho màn nâng cấp
             var upSo = new SerializedObject(upScreen);
             upSo.FindProperty("panelSprite").objectReferenceValue = panelSp;
@@ -606,6 +621,46 @@ namespace TowerRpg.EditorTools
             EditorUtility.SetDirty(ti);
             ti.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        /// <summary>
+        /// Nạp clip theo đúng thứ tự enum Sfx và ép thiết lập import hợp lý cho mobile.
+        ///
+        /// Mặc định của Unity là Decompress On Load — 147 file 44,1kHz stereo giải nén sẵn
+        /// vào RAM là hàng chục MB cho những tiếng dài chưa tới nửa giây. Compressed In
+        /// Memory + Force To Mono cắt gần hết chỗ đó mà tai không phân biệt được, vì âm
+        /// thanh đã đặt spatialBlend = 0 (2D) nên vế stereo vốn không dùng tới.
+        /// </summary>
+        private static void WireClips(SfxPlayer player, string[] relativePaths)
+        {
+            var so = new SerializedObject(player);
+            SerializedProperty arr = so.FindProperty("clips");
+            arr.arraySize = relativePaths.Length;
+
+            for (int i = 0; i < relativePaths.Length; i++)
+            {
+                string path = $"{Art}/Audio/{relativePaths[i]}";
+
+                if (AssetImporter.GetAtPath(path) is AudioImporter ai)
+                {
+                    var s = ai.defaultSampleSettings;
+                    s.loadType = AudioClipLoadType.CompressedInMemory;
+                    s.compressionFormat = AudioCompressionFormat.Vorbis;
+                    s.quality = 0.7f;
+                    s.preloadAudioData = true;    // clip ngắn: nạp sẵn để đòn đầu không trễ
+                    ai.defaultSampleSettings = s;
+                    ai.forceToMono = true;
+                    EditorUtility.SetDirty(ai);
+                    ai.SaveAndReimport();
+                }
+
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                if (clip == null) Debug.LogError($"[BuildM1Scene] Không thấy clip: {path}");
+                arr.GetArrayElementAtIndex(i).objectReferenceValue = clip;
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(player);
         }
 
         private static Image MakeImage(string name, Transform parent, Color color)
