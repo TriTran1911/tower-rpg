@@ -8,11 +8,19 @@ namespace TowerRpg.Progression
     /// <summary>
     /// Quét nhanh — §5.2. Tầng đã dọn một lần thì bấm nút là nhận thưởng, không đánh lại.
     ///
-    /// CÓ HỒI CHIÊU, và đó là một quyết định chứ không phải thiếu sót: §5.2 cho phép bấm
-    /// lại, nhưng can-bang.xlsx chỉ mô hình hoá Mảnh theo việc LEO — chưa từng tính farm.
-    /// Quét tức thời bấm được vô hạn thì Mảnh vô hạn, và toàn bộ đường cong chi phí ở §5.6
-    /// mất nghĩa. 3 giây mỗi lượt so với ~45 giây đánh tay vẫn là nén 15 lần — đủ để
-    /// "farm không thành cực hình" mà không phá kinh tế.
+    /// ⚠️ CHÚ THÍCH CŨ Ở ĐÂY ĐÃ SAI, VÀ CÁI SAI ĐÓ CHE MẤT MỘT LỖI ĐANG SỐNG.
+    /// Tôi từng viết "can-bang.xlsx chỉ mô hình hoá Mảnh theo việc LEO — chưa từng tính
+    /// farm". SAI. Ô 'Thông số'!B32 = 2, nhãn "Hệ số cày lại (quét nhanh)", chú thích
+    /// "1.0 = chỉ clear mỗi tầng một lần"; và 'Đường cong tầng'!E = D × B32, tức ngân sách
+    /// Mảnh lũy kế LUÔN gấp đôi Mảnh leo. Cột cấp trang bị kỳ vọng cũng suy từ đó.
+    ///
+    /// Nghĩa là bảng tính CÓ cho farm, và cho ĐÚNG 2×. Mã này thì đang giao VÔ HẠN:
+    /// 133 Mảnh/giây khi quét so với 9,6 khi đánh tay — gấp 13,9 lần, max cả bốn ô lên
+    /// cấp 10 chỉ mất 2,6 phút giữ nút ở tầng 1. Hồi 3 giây KHÔNG chặn được gì vì phần
+    /// thưởng bám theo HighestCleared và vòng lặp chạy song song với đánh tay.
+    ///
+    /// CHƯA SỬA — nằm ở Việc 2 của docs/KE-HOACH-NHIP-DO.md. Cách sửa đã biết: trần
+    /// ngân sách 2× ShardReward mỗi tầng, hết trần thì nút chuyển "HẾT NGÂN SÁCH".
     /// </summary>
     public sealed class SweepRunner : MonoBehaviour
     {

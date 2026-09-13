@@ -541,11 +541,28 @@ thao túng người chơi.
   10,3% · thủ dày 19,4%.
 - **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
   thì phá §5.1. Chưa có lời giải rẻ.
-- ⚠️ **QUÉT NHANH CHƯA CÓ TRONG MÔ HÌNH KINH TẾ** (quyết định #27). `can-bang.xlsx` tính Mảnh
-  theo việc LEO, chưa bao giờ tính farm. M3 tạm chặn bằng hồi 3 giây mỗi lượt — nén 15 lần so
-  với đánh tay, đủ dùng mà không thủng ngay. Nhưng con số 3 là **phỏng đoán có cơ sở, không
-  phải kết quả mô hình**: người chơi cày 1 giờ quét được 1.200 lượt tầng cao nhất. Trước M4
-  phải đưa farm vào bảng tính, rồi chốt lại — cùng lúc với hút máu.
+- ⚠️ **QUÉT NHANH ĐANG VƯỢT TRẦN CỦA BẢNG TÍNH — sửa trước M4.** Quyết định #27 viết rằng
+  `can-bang.xlsx` "chưa bao giờ tính farm". **Câu đó sai**, và tôi đã đọc lại bảng để xác nhận:
+  ô `'Thông số'!B32 = 2` nhãn *"Hệ số cày lại (quét nhanh)"*, chú thích *"1.0 = chỉ clear mỗi
+  tầng một lần"*, và `'Đường cong tầng'!E = D × B32`. Bảng tính CÓ mô hình farm, ở đúng **2×**
+  Mảnh leo — và cột cấp trang bị kỳ vọng cũng suy từ ngân sách đó. Mã đang giao **vô hạn**:
+  133 Mảnh/giây khi quét so với 9,6 khi đánh tay (**13,9 lần**), max cả bốn ô lên cấp 10 trong
+  **2,6 phút** giữ nút ở tầng 1. Hồi 3 giây không chặn được gì. Cách sửa đã rõ: trần ngân sách
+  2× `ShardReward` mỗi tầng.
+- ⚠️ **NÉ ĐÒN KHÔNG CÓ TÁC DỤNG — boss tầng 10 hiện KHÔNG THẮNG NỔI bằng đường leo.**
+  Ô `'Thông số'!B9 = 0,5` nhãn *"Tỉ lệ sát thương thực nhận — nhờ luật di chuyển ở mục 5.3"*,
+  và dòng 7 ghi 3 dps là *"nếu người chơi đứng yên hoàn toàn"*. Nhưng `Enemy.Update()` trừ hồi
+  chiêu **bất kể người chơi ở đâu**, và ra ngoài tầm thì `return` mà không reset — hồi chiêu âm
+  sẵn, bước vào là ăn đòn ngay. Đo với ngân sách của bảng (cấp 7 cả bốn ô): né 50% cho biên
+  **1,50** (đúng bằng ngưỡng `B40`), mã hôm nay cho **0,75**. Đây chính là lỗi đã sửa cho NGƯỜI
+  CHƠI ở M1 mà quên áp ngược cho QUÁI — `AutoAttack.cs` đặt guard trước khi trừ, `Enemy.cs` thì
+  không. Sửa là đảo thứ tự hai khối.
+- **Đánh lâu hơn khi lên tầng, không phải ngắn đi.** Máu quái +5,18%/tầng còn Vũ khí +4,4%/cấp:
+  số đòn giết một con đi từ 7 (tầng 1) lên 11 (tầng 20) — **chậm đi 57%**. Đã thử cả ngân sách
+  2× lẫn trần 60, vẫn còn tụt 29%. Biên an toàn vẫn đạt nên **không phải lỗi**, nhưng nó đảo
+  ngược đúng lời hứa "mạnh đều đều" ở §1. Bảng tính ghi `hpGrowth` 5,18% là *"giá trị LỚN NHẤT
+  giữ được biên ≥ 1,60"*, tức **hạ xuống là an toàn** — nhưng `shard.growth` 9% đang bám theo
+  nó nên phải chỉnh cùng lúc. Chưa chốt.
 - **Tháp mới có 40/100 tầng và 4/10 boss.** Đúng phạm vi M3 (§8 giao "hệ thống đủ, thiếu nội
   dung"), nhưng nghĩa là sáu cổng đột phá cuối và sáu nhân vật cuối **chưa từng chạy thật**.
   Hệ số máu boss 5–10 ở §5.10 vẫn chỉ là số trên giấy.

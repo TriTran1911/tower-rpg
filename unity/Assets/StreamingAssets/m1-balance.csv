@@ -96,10 +96,11 @@ respec.costGrowth,1.0,Mỗi lần tẩy sau đắt gấp đôi
 
 # ── QUÉT NHANH §5.2 ───────────────────────────────────────────────────────────
 sweep.unlockOnClear,1,1 = clear tầng lần đầu là mở quét nhanh cho tầng đó
-# §5.2 nói quét nhanh CÓ THỂ bấm lại — nhưng mô hình kinh tế ở can-bang.xlsx chỉ tính
-# Mảnh theo việc LEO, chưa bao giờ tính farm. Quét tức thời + bấm vô hạn = Mảnh vô hạn,
-# đường cong chi phí chết. Nên quét có hồi: 3 giây so với ~45 giây đánh tay = nén 15 lần.
-# Vẫn đúng tinh thần "farm không thành cực hình", mà không phá kinh tế. Mở ở §7.
+# ⚠️ CHÚ THÍCH CŨ Ở ĐÂY ĐÃ SAI. Tôi từng ghi "can-bang.xlsx chưa bao giờ tính farm".
+# Ô 'Thông số'!B32 = 2 = "Hệ số cày lại (quét nhanh)", và 'Đường cong tầng'!E = D × B32.
+# Bảng tính CÓ tính farm, ĐÚNG 2× Mảnh leo. Mã đang giao VÔ HẠN (13,9 lần nhanh hơn
+# đánh tay; max cả bốn ô trong 2,6 phút). Hồi 3 giây không chặn được vì thưởng bám
+# HighestCleared. CHƯA SỬA — Việc 2 của docs/KE-HOACH-NHIP-DO.md: trần 2× mỗi tầng.
 sweep.seconds,3,Giây mỗi lần quét một tầng
 
 # ── TỰ ĐỘNG CHIẾN ĐẤU §5.2 ───────────────────────────────────────────────────
