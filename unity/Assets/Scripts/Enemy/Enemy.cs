@@ -34,6 +34,8 @@ namespace TowerRpg.Enemies
         private float _attackCooldown;
         private bool _armed;
         private float _deathSeconds = 0.22f;
+        private float _telegraphSeconds, _telegraphNudge;
+        private Vector3 _homePos;
         private float _shardValue;
         private Loot.ShardDropSpawner _drops;
 
@@ -68,7 +70,13 @@ namespace TowerRpg.Enemies
             _attackCooldown = _attackInterval;          // không đánh ngay lúc vừa sinh
             _armed = maxHp > 0f;
             if (BalanceConfig.Instance != null && BalanceConfig.Instance.IsLoaded)
-                _deathSeconds = Mathf.Max(0.01f, BalanceConfig.Instance.Get("juice.enemyDeathSeconds"));
+            {
+                BalanceConfig b = BalanceConfig.Instance;
+                _deathSeconds = Mathf.Max(0.01f, b.Get("juice.enemyDeathSeconds"));
+                _telegraphSeconds = Mathf.Max(0f, b.Get("enemy.telegraphSeconds"));
+                _telegraphNudge = b.Get("enemy.telegraphNudge");
+            }
+            _homePos = transform.position;
 
             EnemyRegistry.Register(this);
         }
@@ -104,10 +112,36 @@ namespace TowerRpg.Enemies
             if (sqr > _attackRange * _attackRange) return;
 
             _attackCooldown -= Time.deltaTime;
+
+            // BÁO HIỆU RA ĐÒN — hiển thị THUẦN, không đổi một luật nào. Quái sáng lên và
+            // nhích về phía người chơi trong 0,25 giây cuối trước khi đánh. Người chơi
+            // đọc được nhịp và lùi ra kịp; nếu lùi thì hồi chiêu ĐÓNG BĂNG (Việc 2.1),
+            // không phải huỷ — quay lại là ăn đòn tiếp, đúng chỗ nó dừng.
+            //
+            // KHÔNG cài "rời tầm lúc vung tay thì đòn TRƯỢT": đó là hoàn tiền chứ không
+            // phải né, và kế hoạch đã loại nó ở Việc 2 vì nó nới biên thật.
+            if (_flashTimer <= 0f && _sprite != null)
+            {
+                bool sapDanh = _attackCooldown <= _telegraphSeconds && _telegraphSeconds > 0f;
+                if (sapDanh)
+                {
+                    float k = 1f - Mathf.Clamp01(_attackCooldown / _telegraphSeconds);
+                    _sprite.color = Color.Lerp(_baseColor, Color.white, k * 0.55f);
+                    Vector3 toi = (player.transform.position - _homePos).normalized;
+                    transform.position = _homePos + toi * (_telegraphNudge * k);
+                }
+                else if (transform.position != _homePos)
+                {
+                    _sprite.color = _baseColor;
+                    transform.position = _homePos;
+                }
+            }
+
             if (_attackCooldown > 0f) return;
 
             player.TakeDamage(_damage);
             _attackCooldown = _attackInterval;
+            transform.position = _homePos;
         }
 
         public void TakeDamage(float amount, bool isCrit)

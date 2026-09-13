@@ -67,6 +67,7 @@ namespace TowerRpg.Tests
             var hp = Object.FindFirstObjectByType<PlayerHealth>();
             var runner = Object.FindFirstObjectByType<FloorRunner>();
             var auto = Object.FindFirstObjectByType<AutoBattle>();
+            var motCot = Object.FindFirstObjectByType<TowerRpg.UI.MilestoneOverlay>();
             Assert.IsNotNull(gs); Assert.IsNotNull(hp); Assert.IsNotNull(auto);
 
             // Mở tự đánh rồi bật: đây là cách duy nhất "chơi" được trong batchmode.
@@ -95,6 +96,12 @@ namespace TowerRpg.Tests
                 { chờ += Time.unscaledDeltaTime; yield return null; }
                 if (gs.Floor != tang) break;
 
+                // HAI ĐỒNG HỒ, hai việc khác nhau:
+                //  · Time.time       = giây TRONG GAME — thứ người chơi cảm nhận, dùng để BÁO CÁO.
+                //  · unscaledTime    = giây thật — chỉ dùng cho mốc chống treo, vì bộ đo
+                //                      chạy ở timeScale 6 và màn cột mốc có thể đặt nó về 0.
+                // Bản trước đo bằng unscaledTime và báo "8 giây mỗi tầng" — đó là 48 giây
+                // game chia cho 6, tức con số đúng cho cái máy chứ không đúng cho người chơi.
                 float batDau = Time.time;
                 float hpVao = hp.MaxHp > 0f ? hp.Hp / hp.MaxHp : 0f;
                 // ShardsClimbed chỉ TĂNG, không bao giờ giảm. gs.Shards thì trừ đi mỗi lần
@@ -106,8 +113,14 @@ namespace TowerRpg.Tests
 
                 float langDaiNhat = 0f;
 
-                while (gs.Floor == tang && Time.time - batDau < 300f)
+                float treoTu = Time.unscaledTime;
+                while (gs.Floor == tang && Time.unscaledTime - treoTu < 300f)
                 {
+                    // Màn cột mốc boss đặt Time.timeScale = 0 và chờ người chạm. Trong
+                    // batchmode không có ai chạm, nên vòng lặp này phải tự đóng nó — và
+                    // vòng lặp phải đo bằng unscaledTime, nếu không nó đứng hình cùng game.
+                    if (motCot != null && motCot.IsOpen) motCot.Dong();
+
                     // Tiêu Mảnh như người chơi: mua ô RẺ NHẤT trước. Đây chính là giả định
                     // của 'Đường cong tầng'!G trong can-bang.xlsx (cấp kỳ vọng = ngân sách/4).
                     MuaThamLam(gs);

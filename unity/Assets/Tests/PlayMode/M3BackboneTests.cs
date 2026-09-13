@@ -28,6 +28,10 @@ namespace TowerRpg.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            // BẢO HIỂM: MilestoneOverlay đặt Time.timeScale = 0 và chờ người chạm. Test
+            // nào giết boss mà không đóng nó thì mọi vòng lặp đo bằng Time.deltaTime sau
+            // đó TREO VÔ HẠN — deltaTime bằng 0. Đặt lại ở đây rẻ hơn đi tìm chỗ treo.
+            Time.timeScale = 1f;   // bảo hiểm
             SaveSystem.Delete();
             SceneManager.LoadScene("M1", LoadSceneMode.Single);
             yield return null; yield return null;
@@ -42,7 +46,11 @@ namespace TowerRpg.Tests
         }
 
         [TearDown]
-        public void TearDown() => SaveSystem.Delete();
+        public void TearDown()
+        {
+            Time.timeScale = 1f;
+            SaveSystem.Delete();
+        }
 
         // ── Boss và Lõi ───────────────────────────────────────────────────────────
 
@@ -492,8 +500,13 @@ namespace TowerRpg.Tests
             SfxPlayer.Play(Sfx.Hit);
             yield return null;
 
-            var sources = sfx.GetComponentsInChildren<AudioSource>();
-            Assert.AreEqual(8, sources.Length, "phải có 8 nguồn quay vòng");
+            // Lọc THEO TÊN. AudioDirector (Đợt 2) cũng treo hai nguồn nhạc lên cùng
+            // Bootstrap, nên GetComponentsInChildren của SfxPlayer vơ luôn cả chúng và
+            // phép đếm "phải có đúng 8" hỏng — dù chẳng có gì sai cả.
+            var tatCa = sfx.GetComponentsInChildren<AudioSource>();
+            var sources = System.Array.FindAll(tatCa, s => s.name.StartsWith("Sfx"));
+            Assert.AreEqual(8, sources.Length,
+                $"phải có 8 nguồn hiệu ứng quay vòng (thấy {tatCa.Length} nguồn tổng cộng)");
 
             int playing = 0;
             foreach (AudioSource s in sources) if (s.isPlaying) playing++;

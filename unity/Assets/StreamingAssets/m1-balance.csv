@@ -178,3 +178,19 @@ hud.countSeconds,0.25,Số Mảnh chạy tới giá trị mới trong bao lâu
 hud.flashSeconds,0.18,Nhãn Mảnh nháy sáng bao lâu khi vừa nhận
 hud.floorBannerSeconds,1.0,Banner dọn sạch tầng hiện bao lâu
 hud.bossBannerSeconds,2.0,Banner hạ boss hiện bao lâu
+
+# ── ĐỢT 2 ─────────────────────────────────────────────────────────────────────
+# HỒI ĐẦY MÁU TRƯỚC TẦNG BOSS. Không phải buff — là lớp thứ TƯ đưa mã về mô hình.
+# 'Kiểm chứng build'!P = baseHp x (1+hpPerFloor)^99 x giáp, tức MÁU TỐI ĐA; công thức
+# T5 = P5/(R5 x B9) tính thời gian sống từ ĐẦY. Đo được người chơi tới tầng 9 với 9%
+# máu, tức biên thật 0,14 chứ không phải 1,50 — cả đường cong máu boss §5.10 mất nghĩa.
+# Bảng bấm giờ còn cho thấy nguồn hồi máu DUY NHẤT hiện nay là ResetHealth() lúc chết,
+# tức CHẾT ĐANG CÓ LỢI. Hồi ở cửa boss bịt luôn cái đó.
+boss.healOnEnter,1,1 = hồi đầy máu khi bước vào tầng boss
+# BÁO HIỆU RA ĐÒN §Đợt2-1. HIỂN THỊ THUẦN, KHÔNG có luật trượt: rời tầm trong lúc quái
+# vung tay thì đòn VẪN trúng khi bạn quay lại (hồi chiêu đóng băng chứ không huỷ).
+# Luật trượt là hoàn tiền, không phải né — kế hoạch đã loại ở Việc 2.
+enemy.telegraphSeconds,0.25,Quái sáng lên trước khi ra đòn bao lâu
+enemy.telegraphNudge,0.12,Quái nhích về phía người chơi bao xa khi báo hiệu
+juice.slashSeconds,0.16,Vệt chém tồn tại bao lâu
+audio.musicVolume,0.3,Âm lượng nhạc nền

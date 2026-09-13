@@ -8,6 +8,7 @@ using TowerRpg.Enemies;
 using TowerRpg.Loot;
 using TowerRpg.Player;
 using TowerRpg.Progression;
+using TowerRpg.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -33,6 +34,10 @@ namespace TowerRpg.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            // BẢO HIỂM: MilestoneOverlay đặt Time.timeScale = 0 và chờ người chạm. Test
+            // nào giết boss mà không đóng nó thì mọi vòng lặp đo bằng Time.deltaTime sau
+            // đó TREO VÔ HẠN — deltaTime bằng 0. Đặt lại ở đây rẻ hơn đi tìm chỗ treo.
+            Time.timeScale = 1f;   // bảo hiểm
             SaveSystem.Delete();
             SceneManager.LoadScene("M1", LoadSceneMode.Single);
             yield return null; yield return null;
@@ -47,6 +52,7 @@ namespace TowerRpg.Tests
         [TearDown]
         public void TearDown()
         {
+            Time.timeScale = 1f;
             Time.timeScale = 1f;
             SaveSystem.Delete();
         }
@@ -191,6 +197,85 @@ namespace TowerRpg.Tests
             StringAssert.Contains("NGÂN SÁCH", label.text,
                 $"hết ngân sách mà nhãn vẫn ghi '{label.text.Replace("\n", " / ")}' — "
                 + "người chơi đã dọn tầng 1 rồi, bảo họ dọn nữa là nói dối");
+        }
+
+        // ── Đợt 2 ─────────────────────────────────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Cua_boss_thi_HOI_DAY_MAU()
+        {
+            var hp = Object.FindFirstObjectByType<PlayerHealth>();
+            yield return null; yield return null;
+
+            // Tụt máu xuống thấp rồi leo tới cửa boss.
+            hp.TakeDamage(hp.MaxHp * 0.9f);
+            yield return null;
+            Assert.Less(hp.Fraction, 0.2f);
+
+            while (_gs.Floor < 9) _gs.AdvanceFloor();
+            yield return null;
+            EnemyRegistry.ClearAll();
+
+            float t = 0f;
+            while (_gs.Floor < 10 && t < 10f) { t += Time.deltaTime; yield return null; }
+            yield return null; yield return null;
+
+            // Bảng tính 'Kiểm chứng build'!T5 = P5/(R5 x B9) tính thời gian sống từ máu
+            // TỐI ĐA. Vào boss với 9% máu thì biên thật là 0,14 chứ không phải 1,50 — cả
+            // đường cong máu boss §5.10 mất nghĩa. Và trước đợt này, cách DUY NHẤT để vào
+            // boss với máu đầy là cố tình CHẾT trước đó.
+            Assert.AreEqual(1f, hp.Fraction, 0.02f,
+                $"vào tầng boss với {hp.Fraction * 100:F0}% máu — bảng tính giả định máu ĐẦY, "
+                + "và không hồi thì chết-trước-boss lại thành nước đi tối ưu");
+        }
+
+        [UnityTest]
+        public IEnumerator Man_cot_moc_dung_game_roi_TRA_LAI_timeScale()
+        {
+            var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();
+            Assert.IsNotNull(ms, "không có MilestoneOverlay");
+            yield return null;
+
+            Assert.AreEqual(1f, Time.timeScale, 0.001f);
+            ms.Show(10, 3, "Kiếm sĩ");
+            yield return null;
+
+            Assert.IsTrue(ms.IsOpen);
+            Assert.AreEqual(0f, Time.timeScale, 0.001f, "màn cột mốc phải DỪNG trò chơi");
+
+            // Khoá chạm một nhịp: người chơi đang bấm liên tục lúc hạ boss sẽ đóng mất
+            // màn hình trước khi đọc được chữ nào.
+            ms.Dong();
+            Assert.IsTrue(ms.IsOpen, "đóng được ngay lập tức — người chơi sẽ không kịp đọc");
+
+            yield return new WaitForSecondsRealtime(0.8f);
+            ms.Dong();
+
+            // TRẢ LẠI timeScale là phần sống còn: quên một đường thoát là CẢ GAME đứng hình
+            // và không có gì báo cho biết vì sao.
+            Assert.IsFalse(ms.IsOpen);
+            Assert.AreEqual(1f, Time.timeScale, 0.001f, "đóng màn cột mốc mà không trả timeScale");
+        }
+
+        [UnityTest]
+        public IEnumerator Hoat_anh_doi_theo_trang_thai_va_huong()
+        {
+            var anim = Object.FindFirstObjectByType<PlayerAnimator>();
+            var sr = anim.GetComponent<SpriteRenderer>();
+            Assert.IsNotNull(anim); Assert.IsNotNull(sr);
+            yield return null; yield return null;
+
+            Sprite dung = sr.sprite;
+            anim.BaoDanh(Vector3.right);
+            yield return null;
+            Sprite danhPhai = sr.sprite;
+
+            anim.BaoDanh(Vector3.up);
+            yield return null;
+            Sprite danhLen = sr.sprite;
+
+            Assert.AreNotEqual(dung, danhPhai, "ra đòn mà hình không đổi");
+            Assert.AreNotEqual(danhPhai, danhLen, "đánh sang phải và đánh lên phải khác hình");
         }
 
         /// <summary>Bất biến của hoạt ảnh chết: Count giảm NGAY, không đợi xác tan.</summary>

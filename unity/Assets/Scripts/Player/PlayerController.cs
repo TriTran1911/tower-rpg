@@ -18,6 +18,9 @@ namespace TowerRpg.Player
 
         public bool IsMoving { get; private set; }
 
+        /// <summary>Vector đi gần nhất — PlayerAnimator dùng để chọn hướng sprite.</summary>
+        public Vector2 LastInput { get; private set; }
+
         // Đầu vào do AutoBattle đẩy vào. Để null nghĩa là "máy không lái" — phải phân biệt
         // được với Vector2.zero, vì zero là một MỆNH LỆNH hợp lệ ("đứng yên mà đánh").
         private Vector2? _autoInput;
@@ -51,6 +54,7 @@ namespace TowerRpg.Player
             Vector2 input = stick.sqrMagnitude > 0f ? stick : (_autoInput ?? Vector2.zero);
 
             IsMoving = input.sqrMagnitude > _deadzone * _deadzone;
+            if (IsMoving) LastInput = input;
 
             _body.linearVelocity = IsMoving ? input * _moveSpeed : Vector2.zero;
         }

@@ -129,6 +129,10 @@ namespace TowerRpg.Progression
         /// <summary>Hệ số nhân của một ô: (1 + tăng trưởng)^(cấp - 1).</summary>
         public float Mult(Slot s) => Mathf.Pow(1f + _perLevel[(int)s], levels[(int)s] - 1);
 
+        /// <summary>Hệ số của ô nếu nó ở cấp cho trước — để giao diện xem trước cấp kế tiếp.</summary>
+        public float MultAtLevel(Slot s, int level) =>
+            Mathf.Pow(1f + _perLevel[(int)s], Mathf.Max(1, level) - 1);
+
         public int[] Snapshot() => (int[])levels.Clone();
 
         public void Restore(int[] saved)

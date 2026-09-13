@@ -112,7 +112,8 @@ namespace TowerRpg.Loot
         {
             float v = _value;
             _value = 0f;                       // chặn cộng hai lần nếu bị gọi chồng
-            _onCollected?.Invoke(v);
+            // v = 0 với viên loan báo (Lõi tím): vẫn kêu, vẫn biến mất, chỉ không cộng gì.
+            if (v > 0f) _onCollected?.Invoke(v);
             Juice.SfxPlayer.Play(Juice.Sfx.Pickup);
             Release();
         }

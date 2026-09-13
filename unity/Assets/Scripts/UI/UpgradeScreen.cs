@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using TowerRpg.Core;
 using TowerRpg.Player;
 using TowerRpg.Progression;
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace TowerRpg.UI
         [SerializeField] private RectTransform rowParent;
         [SerializeField] private TMP_Text shardLabel;
         [SerializeField] private TMP_Text coreLabel;
+        [SerializeField] private TMP_Text critLabel;
         [SerializeField] private Button respecButton;
         [SerializeField] private TMP_Text respecLabel;
 
@@ -50,9 +52,8 @@ namespace TowerRpg.UI
         // Nên: mảng lớn dùng nine_path_bg (tối, chữ giấy đạt 7,87:1);
         //      nút nhỏ giữ nine_path_panel (cam) nhưng chữ phải là MỰC (7,41:1).
 
-        // 4 x (220 + 14) = 936px. Bắt đầu ở -490 thì hết ở -1426, còn nút tẩy điểm ở
-        // -1496 — chừa 70px. Đổi hai số này là phải tính lại chỗ đó trong BuildM1Scene.
-        private const int RowH = 220, Pad = 14, Touch = 144;
+        // 4 x (212 + 12) = 896px. Bắt đầu ở -510 thì hết ở -1406, nút tẩy điểm ở -1496. Đổi hai số này là phải tính lại chỗ đó trong BuildM1Scene.
+        private const int RowH = 212, Pad = 12, Touch = 144;
 
         private sealed class Row
         {
@@ -293,6 +294,31 @@ namespace TowerRpg.UI
         /// Nút phân biệt NÂNG với ĐỘT PHÁ bằng SẮC NỀN, không bằng màu chữ: chữ trên gỗ
         /// sáng bắt buộc phải là mực mới đọc được, nên màu chữ không còn là kênh rảnh.
         /// </summary>
+        /// <summary>"Sát thương 10,0 → 10,4" thay vì "×1,04".</summary>
+        private static string MoTaNang(GameState gs, Slot s)
+        {
+            PlayerStats st = PlayerStats.Instance;
+            if (st == null || !st.Ready) return $"{Equipment.StatName(s)} — ×{gs.Gear.Mult(s):0.00}";
+
+            float nay = s switch
+            {
+                Slot.Weapon => st.Damage,
+                Slot.Armor  => st.MaxHp,
+                Slot.Glove  => st.AttacksPerSec,
+                Slot.Ring   => st.CritMultiplier,
+                _           => 0f,
+            };
+            // Cấp kế tiếp nhân thêm đúng một bậc tăng trưởng của ô đó.
+            float buoc = gs.Gear.Level(s) < gs.Gear.CapOf(s)
+                       ? gs.Gear.Mult(s) > 0f
+                         ? nay * (gs.Gear.MultAtLevel(s, gs.Gear.Level(s) + 1) / gs.Gear.Mult(s))
+                         : nay
+                       : nay;
+
+            string F(float v) => v >= 100f ? v.ToString("N0") : v.ToString("0.0");
+            return $"{Equipment.StatName(s)}  {F(nay)} → {F(buoc)}";
+        }
+
         private static void SetButton(Row r, bool on, Color tint)
         {
             r.Button.interactable = on;
@@ -327,7 +353,29 @@ namespace TowerRpg.UI
             if (gs == null || !gs.Ready || !_built) return;
 
             if (shardLabel != null) shardLabel.text = $"{gs.Shards:N0} Mảnh";
-            if (coreLabel  != null) coreLabel.text  = $"{gs.Cores} Lõi";
+            // "x / 30 cả game" — §5.6: Lõi hữu hạn TUYỆT ĐỐI, 10 boss x 3. Con số tổng
+            // phải nằm cạnh con số đang có, nếu không người chơi không có cách nào biết
+            // mình đã tiêu bao nhiêu phần của một nguồn không bao giờ sinh thêm.
+            if (coreLabel != null)
+            {
+                int daTieu = gs.Gear.CoresSpent();
+                int tongCaGame = gs.BossEvery > 0 ? (100 / gs.BossEvery) * 3 : 30;
+                coreLabel.text = $"{gs.Cores} Lõi  ·  đã tiêu {daTieu}/{tongCaGame} cả game";
+            }
+
+            // HAI CON SỐ CỦA §5.5(b). Nhãn PHẢI là "đánh liên tục", KHÔNG được viết "giữ
+            // yên liên tục": §5.4 cho phép lùi lại chờ mà KHÔNG mất thanh dồn, nên nhãn
+            // sai sẽ dạy người chơi ngược luật. DESIGN.md:226-228 ghi rõ câu này.
+            if (critLabel != null)
+            {
+                PlayerStats st = PlayerStats.Instance;
+                int meter = BalanceConfig.Instance != null
+                          ? Mathf.Max(2, BalanceConfig.Instance.GetInt("crit.meterSize")) : 5;
+                float aps = st != null && st.Ready ? st.AttacksPerSec : 1f;
+                float giay = aps > 0f ? meter / aps : 0f;
+                float heSo = st != null && st.Ready ? st.CritMultiplier : 2f;
+                critLabel.text = $"Chí mạng ×{heSo:0.00}  —  {meter} đòn ≈ {giay:0.00} s đánh liên tục";
+            }
 
             RefreshRespec(gs);
 
@@ -367,7 +415,10 @@ namespace TowerRpg.UI
                 {
                     float cost = gs.Gear.NextCost(s);
                     bool afford = gs.Shards >= cost;
-                    r.Progress.text = $"{Equipment.StatName(s)} — ×{gs.Gear.Mult(s):0.00}";
+                    // Số THẬT thay vì hệ số trừu tượng: "×1,04" không nói gì, còn
+                    // "Sát thương 10,0 → 10,4" là thứ người chơi thấy lại trên màn hình
+                    // ngay sau khi bấm. Cùng một phép nhân, hai mức đọc được khác hẳn.
+                    r.Progress.text = MoTaNang(gs, s);
                     r.Progress.color = dim;
                     r.Action.text = "NÂNG";
                     r.Cost.text = $"{cost:N0}";

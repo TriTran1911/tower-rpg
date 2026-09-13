@@ -54,6 +54,8 @@ namespace TowerRpg.Core
             "loot.popSeconds", "loot.magnetRadius", "loot.pickupRadius",
             "loot.flySpeed", "loot.maxLifetime", "hud.countSeconds",
             "hud.flashSeconds", "hud.floorBannerSeconds", "hud.bossBannerSeconds",
+            "boss.healOnEnter", "enemy.telegraphSeconds", "enemy.telegraphNudge",
+            "juice.slashSeconds", "audio.musicVolume",
         };
 
         private void Awake()

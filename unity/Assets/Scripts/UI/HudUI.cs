@@ -36,6 +36,7 @@ namespace TowerRpg.UI
         [SerializeField] private GameObject eventBannerRoot;
         [SerializeField] private TMP_Text eventBanner;
         [SerializeField] private Juice.CameraShake cameraShake;
+        [SerializeField] private MilestoneOverlay milestone;
 
         // QUYẾT ĐỊNH #28 áp cho cả HUD: nút dùng gỗ SÁNG (243,140,76), mà trên nền đó
         // vàng đạt 1,27:1 · ngọc 1,25:1 · mờ 1,45:1 — đều dưới xa 4,5:1, tức là không đọc
@@ -147,9 +148,20 @@ namespace TowerRpg.UI
         /// </summary>
         private void OnBossDefeated(int floor, int cores)
         {
-            ShowBanner($"HẠ BOSS   ·   +{cores} LÕI   ·   MỞ NHÂN VẬT MỚI",
-                       Jade, _bossBannerSeconds);
-            if (cameraShake != null) cameraShake.Shake();
+            // Màn hình cột mốc DỪNG trò chơi lại; banner chỉ là bản dự phòng khi chưa
+            // nối được overlay. Không chạy cả hai — hai thứ cùng nói một điều là ồn.
+            if (milestone != null)
+            {
+                GameState gs2 = GameState.Instance;
+                string ten = gs2 != null ? CharacterRoster.Name(gs2.BossesKilled) : "?";
+                milestone.Show(floor, cores, ten);
+            }
+            else
+            {
+                ShowBanner($"HẠ BOSS   ·   +{cores} LÕI   ·   MỞ NHÂN VẬT MỚI",
+                           Jade, _bossBannerSeconds);
+                if (cameraShake != null) cameraShake.Shake();
+            }
             Refresh();
         }
 

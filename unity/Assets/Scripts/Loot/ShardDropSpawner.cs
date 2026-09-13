@@ -80,10 +80,16 @@ namespace TowerRpg.Loot
             for (int i = 0; i < warmed.Count; i++) _pool.Release(warmed[i]);
         }
 
-        /// <summary>Thả một viên tại chỗ quái vừa gục.</summary>
+        /// <summary>
+        /// Thả một viên tại chỗ quái vừa gục.
+        ///
+        /// value = 0 là hợp lệ và có nghĩa: viên LOAN BÁO (Lõi tím của boss). Lõi đã do
+        /// AwardBoss cấp rồi, viên bay ra chỉ để người chơi nhìn thấy điều đó xảy ra.
+        /// Nhặt nó không cộng gì — và đó là chủ ý, không phải thiếu sót.
+        /// </summary>
         public void Drop(Vector3 position, float value)
         {
-            if (!_ready || value <= 0f) return;
+            if (!_ready || value < 0f) return;
 
             ShardPickup p = _pool.Get();
             _live.Add(p);

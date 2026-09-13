@@ -123,6 +123,14 @@ namespace TowerRpg.EditorTools
             var sweep    = bootGo.AddComponent<SweepRunner>();
             var sfx      = bootGo.AddComponent<SfxPlayer>();
             var drops    = bootGo.AddComponent<ShardDropSpawner>();
+            var slashes  = bootGo.AddComponent<SlashFxSpawner>();
+            var music    = bootGo.AddComponent<AudioDirector>();
+
+            // Pool thứ hai cho Lõi tím của boss — tách riêng vì nó dùng prefab khác và
+            // KHÔNG được nối vào lớp kế toán hũ Mảnh của FloorRunner.
+            var coreDropsGo = new GameObject("CoreDrops");
+            coreDropsGo.transform.SetParent(bootGo.transform, false);
+            var coreDrops = coreDropsGo.AddComponent<ShardDropSpawner>();
 
             // ── Người chơi ────────────────────────────────────────────────────────────
             var playerGo = new GameObject("Player");
@@ -139,6 +147,7 @@ namespace TowerRpg.EditorTools
             var attack = playerGo.AddComponent<AutoAttack>();
             var autoBattle = playerGo.AddComponent<AutoBattle>();
             var look   = playerGo.AddComponent<PlayerAppearance>();
+            var anim   = playerGo.AddComponent<PlayerAnimator>();
 
             // thanh chí mạng ngay dưới chân nhân vật (§5.4) — CHIA VẠCH, không liền mạch
             var critCanvasGo = new GameObject("CritBarCanvas");
@@ -374,6 +383,9 @@ namespace TowerRpg.EditorTools
             var upCores = UiText("Cores", upGo.transform, "0 Lõi", 32f, UiCinnabar);
             Anchor(upCores.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -434f), new Vector2(600, 44));
 
+            var upCrit = UiText("Crit", upGo.transform, "", 24f, UiJade);
+            Anchor(upCrit.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -466f), new Vector2(900, 34));
+
             var rowParentGo = new GameObject("Rows", typeof(RectTransform));
             rowParentGo.transform.SetParent(upGo.transform, false);
             var rowParent = rowParentGo.GetComponent<RectTransform>();
@@ -385,7 +397,7 @@ namespace TowerRpg.EditorTools
             // Ô Mảnh/Lõi của HUD kết thúc ở -320, nên tiêu đề phải bắt đầu từ -340 trở
             // xuống. Bốn dòng 220+14 = 936px từ -490 thì hết ở -1426; nút tẩy điểm ở -1496.
             // Đổi bất kỳ số nào ở đây là phải tính lại RowH/Pad trong UpgradeScreen.
-            rowParent.anchoredPosition = new Vector2(0f, -490f);
+            rowParent.anchoredPosition = new Vector2(0f, -510f);
             rowParent.sizeDelta = new Vector2(0f, 1200f);
 
             // nút tẩy điểm — §5.8 van 2. Đặt DƯỚI bốn dòng, không lẫn vào chúng: đây là
@@ -480,6 +492,30 @@ namespace TowerRpg.EditorTools
             charBtn.onClick.AddListener(chScreen.Toggle);
             chCloseBtn.onClick.AddListener(chScreen.Toggle);
 
+            // ── MÀN HÌNH CỘT MỐC BOSS ────────────────────────────────────────────────
+            var msGo = new GameObject("MilestoneOverlay", typeof(RectTransform));
+            msGo.transform.SetParent(canvasGo.transform, false);
+            var msRt = msGo.GetComponent<RectTransform>();
+            msRt.anchorMin = Vector2.zero; msRt.anchorMax = Vector2.one;
+            msRt.offsetMin = msRt.offsetMax = Vector2.zero;
+
+            Image msDim = UiImage("Dim", msGo.transform, null, new Color(0.03f, 0.02f, 0.02f, 0.94f), false);
+            msDim.rectTransform.anchorMin = Vector2.zero;
+            msDim.rectTransform.anchorMax = Vector2.one;
+            msDim.rectTransform.offsetMin = msDim.rectTransform.offsetMax = Vector2.zero;
+            msDim.raycastTarget = true;      // nuốt chạm, và chính nó là nút "chạm để tiếp"
+
+            var msTitle = UiText("Title", msGo.transform, "", 58f, UiGold);
+            Anchor(msTitle.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(960, 80));
+            var msDetail = UiText("Detail", msGo.transform, "", 40f, UiPaper);
+            Anchor(msDetail.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(960, 130));
+            msDetail.textWrappingMode = TextWrappingModes.Normal;
+            var msHint = UiText("Hint", msGo.transform, "", 28f, UiDim);
+            Anchor(msHint.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -160f), new Vector2(960, 40));
+
+            msGo.SetActive(false);
+            var milestone = canvasGo.AddComponent<MilestoneOverlay>();
+
             // ── CẦN GẠT ĐỘNG ─────────────────────────────────────────────────────────
             // Vùng chạm phủ nửa dưới màn hình; cần gạt hiện ra ngay nơi ngón đặt xuống.
             var zoneGo = new GameObject("JoystickZone", typeof(RectTransform));
@@ -523,16 +559,26 @@ namespace TowerRpg.EditorTools
             Directory.CreateDirectory(PrefabDir);
             GameObject enemyPrefab = MakeEnemyPrefab(enemy);
             GameObject popupPrefab = MakePopupPrefab();
-            GameObject shardPrefab = MakeShardPrefab();
+            GameObject shardPrefab = MakeShardPrefab("GemYellow", UiGold, "ShardPickup");
+            GameObject corePrefab  = MakeShardPrefab("GemPurple", UiCinnabar, "CorePickup");
+            GameObject slashPrefab = MakeSlashPrefab();
 
             // ── Nối tham chiếu ────────────────────────────────────────────────────────
             Wire(runner,   ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()),
                            ("arenaCentre", null), ("playerHealth", health),
-                           ("bossSprite", boss), ("drops", drops));
-            Wire(drops,    ("pickupPrefab", shardPrefab.GetComponent<ShardPickup>()));
+                           ("bossSprite", boss), ("drops", drops), ("coreDrops", coreDrops));
+            Wire(drops,     ("pickupPrefab", shardPrefab.GetComponent<ShardPickup>()));
+            Wire(coreDrops, ("pickupPrefab", corePrefab.GetComponent<ShardPickup>()));
+            Wire(slashes,   ("prefab", slashPrefab.GetComponent<SlashFx>()));
+            Wire(music,     ("runner", runner));
+            WireMusic(music, "Musics/1 - Adventure Begin.ogg", "Musics/17 - Fight.ogg");
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
             Wire(ctrl,     ("joystick", joystick));
-            Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups), ("cameraShake", shake));
+            Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups),
+                           ("cameraShake", shake), ("slashes", slashes), ("animator", anim));
+            Wire(anim,     ("target", psr), ("controller", ctrl));
+            Wire(milestone, ("root", msGo), ("title", msTitle), ("detail", msDetail),
+                            ("hint", msHint), ("shake", shake));
             Wire(critUi,   ("meter", meter), ("segmentRoot", segRoot), ("segmentPrefab", segPrefab));
             Wire(hpUi,     ("health", health), ("fillImage", hpFill), ("label", hpText));
             Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
@@ -547,10 +593,10 @@ namespace TowerRpg.EditorTools
                            ("sweepLabel", sweepTxt), ("sweepFill", sweepFill),
                            ("auto", autoBattle), ("autoButton", autoBtn), ("autoLabel", autoTxt),
                            ("runner", runner), ("eventBanner", eventBanner),
-                           ("eventBannerRoot", bannerBg.gameObject),
+                           ("eventBannerRoot", bannerBg.gameObject), ("milestone", milestone),
                            ("cameraShake", shake));
             Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
-                           ("coreLabel", upCores), ("respecButton", respecBtn),
+                           ("coreLabel", upCores), ("critLabel", upCrit), ("respecButton", respecBtn),
                            ("respecLabel", respecTxt));
             Wire(chScreen, ("root", chGo), ("cardParent", chRows), ("hintLabel", chHint));
 
@@ -601,6 +647,24 @@ namespace TowerRpg.EditorTools
                     ActorSprite($"Actor/Character/{CharacterRoster.ArtFolders[i]}/Faceset.png");
             chSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(chScreen);
+
+            // Hoạt ảnh: Idle/Walk/Attack x 4 hướng x 5 nhân vật. File 64x16 = bốn khung
+            // 16x16 nằm ngang, thứ tự xuống/trái/phải/lên.
+            var animSo = new SerializedObject(anim);
+            foreach (string bo in new[] { "idle", "walk", "attack" })
+            {
+                SerializedProperty arr = animSo.FindProperty(bo);
+                arr.arraySize = CharacterRoster.Count * PlayerAnimator.Huong;
+                string file = bo == "idle" ? "Idle" : bo == "walk" ? "Walk" : "Attack";
+                for (int ch = 0; ch < CharacterRoster.Count; ch++)
+                    for (int d = 0; d < PlayerAnimator.Huong; d++)
+                        arr.GetArrayElementAtIndex(ch * PlayerAnimator.Huong + d)
+                           .objectReferenceValue = SliceAndGet(
+                               $"{Art}/Actor/Character/{CharacterRoster.ArtFolders[ch]}/SeparateAnim/{file}.png",
+                               Cell, d);
+            }
+            animSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(anim);
 
             // hình người chơi theo từng nhân vật
             var lookSo = new SerializedObject(look);
@@ -823,11 +887,11 @@ namespace TowerRpg.EditorTools
         }
 
         /// <summary>Viên Mảnh rơi ra từ quái. GemYellow 14x14, một ảnh nguyên nên không cắt lưới.</summary>
-        private static GameObject MakeShardPrefab()
+        private static GameObject MakeShardPrefab(string gem, Color tint, string name)
         {
-            var go = new GameObject("ShardPickup");
+            var go = new GameObject(name);
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = ActorSpriteAt("Items/Resource/GemYellow.png");
+            sr.sprite = ActorSpriteAt($"Items/Resource/{gem}.png");
             sr.sortingOrder = 7;              // trên sàn (-100) và trên quái (5)
 
             // NHUỘM VÀNG. Tên file là "GemYellow" nhưng bảng màu Mực & Son đã remap nó
@@ -837,13 +901,71 @@ namespace TowerRpg.EditorTools
             // Mảnh KHÔNG thuộc tầng thế giới: nó là PHẦN THƯỞNG, cùng tầng đọc với giao
             // diện — tông ấm, không đổi theo chương (quyết định #23). Nhãn "Mảnh" trên HUD
             // đã là vàng; viên rơi ra phải cùng màu thì người chơi mới nối được hai thứ.
-            sr.color = UiGold;
+            sr.color = tint;
             go.AddComponent<ShardPickup>();
 
-            string path = $"{PrefabDir}/ShardPickup.prefab";
+            string path = $"{PrefabDir}/{name}.prefab";
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        /// <summary>Vệt chém — Cut/SpriteSheet.png 128x32 = bốn khung 32x32.</summary>
+        private static GameObject MakeSlashPrefab()
+        {
+            var go = new GameObject("SlashFx");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 20;             // trên quái (5) và thanh máu (7)
+            var fx = go.AddComponent<SlashFx>();
+
+            var so = new SerializedObject(fx);
+            so.FindProperty("view").objectReferenceValue = sr;
+            SerializedProperty frames = so.FindProperty("frames");
+            frames.arraySize = 4;
+            for (int i = 0; i < 4; i++)
+                frames.GetArrayElementAtIndex(i).objectReferenceValue =
+                    SliceAndGet($"{Art}/FX/Attack/Cut/SpriteSheet.png", 32, i);
+            if (frames.GetArrayElementAtIndex(0).objectReferenceValue is Sprite s0) sr.sprite = s0;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            string path = $"{PrefabDir}/SlashFx.prefab";
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return prefab;
+        }
+
+        /// <summary>
+        /// Nhạc nền phải là STREAMING, ngược hẳn với hiệu ứng. Một bài 2-3 phút giải nén
+        /// vào RAM là hàng chục MB cho đúng một thứ đang phát; còn hiệu ứng thì ngắn và
+        /// phát liên tục nên mới nạp sẵn (xem WireClips).
+        /// </summary>
+        private static void WireMusic(AudioDirector director, string normal, string boss)
+        {
+            AudioClip Nap(string rel)
+            {
+                string path = $"{Art}/Audio/{rel}";
+                if (AssetImporter.GetAtPath(path) is AudioImporter ai)
+                {
+                    var s = ai.defaultSampleSettings;
+                    s.loadType = AudioClipLoadType.Streaming;
+                    s.compressionFormat = AudioCompressionFormat.Vorbis;
+                    s.quality = 0.6f;
+                    s.preloadAudioData = false;
+                    ai.defaultSampleSettings = s;
+                    ai.forceToMono = false;      // nhạc giữ stereo
+                    EditorUtility.SetDirty(ai);
+                    ai.SaveAndReimport();
+                }
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                if (clip == null) Debug.LogError($"[BuildM1Scene] Không thấy nhạc: {path}");
+                return clip;
+            }
+
+            var so = new SerializedObject(director);
+            so.FindProperty("normalTrack").objectReferenceValue = Nap(normal);
+            so.FindProperty("bossTrack").objectReferenceValue = Nap(boss);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(director);
         }
 
         /// <summary>Như ActorSprite nhưng nhận đường dẫn ngoài thư mục Actor/.</summary>

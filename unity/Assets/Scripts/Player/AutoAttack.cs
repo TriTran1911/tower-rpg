@@ -18,6 +18,8 @@ namespace TowerRpg.Player
         [SerializeField] private CritMeter critMeter;
         [SerializeField] private DamagePopupSpawner popups;
         [SerializeField] private CameraShake cameraShake;
+        [SerializeField] private Juice.SlashFxSpawner slashes;
+        [SerializeField] private PlayerAnimator animator;
 
         private float _range;
 
@@ -83,6 +85,8 @@ namespace TowerRpg.Player
             // chơi ĐẾM được, nên đòn thứ 5 phải nghe khác hẳn chứ không chỉ to hơn.
             Juice.SfxPlayer.Play(isCrit ? Juice.Sfx.Crit : Juice.Sfx.Hit);
 
+            if (animator != null) animator.BaoDanh(hitPosition - transform.position);
+            if (slashes != null) slashes.Play(hitPosition, isCrit);
             if (popups != null) popups.Show(hitPosition, amount, isCrit);
             if (isCrit && cameraShake != null) cameraShake.Shake();
 

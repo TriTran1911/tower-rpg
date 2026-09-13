@@ -55,6 +55,10 @@ namespace TowerRpg.EditorTools
                                                 "panelSprite", "bgSprite", "cellSprite");
             fail += Check<AutoBattle>(log, "player", "joystick");
             fail += Check<PlayerAppearance>(log, "target");
+            fail += Check<PlayerAnimator>(log, "target", "controller");
+            fail += Check<SlashFxSpawner>(log, "prefab");
+            fail += Check<AudioDirector>(log, "normalTrack", "bossTrack", "runner");
+            fail += Check<MilestoneOverlay>(log, "root", "title", "detail", "hint", "shake");
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
             fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
@@ -223,6 +227,23 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, $"đủ {CharacterRoster.Count} hình người chơi",
                            lookCount == CharacterRoster.Count,
                            $"{lookCount}/{CharacterRoster.Count}");
+
+            // Hoạt ảnh: 3 bộ x 5 nhân vật x 4 hướng = 60 sprite. Thiếu một cái là nhân
+            // vật đứng hình ở đúng hướng đó và không gì báo cho biết.
+            var pAnim = Object.FindFirstObjectByType<PlayerAnimator>();
+            var animSo2 = pAnim != null ? new SerializedObject(pAnim) : null;
+            int animCo = 0, animCan = 0;
+            if (animSo2 != null)
+                foreach (string bo in new[] { "idle", "walk", "attack" })
+                {
+                    SerializedProperty arr = animSo2.FindProperty(bo);
+                    if (arr == null) continue;
+                    animCan += arr.arraySize;
+                    for (int i = 0; i < arr.arraySize; i++)
+                        if (arr.GetArrayElementAtIndex(i).objectReferenceValue != null) animCo++;
+                }
+            fail += Assert(log, "đủ sprite hoạt ảnh nhân vật (3 bộ x 5 x 4 hướng)",
+                           animCan > 0 && animCo == animCan, $"{animCo}/{animCan}");
 
             fail += Assert(log, "có SweepRunner trong scene",
                            Object.FindFirstObjectByType<SweepRunner>() != null, "không có");

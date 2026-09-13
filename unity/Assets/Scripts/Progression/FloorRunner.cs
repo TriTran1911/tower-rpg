@@ -20,6 +20,7 @@ namespace TowerRpg.Progression
         [SerializeField] private Transform arenaCentre;
         [SerializeField] private PlayerHealth playerHealth;
         [SerializeField] private Loot.ShardDropSpawner drops;
+        [SerializeField] private Loot.ShardDropSpawner coreDrops;
 
         [Header("Boss — §5.10")]
         [SerializeField] private Sprite bossSprite;
@@ -34,6 +35,7 @@ namespace TowerRpg.Progression
         public event Action<int, int> BossDefeated;    // tầng, số Lõi vừa nhận
 
         private float _hp1, _hpG, _dps1, _dpsG, _radius, _rate, _range, _bossRangeMult;
+        private bool _healOnBoss;
         private int _count, _bossCount;
         private readonly System.Collections.Generic.List<float> _bossMult =
             new System.Collections.Generic.List<float>();
@@ -93,6 +95,7 @@ namespace TowerRpg.Progression
             _range  = b.Get("enemy.attackRange");
 
             _bossCount     = Mathf.Max(1, b.GetInt("boss.count"));
+            _healOnBoss    = b.GetInt("boss.healOnEnter") != 0;
             _bossRangeMult = b.Get("boss.attackRangeMult");
             _bossMult.Clear();
             // Đọc tới khi hết khoá — số boss bám theo số tầng, không viết cứng.
@@ -136,7 +139,16 @@ namespace TowerRpg.Progression
                     if (GameState.Instance.AwardBoss(floor))
                     {
                         Juice.SfxPlayer.Play(Juice.Sfx.BossDown);
-                        BossDefeated?.Invoke(floor, GameState.Instance.Cores - before);
+                        int nhan = GameState.Instance.Cores - before;
+
+                        // Lõi ĐÃ được AwardBoss cấp trong khung hình đó rồi. Mấy viên tím
+                        // bay ra chỉ là LỜI LOAN BÁO, không phải nguồn — giá trị 0 nên
+                        // nhặt chúng không cộng gì. Dùng lại đúng pool của Việc 5.
+                        if (coreDrops != null && _boss != null)
+                            for (int k = 0; k < nhan; k++)
+                                coreDrops.Drop(_boss.transform.position, 0f);
+
+                        BossDefeated?.Invoke(floor, nhan);
                     }
                 }
 
@@ -182,6 +194,17 @@ namespace TowerRpg.Progression
             // Lượt tầng MỚI thì hũ mở lại từ 0. Cùng một tầng (đường Retry) thì giữ nguyên
             // _paid — đó là thứ chặn chết-rồi-thử-lại thành máy in Mảnh.
             if (floor != _paidFloor) { _paidFloor = floor; _paid = 0f; }
+
+            // HỒI ĐẦY MÁU Ở CỬA BOSS — lớp thứ tư đưa mã về đúng bảng tính, không phải
+            // buff. 'Kiểm chứng build'!T5 = P5/(R5 x B9) tính thời gian sống từ máu TỐI
+            // ĐA; người chơi tới tầng 9 với 9% máu thì biên thật là 0,14 chứ không phải
+            // 1,50. Và nó bịt luôn chuyện CHẾT CÓ LỢI: trước đây ResetHealth() lúc chết
+            // là nguồn hồi máu duy nhất, nên cố tình chết trước boss là nước đi tối ưu.
+            if (boss && _healOnBoss && playerHealth != null)
+            {
+                playerHealth.ResetHealth();
+                Debug.Log($"[FloorRunner] Cửa boss tầng {floor}: hồi đầy máu.");
+            }
 
             // BẮT BUỘC: ClearAll() dưới đây chỉ dọn QUÁI. Viên Mảnh của lượt trước vẫn nằm
             // trên sàn, và nếu để lại thì chúng được cộng vào hũ của lượt này.

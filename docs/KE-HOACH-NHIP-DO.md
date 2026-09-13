@@ -484,7 +484,34 @@ Dựng lại scene · chạy 30 test cũ + 5 test mới · chụp ảnh · **ch�
 
 ---
 
-# ĐỢT 2 — LÀM SAU, NẾU CÒN SỨC (theo đúng thứ tự này)
+# ~~ĐỢT 2~~ ✅ XONG — cả 8 mục, cộng mục "chờ số liệu"
+
+> **57/57 test, 52 mục kiểm scene.** Bảng bấm giờ chạy lại sau Đợt 2:
+> **HP vào tầng 10: 89 % → 100 %** · **trận boss: 151 s → 78 s**.
+>
+> | # | Việc | Ghi chú |
+> |---|---|---|
+> | 0 | **Hồi đầy máu ở cửa boss** | Mục "CHỜ SỐ LIỆU" — số đã có. Không phải buff: `'Kiểm chứng build'!T5 = P5/(R5×B9)` tính thời gian sống từ máu **tối đa**, mà người chơi tới tầng 9 với 9 % máu, tức biên thật **0,14** chứ không phải 1,50. Đây là lớp thứ tư đưa mã về mô hình, và nó bịt luôn chuyện **chết có lợi** |
+> | 1 | Báo hiệu ra đòn | Sáng lên + nhích tới trong 0,25 s. **Hiển thị thuần, KHÔNG có luật trượt** — rời tầm thì hồi chiêu đóng băng chứ không huỷ |
+> | 2 | Vệt chém | `FX/Attack/Cut` 4 khung qua pool. Chí mạng to hơn 1,35× và ngả vàng |
+> | 3 | Hai con số §5.5(b) | Nhãn đúng nguyên văn *"5 đòn ≈ 0,95 s đánh liên tục"*, và `×1,04` → **"Sát thương 10,0 → 10,4"** |
+> | 4 | Nhạc nền | Fade chéo sang `17 - Fight.ogg` ở tầng boss. Import **Streaming**, ngược hẳn với hiệu ứng |
+> | 5 | Boss rơi Lõi tím | Giá trị **0** — Lõi đã do `AwardBoss` cấp, viên bay chỉ là lời loan báo |
+> | 6 | Màn hình cột mốc | `Time.timeScale = 0`, khoá chạm 0,6 s để kịp đọc |
+> | 7 | Khung Lõi | *"3 Lõi · đã tiêu 6/30 cả game"* |
+> | 8 | Hoạt ảnh đánh + hướng | Idle/Walk/Attack × 4 hướng × 5 nhân vật = 60 sprite |
+>
+> **Ba lỗi tự gây, hai trong đó do chính Đợt 2 sinh ra:**
+> 1. `Time.timeScale = 0` của màn cột mốc **treo bảng bấm giờ vô hạn** — vòng lặp đo bằng
+>    `Time.deltaTime` không bao giờ tiến. Bộ đo phải tự đóng overlay, và mọi `SetUp` thêm
+>    một dòng `Time.timeScale = 1f` bảo hiểm.
+> 2. Sửa xong lại đo bằng `unscaledTime` và báo **"8 giây mỗi tầng"** — đó là 48 giây game
+>    chia cho tốc độ tua 6×, đúng cho máy và sai cho người. Tách hai đồng hồ: `Time.time`
+>    để **báo cáo**, `unscaledTime` chỉ để **chống treo**.
+> 3. `AudioDirector` treo hai nguồn nhạc lên cùng `Bootstrap` nên test đếm nguồn hiệu ứng
+>    ra 10 thay vì 8 — lọc theo tên.
+
+# Nội dung gốc Đợt 2
 
 | # | Việc | File | Công |
 |---|---|---|---|

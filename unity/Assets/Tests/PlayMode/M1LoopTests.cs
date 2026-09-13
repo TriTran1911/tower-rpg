@@ -35,6 +35,10 @@ namespace TowerRpg.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            // BẢO HIỂM: MilestoneOverlay đặt Time.timeScale = 0 và chờ người chạm. Test
+            // nào giết boss mà không đóng nó thì mọi vòng lặp đo bằng Time.deltaTime sau
+            // đó TREO VÔ HẠN — deltaTime bằng 0. Đặt lại ở đây rẻ hơn đi tìm chỗ treo.
+            Time.timeScale = 1f;   // bảo hiểm
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
             yield return null;
             yield return null;
