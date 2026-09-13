@@ -30,8 +30,16 @@ namespace TowerRpg.Juice
                                "Thêm TextMeshPro - Text (không phải bản UI).", this);
         }
 
+        /// <summary>
+        /// Dấu phẩy thập phân kiểu Việt. Không dùng CultureInfo mặc định của máy —
+        /// máy người chơi đặt en-US sẽ in "10.4" giữa một giao diện toàn tiếng Việt.
+        /// </summary>
+        private static readonly System.Globalization.NumberFormatInfo Vi =
+            new System.Globalization.NumberFormatInfo { NumberDecimalSeparator = "," };
+
         public void Play(Vector3 worldPosition, float amount, bool isCrit,
-                         float riseSpeed, float lifetime, Action<DamagePopup> onFinished)
+                         float riseSpeed, float lifetime, float decimalBelow,
+                         Action<DamagePopup> onFinished)
         {
             _onFinished = onFinished;
 
@@ -44,7 +52,12 @@ namespace TowerRpg.Juice
             transform.position = worldPosition;
             transform.localScale = Vector3.one * (isCrit ? critScale : 1f);
 
-            _label.text = Mathf.RoundToInt(amount).ToString();
+            // Một chữ số thập phân khi số còn nhỏ: +4,4% mỗi cấp mà làm tròn thì
+            // 10,00 và 10,44 in ra GIỐNG HỆT NHAU, và lần nâng cấp đầu tiên của người
+            // chơi trông như không có tác dụng gì. Xem chú thích juice.popupDecimalBelow.
+            _label.text = amount < decimalBelow
+                        ? amount.ToString("0.0", Vi)
+                        : Mathf.RoundToInt(amount).ToString();
             _label.color = isCrit ? critColour : normalColour;
 
             _riseSpeed = riseSpeed;

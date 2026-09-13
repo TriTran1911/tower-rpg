@@ -64,6 +64,12 @@ namespace TowerRpg.Tests
                 if (File.Exists(old)) File.Delete(old);
             }
 
+            // XOÁ SAVE TRƯỚC. Không có dòng này thì ảnh chụp nạp tiến trình của các test
+            // chạy trước nó trong cùng một lượt — nút TỰ ĐÁNH hiện ra đã mở khoá, tầng
+            // không phải tầng 1. Tức là ta đang chụp một người chơi đã cày lâu, đúng lúc
+            // thứ cần nhìn lại là 5 phút ĐẦU của người chơi MỚI.
+            SaveSystem.Delete();
+
             SceneManager.LoadScene("M1", LoadSceneMode.Single);
             yield return null; yield return null;
 
@@ -155,6 +161,7 @@ namespace TowerRpg.Tests
             }
 
             cam.targetTexture = null;
+            SaveSystem.Delete();      // đừng để lại tiến trình cho test chạy sau
             foreach (string n in Shots.Select(s => s.name).Concat(Extra))
                 Assert.IsTrue(File.Exists(Path.Combine(OutDir, n + ".png")), $"thiếu ảnh {n}.png");
         }

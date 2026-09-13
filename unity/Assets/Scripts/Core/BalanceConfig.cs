@@ -48,7 +48,7 @@ namespace TowerRpg.Core
             "core.capStep", "respec.costBase", "respec.costGrowth",
             "sweep.unlockOnClear", "sweep.seconds", "auto.unlockFloor",
             "juice.shakeDuration", "juice.shakeMagnitude", "juice.shakeYRatio",
-            "juice.popupRiseSpeed", "juice.popupLifetime",
+            "juice.popupRiseSpeed", "juice.popupLifetime", "juice.popupDecimalBelow",
         };
 
         private void Awake()

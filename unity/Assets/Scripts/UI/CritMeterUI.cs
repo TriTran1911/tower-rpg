@@ -42,8 +42,14 @@ namespace TowerRpg.UI
 
         private void ApplyBalance(BalanceConfig balance)
         {
+            // DỰNG size-1 VẠCH, KHÔNG PHẢI size. CritMeter.Fill01 = charge/(size-1) và
+            // charge chỉ chạy 0..size-1. Với 5 vạch thì lit = Floor(charge/4 x 5) cho ra
+            // 0,1,2,3 rồi IsReady ép thẳng lên 5 — thanh NHẢY CÓC 3->5 và vạch thứ 4
+            // không bao giờ sáng. Với 4 vạch thì lit = charge, đếm trơn 0,1,2,3,4.
+            // §5.4 chọn thanh dồn thay vì xác suất CHỈ để người chơi ĐẾM được — thanh
+            // đếm sai thì mất sạch lợi thế đó. crit.meterSize giữ nguyên 5 (là số ĐÒN).
             int size = Mathf.Max(2, balance.GetInt("crit.meterSize"));
-            Build(size);
+            Build(size - 1);
             _ready = true;
         }
 

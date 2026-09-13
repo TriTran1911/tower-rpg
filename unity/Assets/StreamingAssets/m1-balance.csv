@@ -111,3 +111,11 @@ juice.shakeMagnitude,0.22,Biên độ rung
 juice.shakeYRatio,0.6,Tỉ lệ rung trục Y so với trục X
 juice.popupRiseSpeed,1.6,Tốc độ bay lên của số sát thương
 juice.popupLifetime,0.7,Số sát thương tồn tại bao lâu
+# Dưới ngưỡng này thì số sát thương in một chữ số thập phân. LÝ DO: mỗi cấp Vũ khí chỉ
+# +4,4%, nên 10,00 -> 10,44 làm tròn ra VẪN LÀ "10". Người chơi trả 300 Mảnh (bằng 3/4
+# thu nhập cả tầng 1) rồi quay lại đánh và thấy pixel y hệt -> kết luận nâng cấp là đồ
+# trang trí. Chuỗi cũ theo cấp 1..10: 10 10 11 11 12 12 13 14 14 15 (đổi lần đầu ở CẤP 3).
+# Chuỗi mới: 10,0 10,4 10,9 11,4 11,9 12,4 13,0 13,5 14,2 14,8 — đổi NGAY lần mua đầu.
+# Đây KHÔNG phải đổi cân bằng: ràng buộc §5.11 khoá con số 4,4%, không khoá cách in nó.
+# Ngưỡng 100 để sát thương tầng cao (~600) không thành rác chữ số.
+juice.popupDecimalBelow,100,Dưới mức này thì in số sát thương kèm một chữ số thập phân

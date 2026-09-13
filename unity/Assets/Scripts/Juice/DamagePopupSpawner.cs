@@ -18,6 +18,7 @@ namespace TowerRpg.Juice
         private ObjectPool<DamagePopup> _pool;
         private float _riseSpeed;
         private float _lifetime;
+        private float _decimalBelow;
         private bool _ready;
 
         private void Awake()
@@ -49,6 +50,7 @@ namespace TowerRpg.Juice
         {
             _riseSpeed = balance.Get("juice.popupRiseSpeed");
             _lifetime = balance.Get("juice.popupLifetime");
+            _decimalBelow = balance.Get("juice.popupDecimalBelow");
             _ready = true;
         }
 
@@ -77,7 +79,7 @@ namespace TowerRpg.Juice
             if (!_ready) return;
 
             DamagePopup popup = _pool.Get();
-            popup.Play(worldPosition, amount, isCrit, _riseSpeed, _lifetime, Release);
+            popup.Play(worldPosition, amount, isCrit, _riseSpeed, _lifetime, _decimalBelow, Release);
         }
 
         private void Release(DamagePopup popup) => _pool.Release(popup);

@@ -31,9 +31,21 @@ namespace TowerRpg.UI
 
         [SerializeField] private FloorRunner runner;
 
-        private static readonly Color Gold = new Color(0.91f, 0.70f, 0.29f);
-        private static readonly Color Jade = new Color(0.28f, 0.81f, 0.70f);
-        private static readonly Color Dim  = new Color(0.58f, 0.53f, 0.46f);
+        // QUYẾT ĐỊNH #28 áp cho cả HUD: nút dùng gỗ SÁNG (243,140,76), mà trên nền đó
+        // vàng đạt 1,27:1 · ngọc 1,25:1 · mờ 1,45:1 — đều dưới xa 4,5:1, tức là không đọc
+        // được. Chỉ MỰC đạt (7,41:1). Nên trạng thái nút phân biệt bằng SẮC NỀN, còn chữ
+        // luôn là mực. Đây đúng cái bẫy đã sửa ở UpgradeScreen mà HUD còn sót.
+        // MÀU CHỮ ĐẢO THEO TRẠNG THÁI, và đây là chỗ trực giác dễ sai:
+        //   nút MỞ  = gỗ cam nguyên bản (243,140,76) -> nền SÁNG -> chữ MỰC   (7,37:1)
+        //   nút KHOÁ = cùng gỗ đó nhân TintLock      -> nền TỐI (112,62,32) -> chữ GIẤY (4,7:1)
+        // Bản đầu tôi dùng một màu "mực nhạt" cho nút khoá và đo được 1,05:1 — tức là
+        // dòng "CÒN 20 TẦNG", thứ mang toàn bộ thông điệp, gần như vô hình.
+        private static readonly Color Ink  = new Color(0.10f, 0.09f, 0.08f);
+        private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
+
+        private static readonly Color TintOn   = new Color(0.62f, 1f, 0.90f, 1f);   // đang chạy — ngả ngọc
+        private static readonly Color TintOpen = Color.white;                        // dùng được
+        private static readonly Color TintLock = new Color(0.46f, 0.44f, 0.42f, 1f); // còn khoá
 
         private void Start()
         {
@@ -118,21 +130,33 @@ namespace TowerRpg.UI
             RefreshAuto(gs);
         }
 
+        // KHOÁ NHƯNG THẤY ĐƯỢC — đây là sửa một lỗi thiết kế, không phải thêm tính năng.
+        // Cũ: SetActive(unlocked) làm nút BIẾN MẤT HOÀN TOÀN tới khi mở. Người chơi mới
+        // đánh 16 phút đầu mà KHÔNG CÓ CÁCH NÀO biết là có chế độ tự đánh đang chờ —
+        // nên nó không kéo được ai đi tiếp. Một tính năng vô hình thì bằng không tồn tại.
+        // Mốc tầng 20 GIỮ NGUYÊN: §5.2 giải thích rất kỹ vì sao phải là 20 (đủ lâu để
+        // hiểu hệ thống bằng tay, đủ sớm để chưa chán). Thứ sai là cách bày, không phải mốc.
         private void RefreshSweep(GameState gs)
         {
             if (sweepButton == null) return;
 
             bool can = sweep != null && sweep.CanSweep;
-            sweepButton.gameObject.SetActive(can || (sweep != null && sweep.Running));
+            bool on = sweep != null && sweep.Running;
+
+            sweepButton.gameObject.SetActive(true);
             sweepButton.interactable = can;
+
+            Image sweepBg = sweepButton.targetGraphic as Image;
+            if (sweepBg != null) sweepBg.color = on ? TintOn : can ? TintOpen : TintLock;
 
             if (sweepLabel != null)
             {
-                bool on = sweep != null && sweep.Running;
-                sweepLabel.text = on ? $"QUÉT  T{sweep.TargetFloor}" : "QUÉT NHANH";
-                sweepLabel.color = on ? Jade : (can ? Gold : Dim);
+                if (on)       sweepLabel.text = $"QUÉT\nT{sweep.TargetFloor}";
+                else if (can) sweepLabel.text = "QUÉT\nNHANH";
+                else          sweepLabel.text = "QUÉT NHANH\nDỌN TẦNG 1";
+                sweepLabel.color = can || on ? Ink : InkOff;
             }
-            if (sweepFill != null && (sweep == null || !sweep.Running)) sweepFill.fillAmount = 0f;
+            if (sweepFill != null && !on) sweepFill.fillAmount = 0f;
         }
 
         private void RefreshAuto(GameState gs)
@@ -140,15 +164,29 @@ namespace TowerRpg.UI
             if (autoButton == null) return;
 
             bool unlocked = auto != null && auto.IsUnlocked;
-            autoButton.gameObject.SetActive(unlocked);
+            bool on = unlocked && auto.Enabled;
+
+            autoButton.gameObject.SetActive(true);
             autoButton.interactable = unlocked;
 
-            if (autoLabel != null)
+            Image autoBg = autoButton.targetGraphic as Image;
+            if (autoBg != null) autoBg.color = on ? TintOn : unlocked ? TintOpen : TintLock;
+
+            if (autoLabel == null) return;
+
+            if (!unlocked)
             {
-                bool on = auto != null && auto.Enabled;
-                autoLabel.text = on ? "TỰ ĐÁNH  ●" : "TỰ ĐÁNH";
-                autoLabel.color = on ? Jade : Gold;
+                int need = auto != null ? auto.UnlockFloor : 20;
+                int left = Mathf.Max(0, need - gs.HighestCleared);
+                // Đếm ngược cho người chơi một cái đích. "CÒN 17 TẦNG" là một lời hứa
+                // kiểm chứng được; nút biến mất thì không hứa gì cả.
+                autoLabel.text = $"TỰ ĐÁNH\nCÒN {left} TẦNG";
+                autoLabel.color = InkOff;
+                return;
             }
+
+            autoLabel.text = on ? "TỰ ĐÁNH  ●" : "TỰ ĐÁNH";
+            autoLabel.color = Ink;
         }
     }
 }

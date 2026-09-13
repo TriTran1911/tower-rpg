@@ -100,5 +100,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45261d5a5acd94bb89b8db86f6b16de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitFlashColor: {r: 1, g: 0.4, b: 0.4, a: 1}
-  hitFlashSeconds: 0.06
+  hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  hitFlashSeconds: 0.1

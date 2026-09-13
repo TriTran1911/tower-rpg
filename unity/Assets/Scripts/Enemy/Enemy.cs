@@ -15,8 +15,11 @@ namespace TowerRpg.Enemies
     public sealed class Enemy : MonoBehaviour, IDamageable
     {
         [Header("Phản hồi khi trúng đòn (thẩm mỹ, không phải cân bằng)")]
-        [SerializeField] private Color hitFlashColor = new Color(1f, 0.4f, 0.4f);
-        [SerializeField] private float hitFlashSeconds = 0.06f;
+        // TRẮNG chứ không phải đỏ nhạt: bảng màu "Mực & Son" (quyết định #18/#19) làm
+        // TOÀN BỘ quái ngả đỏ, nên nhân một màu đỏ nhạt lên nền đỏ là gần như vô hình.
+        // 0,06 giây = 3,6 khung hình ở 60fps, mắt không kịp bắt. 0,10 = 6 khung hình.
+        [SerializeField] private Color hitFlashColor = Color.white;
+        [SerializeField] private float hitFlashSeconds = 0.10f;
 
         private SpriteRenderer _sprite;
         private Color _baseColor;

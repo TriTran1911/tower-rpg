@@ -289,7 +289,7 @@ namespace TowerRpg.EditorTools
             // Ba nút M3 xếp dọc dưới nút trang bị. Đáy nút cuối ở -848, vùng chạm cần gạt
             // bắt đầu ở -864 — cố ý không chồng lên nhau, chạm nút không thành ra đi bộ.
             (Button charBtn, TMP_Text _)     = SideButton("CharButton", canvasGo.transform, panelSp,
-                                                          "NHÂN\nVẬT", -392, UiPaper);
+                                                          "NHÂN\nVẬT", -392, UiInk);
             (Button sweepBtn, TMP_Text sweepTxt) = SideButton("SweepButton", canvasGo.transform, panelSp,
                                                           "QUÉT NHANH", -552, UiInk);
             (Button autoBtn, TMP_Text autoTxt)   = SideButton("AutoButton", canvasGo.transform, panelSp,
@@ -582,7 +582,9 @@ namespace TowerRpg.EditorTools
             var btn = go.AddComponent<Button>();
             btn.targetGraphic = img;
 
-            TextMeshProUGUI t = UiText("Label", go.transform, label, 24f, colour);
+            // 20f chứ không phải 24f: nhãn khoá là HAI DÒNG ("TỰ ĐÁNH / CÒN 17 TẦNG")
+            // trong nút cao 144px. Ở 24f dòng dưới bị cắt — đã kiểm bằng ảnh chụp.
+            TextMeshProUGUI t = UiText("Label", go.transform, label, 20f, colour);
             t.rectTransform.anchorMin = Vector2.zero;
             t.rectTransform.anchorMax = Vector2.one;
             t.rectTransform.offsetMin = t.rectTransform.offsetMax = Vector2.zero;
