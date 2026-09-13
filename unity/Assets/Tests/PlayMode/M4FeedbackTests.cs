@@ -230,6 +230,84 @@ namespace TowerRpg.Tests
         }
 
         [UnityTest]
+        public IEnumerator Bao_hieu_ra_don_phai_NHIN_THAY_DUOC()
+        {
+            var ctrl = Object.FindFirstObjectByType<PlayerController>();
+            IDamageable near = EnemyRegistry.Nearest(Vector3.zero, 999f);
+            var quai = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)[0];
+            var sr = quai.GetComponent<SpriteRenderer>();
+
+            ctrl.transform.position = quai.transform.position - Vector3.up * 1.0f;
+            yield return null;
+
+            Vector3 scaleNghi = quai.transform.localScale;
+            Color mauNghi = sr.color;
+
+            // Theo dõi suốt CẢ cửa sổ báo hiệu và lấy giá trị lớn nhất. Chộp đúng một
+            // khung hình là may rủi: lúc IsTelegraphing vừa bật thì k≈0 nên chưa đổi gì,
+            // và ở batchmode khung hình trôi rất nhanh.
+            float scaleMax = scaleNghi.x, lechMauMax = 0f;
+            bool tungBaoHieu = false;
+            float t = 0f;
+            while (t < 5f)
+            {
+                t += Time.deltaTime;
+                yield return null;
+                if (!quai.IsTelegraphing) { if (tungBaoHieu) break; continue; }
+                tungBaoHieu = true;
+                scaleMax = Mathf.Max(scaleMax, quai.transform.localScale.x);
+                lechMauMax = Mathf.Max(lechMauMax, Mathf.Abs(sr.color.b - mauNghi.b));
+            }
+            Assert.IsTrue(tungBaoHieu, "quái không bao giờ vào trạng thái báo hiệu");
+
+            // BẢN ĐẦU HỎNG ĐÚNG Ở ĐÂY: nó "làm sáng lên" bằng Lerp(_baseColor, trắng) mà
+            // _baseColor đã là trắng — phép toán rỗng. Tính năng được nối, được verify,
+            // và không làm gì cả. Chỉ đo pixel trên ảnh chụp mới lộ ra.
+            bool toHon = scaleMax > scaleNghi.x * 1.05f;
+            bool doiMau = lechMauMax > 0.1f;
+            Assert.IsTrue(toHon && doiMau,
+                $"báo hiệu không nhìn thấy được: scale lớn nhất {scaleMax:F3} so với "
+                + $"{scaleNghi.x:F3}, lệch kênh lam lớn nhất {lechMauMax:F3}");
+        }
+
+        [UnityTest]
+        public IEnumerator Tang_boss_KHONG_hien_ca_hai_thong_bao()
+        {
+            GameObject banner = null;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == "EventBanner") { banner = t.gameObject; break; }
+            Assert.IsNotNull(banner);
+
+            var runner = Object.FindFirstObjectByType<FloorRunner>();
+            var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();
+
+            while (_gs.Floor < 9) _gs.AdvanceFloor();
+            yield return null;
+            EnemyRegistry.ClearAll();
+            float t0 = 0f;
+            while ((!runner.InBossFight || EnemyRegistry.Count == 0) && t0 < 12f)
+            { t0 += Time.deltaTime; yield return null; }
+
+            Enemy boss = System.Array.Find(
+                Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None), e => e.IsBoss && e.IsAlive);
+            Assert.IsNotNull(boss, "phải vào được trận boss");
+            boss.TakeDamage(1e9f, false);
+
+            float t1 = 0f;
+            while (!ms.IsOpen && t1 < 6f) { t1 += Time.unscaledDeltaTime; yield return null; }
+            Assert.IsTrue(ms.IsOpen, "hạ boss phải mở màn cột mốc");
+
+            // Hai thông báo cùng lúc thì chúng đè chữ lên nhau và không cái nào đọc trọn.
+            Assert.IsFalse(banner.activeSelf,
+                "tầng boss hiện CẢ banner dọn tầng LẪN màn cột mốc — hai thứ nói cùng một "
+                + "điều, đè lên nhau");
+
+            yield return new WaitForSecondsRealtime(0.8f);
+            ms.Dong();
+        }
+
+        [UnityTest]
         public IEnumerator Man_cot_moc_dung_game_roi_TRA_LAI_timeScale()
         {
             var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();

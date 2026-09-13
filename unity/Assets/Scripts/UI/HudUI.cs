@@ -104,6 +104,13 @@ namespace TowerRpg.UI
         /// </summary>
         private void OnFloorCleared(int floor, float reward)
         {
+            // TẦNG BOSS KHÔNG hiện banner này. Màn cột mốc đã nói cùng một điều, to hơn và
+            // dừng cả trò chơi lại — hai thứ cùng lúc thì chúng đè chữ lên nhau và người
+            // chơi không đọc trọn cái nào. Đúng lý do FloorRunner cũng đã bỏ tiếng dọn tầng
+            // ở tầng boss. Nhìn ảnh chụp phiên chơi mới thấy mình chỉ chặn có một nửa.
+            GameState gs = GameState.Instance;
+            if (gs != null && gs.IsBossFloor(floor)) return;
+
             // Tiếng đã do FloorRunner phát; ở đây chỉ lo phần nhìn.
             ShowBanner($"TẦNG {floor:00} XONG   ·   +{reward:N0} MẢNH", Gold, _floorBannerSeconds);
         }

@@ -36,11 +36,15 @@ namespace TowerRpg.Enemies
         private float _deathSeconds = 0.22f;
         private float _telegraphSeconds, _telegraphNudge;
         private Vector3 _homePos;
+        private Vector3 _baseScale = Vector3.one;
         private float _shardValue;
         private Loot.ShardDropSpawner _drops;
 
         /// <summary>Boss hay quái thường. Chỉ đổi cách hiển thị và cách tính điểm rơi — §5.10.</summary>
         public bool IsBoss { get; private set; }
+
+        /// <summary>Đang vung tay, sắp ra đòn. Phơi ra để test và ảnh chụp bắt đúng lúc.</summary>
+        public bool IsTelegraphing { get; private set; }
 
         public bool IsAlive => _hp > 0f;
         public Vector3 Position => transform.position;
@@ -77,6 +81,7 @@ namespace TowerRpg.Enemies
                 _telegraphNudge = b.Get("enemy.telegraphNudge");
             }
             _homePos = transform.position;
+            _baseScale = transform.localScale;
 
             EnemyRegistry.Register(this);
         }
@@ -123,17 +128,31 @@ namespace TowerRpg.Enemies
             if (_flashTimer <= 0f && _sprite != null)
             {
                 bool sapDanh = _attackCooldown <= _telegraphSeconds && _telegraphSeconds > 0f;
+                IsTelegraphing = sapDanh;
+
                 if (sapDanh)
                 {
                     float k = 1f - Mathf.Clamp01(_attackCooldown / _telegraphSeconds);
-                    _sprite.color = Color.Lerp(_baseColor, Color.white, k * 0.55f);
+
+                    // PHÓNG TO chứ không "làm sáng lên". Bản đầu dùng
+                    // Color.Lerp(_baseColor, Color.white, ...) — mà prefab quái không đặt
+                    // sr.color nên _baseColor ĐÃ LÀ TRẮNG, tức phép Lerp đó là phép toán
+                    // rỗng. Đo pixel trên ảnh chụp: chênh lệch (-1,-2,-2), tức không đổi gì.
+                    // Không thể "sáng hơn trắng" bằng tint; phải đổi kênh khác.
+                    transform.localScale = _baseScale * (1f + 0.18f * k);
+
+                    // Ngả ấm: hạ kênh lam làm con quái đỏ rực lên, đọc ra như "nóng máu".
+                    _sprite.color = new Color(_baseColor.r, _baseColor.g * (1f - 0.25f * k),
+                                              _baseColor.b * (1f - 0.45f * k), _baseColor.a);
+
                     Vector3 toi = (player.transform.position - _homePos).normalized;
                     transform.position = _homePos + toi * (_telegraphNudge * k);
                 }
-                else if (transform.position != _homePos)
+                else if (transform.position != _homePos || transform.localScale != _baseScale)
                 {
                     _sprite.color = _baseColor;
                     transform.position = _homePos;
+                    transform.localScale = _baseScale;
                 }
             }
 
@@ -141,7 +160,10 @@ namespace TowerRpg.Enemies
 
             player.TakeDamage(_damage);
             _attackCooldown = _attackInterval;
+            IsTelegraphing = false;
             transform.position = _homePos;
+            transform.localScale = _baseScale;
+            if (_sprite != null && _flashTimer <= 0f) _sprite.color = _baseColor;
         }
 
         public void TakeDamage(float amount, bool isCrit)
