@@ -246,7 +246,27 @@ Tất cả đường dẫn trên đã kiểm là **có thật** trong `unity/Ass
 
 ---
 
-## VIỆC 4 — THANH MÁU QUÁI + KHOẢNH KHẮC CHẾT (≈ 1 ngày)
+## ~~VIỆC 4 — THANH MÁU QUÁI + KHOẢNH KHẮC CHẾT~~ ✅ XONG
+
+> **40/40 test, 42 mục kiểm scene.** Thanh máu từng con quái (ẩn khi đầy, cam khi dưới 30%),
+> thanh máu boss trên đỉnh màn hình, và xác quái co/giãn/mờ trong 0,22 giây.
+>
+> **Hai lỗi chỉ ảnh chụp mới bắt được, cả hai đều qua lọt mọi test:**
+> 1. `white.png` sinh vào `Assets/Art/Generated/` — mà `PixelArtImportSettings` là một
+>    `AssetPostprocessor` ép `spritePixelsPerUnit = 16` cho MỌI texture dưới `Art/`, chạy SAU
+>    khi hàm sinh đặt PPU 4. Thanh máu nhỏ đúng **4 lần**, còn 18×2 pixel. `fill.enabled`
+>    vẫn `true`, verifier vẫn xanh. Sửa: sinh ra `Assets/Generated/` cho ngoài tầm tay nó.
+> 2. Ruột thanh **teo về giữa như viên thuốc** thay vì vơi từ phải sang trái — tôi dựng đúng
+>    một pivot ở mép trái rồi vẫn co giãn đứa con thay vì co giãn chính pivot.
+>
+> Đã thêm hai lớp kiểm để không tái phạm: verifier đo **bề rộng THẬT theo đơn vị thế giới**
+> (≥ 60% bề ngang con quái), và một test đòi mép trái của ruột trùng mép trái của nền.
+>
+> `juice.enemyDeathSeconds = 0,22` **tốn 0 giây thời gian chơi**: quái gỡ khỏi
+> `EnemyRegistry` ngay trong khung hình chết, nên `FloorRunner` và `Nearest` thấy nó chết tức
+> thì — cái xác đang tan chỉ là pixel. Có test khoá đúng tính chất này.
+
+### Nội dung gốc
 
 **Đây là món đắt giá nhất trong toàn bộ 30 mục của bốn phương án**, vì nó là cách DUY NHẤT biến +4,4%/cấp — thứ ràng buộc 3 khoá cứng — thành thứ **đếm được**: trên popup, Vũ khí cấp 1→2 đổi "10" thành "10"; trên một thanh máu, cùng 4,4% đó đổi **8 đòn thành 7 đòn**.
 

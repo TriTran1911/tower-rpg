@@ -43,7 +43,7 @@ namespace TowerRpg.EditorTools
             log.AppendLine("\nTHAM CHIẾU");
             fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "bossSprite");
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
-                                      "bossBanner", "sweep", "sweepButton", "sweepLabel",
+                                      "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
                                       "sweepFill", "auto", "autoButton", "autoLabel", "runner");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
@@ -114,6 +114,32 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, "prefab Enemy có SpriteRenderer + sprite",
                            enemyPrefab != null && enemyPrefab.GetComponent<SpriteRenderer>()?.sprite != null,
                            enemyPrefab == null ? "không có" : $"{enemyPrefab.GetComponent<SpriteRenderer>()?.sprite?.name}");
+
+            var bar = enemyPrefab != null ? enemyPrefab.GetComponent<EnemyHealthBar>() : null;
+            var barSo = bar != null ? new SerializedObject(bar) : null;
+            bool barOk = barSo != null &&
+                         barSo.FindProperty("background").objectReferenceValue != null &&
+                         barSo.FindProperty("fill").objectReferenceValue != null;
+            fail += Assert(log, "prefab Enemy có thanh máu đủ 2 phần", barOk,
+                           bar == null ? "không có EnemyHealthBar" : "thiếu background hoặc fill");
+
+            // Thanh máu phải vẽ TRÊN sprite quái, nếu không nó nằm sau lưng quái và vô hình.
+            var fillSr = barSo?.FindProperty("fill").objectReferenceValue as SpriteRenderer;
+            int enemyOrder = enemyPrefab != null
+                           ? enemyPrefab.GetComponent<SpriteRenderer>().sortingOrder : 0;
+            fail += Assert(log, "thanh máu vẽ trên sprite quái",
+                           fillSr != null && fillSr.sortingOrder > enemyOrder,
+                           fillSr == null ? "không có" : $"{fillSr.sortingOrder} <= {enemyOrder}");
+
+            // "Có vẽ" KHÁC "nhìn thấy được". Thanh từng render đúng mà chỉ rộng 18px vì một
+            // AssetPostprocessor ép PPU 16 lên sprite trắng — mọi kiểm tra khác đều xanh.
+            // Đo bề rộng THẬT theo đơn vị thế giới và so với chính con quái.
+            float enemyW = enemyPrefab != null
+                         ? enemyPrefab.GetComponent<SpriteRenderer>().bounds.size.x : 0f;
+            float barW = fillSr != null ? fillSr.bounds.size.x : 0f;
+            fail += Assert(log, "thanh máu rộng ít nhất 60% bề ngang con quái",
+                           enemyW > 0f && barW >= enemyW * 0.6f,
+                           $"thanh {barW:0.00} đơn vị, quái {enemyW:0.00} đơn vị");
 
             var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/DamagePopup.prefab");
             fail += Assert(log, "prefab DamagePopup có TMP_Text",

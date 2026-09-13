@@ -266,6 +266,30 @@ namespace TowerRpg.EditorTools
                    new Vector2(0f, -(Edge + 128 + Unit + 96 + Unit)), new Vector2(900, 70));
             bossBanner.gameObject.SetActive(false);
 
+            // thanh máu boss, ngay dưới biển BOSS
+            var bossBarGo = new GameObject("BossBar", typeof(RectTransform));
+            bossBarGo.transform.SetParent(canvasGo.transform, false);
+            var bbRt = bossBarGo.GetComponent<RectTransform>();
+            bbRt.anchorMin = new Vector2(0.5f, 1f); bbRt.anchorMax = new Vector2(0.5f, 1f);
+            bbRt.pivot = new Vector2(0.5f, 1f);
+            bbRt.anchoredPosition = new Vector2(0f, -(Edge + 128 + Unit + 96 + Unit + 74));
+            bbRt.sizeDelta = new Vector2(UiRefW - Edge * 2, 44);
+
+            Image bossTrack = UiImage("Track", bossBarGo.transform, bgSp);
+            bossTrack.rectTransform.anchorMin = Vector2.zero;
+            bossTrack.rectTransform.anchorMax = Vector2.one;
+            bossTrack.rectTransform.offsetMin = bossTrack.rectTransform.offsetMax = Vector2.zero;
+
+            Image bossFill = UiImage("Fill", bossTrack.transform, null, UiCinnabar, false);
+            bossFill.rectTransform.anchorMin = Vector2.zero;
+            bossFill.rectTransform.anchorMax = Vector2.one;
+            bossFill.rectTransform.offsetMin = new Vector2(6f, 6f);
+            bossFill.rectTransform.offsetMax = new Vector2(-6f, -6f);
+            bossFill.type = Image.Type.Filled;
+            bossFill.fillMethod = Image.FillMethod.Horizontal;
+            bossFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            bossBarGo.SetActive(false);
+
             var hudUi = canvasGo.AddComponent<HudUI>();
 
             // nút mở màn nâng cấp — góc trên-phải, vùng chạm đủ lớn
@@ -496,6 +520,7 @@ namespace TowerRpg.EditorTools
             Wire(hudUi,    ("floorNumber", floorNum), ("shardCount", shardVal),
                            ("coreCount", coreVal), ("coreGroup", corePanel.gameObject),
                            ("bossBanner", bossBanner),
+                           ("bossBarRoot", bossBarGo), ("bossFill", bossFill),
                            ("sweep", sweep), ("sweepButton", sweepBtn),
                            ("sweepLabel", sweepTxt), ("sweepFill", sweepFill),
                            ("auto", autoBattle), ("autoButton", autoBtn), ("autoLabel", autoTxt),
@@ -688,10 +713,89 @@ namespace TowerRpg.EditorTools
             sr.sprite = sprite;
             sr.sortingOrder = 5;
             go.AddComponent<Enemy>();
+
+            // ── thanh máu ────────────────────────────────────────────────────────────
+            Sprite white = WhitePixelSprite();
+            SpriteRenderer bar = BarPart(go.transform, "HpBg", white,
+                                         new Color(0.10f, 0.08f, 0.07f, 0.9f), 6);
+            bar.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+            bar.transform.localScale = new Vector3(0.95f, 0.14f, 1f);
+
+            // Ruột đặt pivot TRÁI bằng cách lệch nửa bề rộng: co localScale.x thì nó vơi
+            // từ phải sang trái như thanh máu thật, thay vì co đều về giữa.
+            var pivot = new GameObject("HpPivot");
+            pivot.transform.SetParent(go.transform, false);
+            pivot.transform.localPosition = new Vector3(-0.475f, 0.55f, 0f);
+
+            SpriteRenderer fill = BarPart(pivot.transform, "HpFill", white,
+                                          new Color(0.80f, 0.24f, 0.26f), 7);
+            fill.transform.localPosition = new Vector3(0.465f, 0f, 0f);
+            fill.transform.localScale = new Vector3(0.93f, 0.10f, 1f);
+
+            var hb = go.AddComponent<EnemyHealthBar>();
+            var hbSo = new SerializedObject(hb);
+            hbSo.FindProperty("background").objectReferenceValue = bar;
+            hbSo.FindProperty("fill").objectReferenceValue = fill;
+            hbSo.FindProperty("fillPivot").objectReferenceValue = pivot.transform;
+            hbSo.ApplyModifiedPropertiesWithoutUndo();
+
             string path = $"{PrefabDir}/Enemy.prefab";
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        private static SpriteRenderer BarPart(Transform parent, string name, Sprite sprite,
+                                              Color colour, int order)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.color = colour;
+            sr.sortingOrder = order;      // sprite quái = 5, số sát thương = 30
+            return sr;
+        }
+
+        /// <summary>
+        /// Sinh một sprite trắng 4x4 vào Assets/Art/Generated/. Bộ asset CC0 không có sẵn
+        /// hình chữ nhật trơn nào, mà thanh máu chỉ cần đúng thế — tô màu bằng
+        /// SpriteRenderer.color. Sinh một lần rồi tái dùng, không ghi đè nếu đã có.
+        /// </summary>
+        private static Sprite WhitePixelSprite()
+        {
+            // NGOÀI Assets/Art/ MỘT CÁCH CÓ CHỦ Ý. PixelArtImportSettings là một
+            // AssetPostprocessor ép spritePixelsPerUnit = 16 cho MỌI texture dưới Art/,
+            // và nó chạy SAU khi hàm này đặt PPU 4 — nên sprite thành 0,25 đơn vị và thanh
+            // máu nhỏ đúng 4 lần, còn khoảng 18x2 pixel trên màn hình. Test vẫn xanh,
+            // verifier vẫn xanh, fill.enabled vẫn true; chỉ nhìn ảnh chụp mới thấy.
+            const string dir = "Assets/Generated";
+            const string path = dir + "/white.png";
+
+            if (!File.Exists(path))
+            {
+                Directory.CreateDirectory(dir);
+                var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+                var px = new Color32[16];
+                for (int i = 0; i < px.Length; i++) px[i] = new Color32(255, 255, 255, 255);
+                tex.SetPixels32(px);
+                tex.Apply();
+                File.WriteAllBytes(path, tex.EncodeToPNG());
+                Object.DestroyImmediate(tex);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            }
+
+            if (AssetImporter.GetAtPath(path) is TextureImporter ti)
+            {
+                ti.textureType = TextureImporterType.Sprite;
+                ti.spriteImportMode = SpriteImportMode.Single;
+                ti.filterMode = FilterMode.Point;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                ti.spritePixelsPerUnit = 4f;   // 4x4 pixel -> đúng 1 đơn vị Unity
+                EditorUtility.SetDirty(ti);
+                ti.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         private static GameObject MakePopupPrefab()

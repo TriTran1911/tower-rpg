@@ -49,7 +49,8 @@ namespace TowerRpg.Core
             "sweep.unlockOnClear", "sweep.seconds", "sweep.totalMult",
             "auto.unlockFloor", "juice.shakeDuration", "juice.shakeMagnitude",
             "juice.shakeYRatio", "juice.popupRiseSpeed", "juice.popupLifetime",
-            "juice.popupDecimalBelow", "audio.sfxVolume", "audio.playerHitCooldown",
+            "juice.enemyDeathSeconds", "juice.healthBarHideAbove", "juice.popupDecimalBelow",
+            "audio.sfxVolume", "audio.playerHitCooldown",
         };
 
         private void Awake()

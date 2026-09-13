@@ -41,6 +41,16 @@ namespace TowerRpg.Progression
         /// <summary>Đang ở tầng boss — giao diện dùng để đổi nhạc/khung.</summary>
         public bool InBossFight { get; private set; }
 
+        private Enemy _boss;
+
+        /// <summary>
+        /// Máu boss 0..1 cho thanh trên đỉnh màn hình. Boss mất 75-193 giây (§5.1 chốt
+        /// 200 giây cho boss tầng 100), và MỘT TRẬN DÀI THẾ MÀ KHÔNG CÓ VẠCH TIẾN TRÌNH
+        /// thì người chơi không biết mình đang thắng hay đang phí thời gian.
+        /// </summary>
+        public float BossHealthFraction =>
+            _boss != null && _boss.IsAlive ? _boss.HealthFraction : 0f;
+
         private void Start()
         {
             if (enemyPrefab == null) { Debug.LogError("[FloorRunner] Chưa gán enemyPrefab.", this); enabled = false; return; }
@@ -133,6 +143,7 @@ namespace TowerRpg.Progression
 
             bool boss = GameState.Instance != null && GameState.Instance.IsBossFloor(floor);
             InBossFight = boss;
+            _boss = null;
 
             float totalHp  = _hp1  * Mathf.Pow(1f + _hpG,  floor - 1);
             float totalDps = _dps1 * Mathf.Pow(1f + _dpsG, floor - 1);
@@ -175,6 +186,7 @@ namespace TowerRpg.Progression
                 }
 
                 e.Initialise(hpEach, dmgEach, _rate, range, boss);
+                if (boss) _boss = e;
             }
         }
 

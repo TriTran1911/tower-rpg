@@ -1,4 +1,5 @@
 using TowerRpg.Combat;
+using TowerRpg.Core;
 using TowerRpg.Player;
 using UnityEngine;
 
@@ -32,6 +33,7 @@ namespace TowerRpg.Enemies
         private float _attackInterval;
         private float _attackCooldown;
         private bool _armed;
+        private float _deathSeconds = 0.22f;
 
         /// <summary>Boss hay quái thường. Chỉ đổi cách hiển thị và cách tính điểm rơi — §5.10.</summary>
         public bool IsBoss { get; private set; }
@@ -60,6 +62,8 @@ namespace TowerRpg.Enemies
             _attackInterval = attacksPerSecond > 0f ? 1f / attacksPerSecond : float.MaxValue;
             _attackCooldown = _attackInterval;          // không đánh ngay lúc vừa sinh
             _armed = maxHp > 0f;
+            if (BalanceConfig.Instance != null && BalanceConfig.Instance.IsLoaded)
+                _deathSeconds = Mathf.Max(0.01f, BalanceConfig.Instance.Get("juice.enemyDeathSeconds"));
 
             EnemyRegistry.Register(this);
         }
@@ -110,17 +114,60 @@ namespace TowerRpg.Enemies
             _sprite.color = hitFlashColor;
             _flashTimer = hitFlashSeconds;
 
-            if (_hp <= 0f)
+            if (_hp > 0f) return;
+
+            Die();
+        }
+
+        /// <summary>
+        /// Chết: gỡ đăng ký NGAY trong khung hình này, rồi mới diễn phần nhìn.
+        ///
+        /// ĐÂY LÀ MẤU CHỐT khiến hoạt ảnh chết tốn 0 giây thời gian chơi. FloorRunner chờ
+        /// `EnemyRegistry.Count == 0` và AutoAttack hỏi `Nearest` — cả hai đọc registry.
+        /// Gỡ ngay nghĩa là chúng thấy con này chết tức thì, còn cái xác đang tan chỉ là
+        /// pixel. Nếu đợi Destroy xong mới gỡ thì mỗi con quái cộng thêm 0,22 giây vào
+        /// thời lượng tầng — 6 con là 1,3 giây mỗi tầng, và M1LoopTests đo Count sẽ hỏng.
+        /// </summary>
+        private void Die()
+        {
+            _hp = 0f;
+            _armed = false;
+            EnemyRegistry.Unregister(this);
+            Juice.SfxPlayer.Play(Juice.Sfx.EnemyDie, IsBoss ? 1f : 0.8f);
+
+            // TUYỆT ĐỐI KHÔNG chuyển phần này sang OnDestroy: EnemyRegistry.ClearAll() huỷ
+            // quái ở MỌI lần SpawnFloor, kể cả đường Retry lúc người chơi chết. Đặt ở đó là
+            // biến nút chết thành máy phát tiếng (và từ Việc 5 là máy in Mảnh).
+            if (isActiveAndEnabled) StartCoroutine(DieVisual());
+            else Destroy(gameObject);
+        }
+
+        /// <summary>Bộ asset không có hoạt ảnh chết (quyết định #18). Lấp bằng co/giãn/mờ.</summary>
+        private System.Collections.IEnumerator DieVisual()
+        {
+            Vector3 scale0 = transform.localScale;
+            Color c0 = _baseColor;
+            float t = 0f;
+
+            while (t < _deathSeconds)
             {
-                // Trước Việc 3, quái chết là Destroy() trong im lặng hoàn toàn — không hiệu
-                // ứng, không xác, không tiếng. Sáu lần mỗi tầng, không lần nào để lại dấu
-                // vết trong trí nhớ. Hoạt ảnh chết là Việc 4; tiếng thì rẻ và làm được ngay.
-                Juice.SfxPlayer.Play(Juice.Sfx.EnemyDie, IsBoss ? 1f : 0.8f);
-                Destroy(gameObject);
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / _deathSeconds);
+
+                // Co ngang, giãn dọc: đọc ra như "xẹp xuống" mà không cần một frame vẽ nào.
+                transform.localScale = new Vector3(scale0.x * (1f - 0.85f * k),
+                                                   scale0.y * (1f + 0.25f * k),
+                                                   scale0.z);
+                if (_sprite != null)
+                    _sprite.color = new Color(c0.r, c0.g, c0.b, 1f - k);
+                yield return null;
             }
+
+            Destroy(gameObject);
         }
 
         // Một chỗ gỡ đăng ký duy nhất — chạy cho cả khi chết lẫn khi bị huỷ theo scene.
+        // Gọi Unregister hai lần là vô hại (List.Remove trên phần tử không còn).
         private void OnDestroy() => EnemyRegistry.Unregister(this);
     }
 }

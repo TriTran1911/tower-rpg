@@ -128,6 +128,12 @@ juice.shakeMagnitude,0.22,Biên độ rung
 juice.shakeYRatio,0.6,Tỉ lệ rung trục Y so với trục X
 juice.popupRiseSpeed,1.6,Tốc độ bay lên của số sát thương
 juice.popupLifetime,0.7,Số sát thương tồn tại bao lâu
+# Hoạt ảnh chết của quái. TỐN 0 GIÂY THỜI GIAN CHƠI: quái gỡ khỏi EnemyRegistry NGAY
+# khi máu về 0, nên FloorRunner và Nearest thấy nó chết tức thì — phần nhìn chỉ là xác
+# đang tan. Bộ asset KHÔNG có hoạt ảnh chết (quyết định #18 đã biết và chấp nhận), nên
+# lấp bằng co ngang / giãn dọc / mờ dần.
+juice.enemyDeathSeconds,0.22,Xác quái tan trong bao lâu
+juice.healthBarHideAbove,0.999,Máu trên mức này thì ẩn thanh — tầng vừa bày không có 6 thanh đầy vô nghĩa
 # Dưới ngưỡng này thì số sát thương in một chữ số thập phân. LÝ DO: mỗi cấp Vũ khí chỉ
 # +4,4%, nên 10,00 -> 10,44 làm tròn ra VẪN LÀ "10". Người chơi trả 300 Mảnh (bằng 3/4
 # thu nhập cả tầng 1) rồi quay lại đánh và thấy pixel y hệt -> kết luận nâng cấp là đồ

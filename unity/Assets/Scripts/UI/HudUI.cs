@@ -19,6 +19,8 @@ namespace TowerRpg.UI
         [SerializeField] private TMP_Text coreCount;
         [SerializeField] private GameObject coreGroup;     // ẩn tới khi có Lõi đầu tiên
         [SerializeField] private TMP_Text bossBanner;
+        [SerializeField] private GameObject bossBarRoot;
+        [SerializeField] private Image bossFill;
 
         [SerializeField] private SweepRunner sweep;
         [SerializeField] private Button sweepButton;
@@ -58,6 +60,7 @@ namespace TowerRpg.UI
                 runner.BossDefeated += OnBossDefeated;
             }
             if (bossBanner != null) bossBanner.gameObject.SetActive(false);
+            if (bossBarRoot != null) bossBarRoot.SetActive(false);
         }
 
         private void OnEnable()
@@ -98,6 +101,17 @@ namespace TowerRpg.UI
         private bool _hooked;
         private void Update()
         {
+            // Thanh máu boss phải cập nhật MỖI KHUNG HÌNH, không theo sự kiện: Refresh()
+            // chỉ chạy khi GameState.Changed bắn, mà máu boss vơi liên tục trong 75-193
+            // giây mà không có sự kiện nào cả.
+            if (bossFill != null && runner != null)
+            {
+                bool fighting = runner.InBossFight;
+                if (bossBarRoot != null && bossBarRoot.activeSelf != fighting)
+                    bossBarRoot.SetActive(fighting);
+                if (fighting) bossFill.fillAmount = runner.BossHealthFraction;
+            }
+
             if (_hooked || GameState.Instance == null || !GameState.Instance.Ready) return;
             GameState.Instance.Changed += Refresh;
             _hooked = true;

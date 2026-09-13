@@ -6,6 +6,7 @@ using TowerRpg.Enemies;
 using TowerRpg.Juice;
 using TowerRpg.Player;
 using TowerRpg.Progression;
+using TowerRpg.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -515,6 +516,103 @@ namespace TowerRpg.Tests
             for (int i = 0; i < 50; i++) SfxPlayer.Play(Sfx.PlayerHit);
             yield return null;
             Assert.Pass($"50 lần liên tiếp với hồi {cd}s — không ném lỗi");
+        }
+
+        // ── Việc 4: thanh máu quái + khoảnh khắc chết ─────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Quai_chet_thi_GO_DANG_KY_NGAY_du_xac_con_dang_tan()
+        {
+            yield return null;
+            int before = EnemyRegistry.Count;
+            Assert.Greater(before, 0, "cần quái để giết");
+
+            var target = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)[0];
+            float deathSeconds = BalanceConfig.Instance.Get("juice.enemyDeathSeconds");
+
+            target.TakeDamage(1e9f, false);      // giết tức khắc
+
+            // ĐÂY LÀ TÍNH CHẤT LÀM HOẠT ẢNH CHẾT TỐN 0 GIÂY THỜI GIAN CHƠI.
+            // FloorRunner chờ Count == 0 và AutoAttack hỏi Nearest — cả hai đọc registry.
+            // Nếu đợi Destroy xong mới gỡ thì mỗi con cộng thêm 0,22s vào thời lượng tầng.
+            Assert.AreEqual(before - 1, EnemyRegistry.Count,
+                "quái phải rời registry NGAY trong khung hình chết, không đợi xác tan xong");
+            Assert.IsFalse(target.IsAlive, "phải đọc là đã chết ngay");
+
+            // ...nhưng cái xác vẫn còn đó để nhìn.
+            Assert.IsTrue(target != null, "xác phải còn trong khung hình vừa chết");
+
+            yield return new WaitForSeconds(deathSeconds + 0.3f);
+            Assert.IsTrue(target == null, $"xác phải biến mất sau {deathSeconds}s");
+        }
+
+        [UnityTest]
+        public IEnumerator Thanh_mau_quai_an_khi_day_va_hien_khi_trung_don()
+        {
+            yield return null; yield return null;
+            var enemy = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)[0];
+            var bar = enemy.GetComponent<EnemyHealthBar>();
+            Assert.IsNotNull(bar, "prefab quái phải có EnemyHealthBar");
+
+            var renderers = enemy.GetComponentsInChildren<SpriteRenderer>(true);
+            SpriteRenderer fill = System.Array.Find(renderers, r => r.name == "HpFill");
+            Assert.IsNotNull(fill, "thiếu HpFill");
+
+            yield return null;
+            Assert.IsFalse(fill.enabled,
+                "quái máu đầy mà đã hiện thanh — một tầng vừa bày sẽ có 6 thanh đầy vô nghĩa");
+
+            enemy.TakeDamage(1f, false);
+            yield return null; yield return null;
+
+            Assert.IsTrue(fill.enabled, "trúng đòn rồi thì thanh máu phải hiện ra");
+            Assert.Less(enemy.HealthFraction, 1f);
+
+            // VƠI TỪ PHẢI SANG TRÁI, không teo đều hai bên. Mép TRÁI của ruột phải đứng yên
+            // trùng mép trái của nền; chỉ mép phải được di chuyển. Bản đầu co giãn nhầm
+            // đối tượng nên ruột teo quanh tâm như viên thuốc — mọi test khác vẫn xanh.
+            SpriteRenderer bg = System.Array.Find(renderers, r => r.name == "HpBg");
+            Assert.IsNotNull(bg, "thiếu HpBg");
+
+            enemy.TakeDamage(enemy.HealthFraction * 0.5f * 1000f, false);
+            yield return null; yield return null;
+
+            float leftGap = Mathf.Abs(fill.bounds.min.x - bg.bounds.min.x);
+            float rightGap = Mathf.Abs(fill.bounds.max.x - bg.bounds.max.x);
+            Assert.Less(leftGap, 0.05f,
+                $"mép TRÁI của ruột lệch {leftGap:F3} đơn vị khỏi mép trái nền — thanh đang "
+                + "teo về giữa thay vì vơi từ phải sang trái");
+            Assert.Greater(rightGap, leftGap,
+                "mép PHẢI phải lùi vào khi mất máu");
+        }
+
+        [UnityTest]
+        public IEnumerator Thanh_mau_boss_theo_dung_mau_boss()
+        {
+            var runner = Object.FindFirstObjectByType<FloorRunner>();
+            Assert.IsNotNull(runner);
+
+            while (_gs.Floor < 9) _gs.AdvanceFloor();
+            yield return null;
+            EnemyRegistry.ClearAll();
+
+            float t = 0f;
+            while ((!runner.InBossFight || EnemyRegistry.Count == 0) && t < 10f)
+            { t += Time.deltaTime; yield return null; }
+
+            Assert.IsTrue(runner.InBossFight, "phải vào được trận boss");
+            Assert.AreEqual(1f, runner.BossHealthFraction, 0.02f, "boss vừa bày phải đầy máu");
+
+            Enemy boss = System.Array.Find(
+                Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None), e => e.IsBoss && e.IsAlive);
+            Assert.IsNotNull(boss);
+            boss.TakeDamage(boss.HealthFraction > 0f ? 1e6f : 1f, false);
+            yield return null;
+
+            // Boss mất 75-193 giây; không có vạch tiến trình thì người chơi không biết
+            // mình đang thắng hay đang phí thời gian.
+            Assert.AreEqual(0f, runner.BossHealthFraction, 0.001f,
+                            "boss chết thì thanh phải về 0");
         }
 
         // ── Save ──────────────────────────────────────────────────────────────────
