@@ -39,7 +39,10 @@ namespace TowerRpg.Tests
         };
 
         private static readonly string[] Extra =
-            { "5d-banner-tang", "5c-vien-tren-san", "6-nang-cap", "7-nhan-vat" };
+        {
+            "5c-vien-tren-san", "9-khung-quai-chet", "12-quet-het-ngan-sach",
+            "5d-banner-tang", "6-nang-cap", "7-nhan-vat",
+        };
 
         /// <summary>Đọc khung hình đang có trong RenderTexture ra file PNG.</summary>
         private static void Shot(RenderTexture rt, string name)
@@ -166,6 +169,32 @@ namespace TowerRpg.Tests
                 ctrl.transform.position = spot + Vector3.down * 2.2f; // kéo camera lại gần
                 yield return null;
                 Shot(rt, "5c-vien-tren-san");
+            }
+
+            // ── khung hoạt ảnh chết ──────────────────────────────────────────────
+            // Bắt ở ~0,1s sau đòn kết liễu: xác đã co ngang/giãn dọc/mờ đi rõ rệt nhưng
+            // chưa biến mất. Không có ảnh này thì "quái chết có thành một khoảnh khắc
+            // không" là câu chưa ai trả lời.
+            var dying = Object.FindObjectsByType<TowerRpg.Enemies.Enemy>(FindObjectsSortMode.None);
+            if (dying.Length > 0 && ctrl != null)
+            {
+                ctrl.transform.position = dying[0].transform.position + Vector3.down * 2.2f;
+                dying[0].TakeDamage(1e9f, false);
+                float dw = 0f;
+                while (dw < 0.10f) { dw += Time.deltaTime; yield return null; }
+                Shot(rt, "9-khung-quai-chet");
+            }
+
+            // ── nút quét hết ngân sách ───────────────────────────────────────────
+            // Trần quét = 2x Mảnh đã leo ('Thông số'!B32). Tiêu sạch rồi chụp: nhãn phải
+            // nói rõ vì sao bấm không được, chứ không phải im lặng xám đi.
+            if (GameState.Instance != null)
+            {
+                GameState.Instance.MarkCleared(1);
+                float con = GameState.Instance.SweepBudgetLeft;
+                if (con > 0f) GameState.Instance.AddShards(con, fromSweep: true);
+                yield return null; yield return null;
+                Shot(rt, "12-quet-het-ngan-sach");
             }
 
             // ── banner dọn sạch tầng ─────────────────────────────────────────────

@@ -430,7 +430,55 @@ AdvanceFloor → tầng mới → _paid tự reset ở SpawnFloor
 
 ---
 
-## VIỆC 7 — NGHIỆM THU (≈ 0,5 ngày)
+## ~~VIỆC 7 — NGHIỆM THU~~ ✅ XONG
+
+> **Bảng bấm giờ ĐÃ TỰ ĐỘNG HOÁ** — `M4BangBamGio.cs` bật TỰ ĐÁNH, mua nâng cấp tham lam
+> mỗi tầng, leo 10 tầng và in ra bảng. Máy ghi được 5 trong 6 cột; cột "ghi chú cảm giác"
+> và chỉ tiêu 10 thì không, và không nên giả vờ là đã đo được.
+>
+> ```
+>   tầng    giây/tầng   Mảnh thu   HP% vào   lặng dài nhất   (B = tầng boss)
+>    1      48.0         400       100%         1.4
+>    2      47.4         436        90%         1.2
+>    3      46.2         475        78%         1.2
+>    4      48.8         518        67%         1.2
+>    5      51.5         565        55%         1.3
+>    6      49.2         615        43%         1.2
+>    7      49.2         671        32%         1.2
+>    8      53.4         731        21%         1.2
+>    9      94.6         797         9%         1.5
+>   10 B   151.1         869        89%         1.5
+> ```
+>
+> | # | Chỉ tiêu | Hôm trước | Đo được | Ngưỡng | |
+> |---|---|---|---|---|---|
+> | 1 | nhịp trả thưởng, tầng thường | 48–54 s | **8,4 s** | ≤ 10 s | ✓ |
+> | 2 | khoảng lặng dài nhất | 3,4 s | **1,5 s** | ≤ 2,0 s | ✓ |
+> | 3 | kênh phản hồi khi quái chết | 0 | **3** | ≥ 3 | ✓ |
+> | 4 | nâng cấp đầu đổi pixel | KHÔNG | **CÓ** | CÓ | ✓ |
+> | 5 | số đòn giết một con giảm được | không thấy | **CÓ** | CÓ | ✓ |
+> | 6 | HP% vào tầng 10 | 16–40 % | **89 %** | ≥ 50 % | ✓* |
+> | 7 | thắng boss tầng 10 bằng đường leo | KHÔNG (biên 0,75) | **CÓ** (3 Lõi, lên tầng 11) | CÓ | ✓ |
+> | 8 | thời lượng tầng thường | 48–54 s | **46–53 s** | 40–60 s | ✓ |
+>
+> **\* Chỉ tiêu 6 đạt nhưng đọc kỹ thì không sạch.** HP tụt đều 100 → 9 % suốt tầng 1–9 rồi
+> nhảy lên 89 %. Cú nhảy đó là **một lần chết** ở tầng 9 (94,6 giây, gần gấp đôi các tầng
+> khác) — và `ResetHealth()` là **nguồn hồi máu duy nhất trong game**. Nghĩa là hiện tại
+> **chết có lợi**. Đây chính là số liệu mà mục "hồi đầy máu trước tầng boss" của Đợt 2 đang
+> chờ; giờ đã có, và câu trả lời nghiêng về CÓ nên hồi.
+>
+> **Hai lỗi của chính bộ đo, sửa rồi mới tin số:**
+> 1. Bản đầu **quên mua nâng cấp** — nó đánh boss tầng 10 bằng trang bị cấp 1, 300 giây, 0
+>    Mảnh. Số sai không phải vì game sai mà vì bộ đo không chơi như người chơi.
+> 2. Cột "Mảnh nhận" đo **số dư ví** nên ra số âm khi bộ đo tiêu tiền; và nhịp trả thưởng
+>    gộp cả tầng boss (một trận 151 giây, đúng một phần thưởng) làm trung bình vọt lên 10,9.
+>    Đổi sang đo `ShardsClimbed` và tách riêng tầng boss → 8,4 giây.
+>
+> **Chỉ tiêu 10 vẫn còn nguyên và là của bạn:** chơi liền 15 phút, đặt máy xuống, tự trả lời
+> *"có vui không"*. `DESIGN.md:562` giao tiêu chí đó cho M1 và quyết định #21 đã lặng lẽ đổi
+> nó thành "30 test xanh". Máy không trả lời hộ được câu này.
+
+### Nội dung gốc
 
 Dựng lại scene · chạy 30 test cũ + 5 test mới · chụp ảnh · **chơi thật 10 tầng có bấm giờ**. Chi tiết ở mục KIỂM CHỨNG bên dưới.
 

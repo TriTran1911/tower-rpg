@@ -269,9 +269,15 @@ namespace TowerRpg.UI
 
             if (sweepLabel != null)
             {
-                if (on)       sweepLabel.text = $"QUÉT\nT{sweep.TargetFloor}";
-                else if (can) sweepLabel.text = "QUÉT\nNHANH";
-                else          sweepLabel.text = "QUÉT NHANH\nDỌN TẦNG 1";
+                // Nút khoá phải nói ĐÚNG lý do. Bản đầu ghi "DỌN TẦNG 1" cho mọi trường
+                // hợp không bấm được — kể cả khi người chơi đã dọn tầng 1 từ lâu và thứ
+                // đang chặn họ là TRẦN NGÂN SÁCH. Một cái nút nói dối về lý do còn tệ hơn
+                // một cái nút im lặng: người chơi đi làm đúng việc nó bảo và vẫn không mở.
+                bool daDon = gs.HighestCleared >= 1;
+                if (on)         sweepLabel.text = $"QUÉT\nT{sweep.TargetFloor}";
+                else if (can)   sweepLabel.text = "QUÉT\nNHANH";
+                else if (daDon) sweepLabel.text = "QUÉT NHANH\nHẾT NGÂN SÁCH";
+                else            sweepLabel.text = "QUÉT NHANH\nDỌN TẦNG 1";
                 sweepLabel.color = can || on ? Ink : InkOff;
             }
             if (sweepFill != null && !on) sweepFill.fillAmount = 0f;
