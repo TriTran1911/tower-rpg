@@ -49,7 +49,9 @@ namespace TowerRpg.UI
                 detail.text = string.IsNullOrEmpty(character)
                             ? $"+{cores} LÕI"
                             : $"+{cores} LÕI\nMỞ NHÂN VẬT: {character}";
-            if (hint   != null) hint.text   = "chạm để tiếp";
+            // CHỈ ĐƯỜNG. Người chơi vừa nhận 3 Lõi và không có gì nói cho họ biết tiêu ở
+            // đâu — Lõi chỉ dùng được trong màn TRANG BỊ, và chỉ khi một ô đã chạm cấp 10.
+            if (hint != null) hint.text = "Lõi tiêu ở nút TRANG BỊ, khi một ô chạm trần cấp\nchạm để tiếp";
 
             root.SetActive(true);
             root.transform.SetAsLastSibling();

@@ -9,7 +9,10 @@ namespace TowerRpg.Player
     /// Bộ asset cho mỗi nhân vật bốn file 64x16 (bốn hướng, mỗi hướng một khung 16x16):
     /// Idle · Walk · Attack. Không dùng Animator/AnimationClip — bốn sprite đổi tay bằng
     /// một dòng rẻ hơn hẳn một máy trạng thái, và nó khớp với cách PlayerAppearance (§5.5b)
-    /// đã đổi hình khi đổi nhân vật.
+    /// đã đổi hình khi đổi nhân vật. (PlayerAppearance cũ đã xoá: nó ghi cùng một
+    /// SpriteRenderer nhưng chỉ lúc đổi nhân vật, nên bị lớp này ghi đè mỗi khung hình —
+    /// mã chết từ lúc Đợt 2 thêm hoạt ảnh, và hai component tranh một SpriteRenderer là
+    /// thứ sớm muộn sẽ cắn.)
     ///
     /// Thứ tự hướng trong file: 0 xuống · 1 trái · 2 phải · 3 lên.
     /// </summary>

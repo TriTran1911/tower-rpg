@@ -33,6 +33,13 @@ namespace TowerRpg.UI
         [SerializeField] private TMP_Text autoLabel;
 
         [SerializeField] private FloorRunner runner;
+
+        // Hai nút ĐANG MỞ. Trước gói này HudUI không giữ nổi một tham chiếu tới chúng,
+        // trong khi hai nút đang KHOÁ được chăm từng li — kể cả đếm ngược "CÒN 20 TẦNG".
+        // Tức là tôi đã dồn công giải thích thứ người chơi CHƯA có, và bỏ mặc thứ họ ĐANG có.
+        [SerializeField] private Button gearButton;
+        [SerializeField] private TMP_Text gearLabel;
+        [SerializeField] private TMP_Text charLabel;
         [SerializeField] private GameObject eventBannerRoot;
         [SerializeField] private TMP_Text eventBanner;
         [SerializeField] private Juice.CameraShake cameraShake;
@@ -271,6 +278,8 @@ namespace TowerRpg.UI
                 if (boss) bossBanner.text = $"BOSS  ·  TẦNG {gs.Floor}";
             }
 
+            RefreshGear(gs);
+            RefreshChar(gs);
             RefreshSweep(gs);
             RefreshAuto(gs);
         }
@@ -281,6 +290,59 @@ namespace TowerRpg.UI
         // nên nó không kéo được ai đi tiếp. Một tính năng vô hình thì bằng không tồn tại.
         // Mốc tầng 20 GIỮ NGUYÊN: §5.2 giải thích rất kỹ vì sao phải là 20 (đủ lâu để
         // hiểu hệ thống bằng tay, đủ sớm để chưa chán). Thứ sai là cách bày, không phải mốc.
+        /// <summary>
+        /// Nút TRANG BỊ tự nói trạng thái: còn thiếu bao nhiêu Mảnh, hay đã mua được.
+        /// Người chơi mới không có tutorial, không có chấm đỏ — dòng "CÒN 180" này là thứ
+        /// duy nhất nối "đánh quái" với "bấm vào đây".
+        /// </summary>
+        private void RefreshGear(GameState gs)
+        {
+            if (gearLabel == null) return;
+
+            // NextCost trả -1 khi ô đã chạm trần — bỏ qua số âm, nếu không nút báo "CÒN -1".
+            float reNhat = float.MaxValue;
+            bool dotPhaDuoc = false;
+            for (int i = 0; i < Equipment.SlotCount; i++)
+            {
+                var s = (Slot)i;
+                if (gs.Gear.AtCap(s))
+                {
+                    int loi = gs.Gear.NextTierCost(s);
+                    if (loi >= 0 && gs.Cores >= loi) dotPhaDuoc = true;
+                    continue;
+                }
+                float gia = gs.Gear.NextCost(s);
+                if (gia >= 0f && gia < reNhat) reNhat = gia;
+            }
+
+            if (dotPhaDuoc)                      gearLabel.text = "TRANG BỊ\nĐỘT PHÁ ĐƯỢC";
+            else if (reNhat <= gs.Shards)        gearLabel.text = "TRANG BỊ\nNÂNG ĐƯỢC";
+            else if (reNhat < float.MaxValue)    gearLabel.text = $"TRANG BỊ\nCÒN {reNhat - gs.Shards:N0}";
+            else                                 gearLabel.text = "TRANG BỊ\nTỚI HẠN";
+
+            // Nền LUÔN sáng: cánh cửa này chưa bao giờ khoá, đừng làm nó trông như bị khoá.
+            if (gearButton != null && gearButton.targetGraphic is Image bg) bg.color = TintOpen;
+            gearLabel.color = Ink;
+        }
+
+        /// <summary>Nút NHÂN VẬT đếm ngược tới con kế tiếp — đúng khuôn "CÒN 20 TẦNG".</summary>
+        private void RefreshChar(GameState gs)
+        {
+            if (charLabel == null) return;
+
+            if (gs.BossesKilled >= CharacterRoster.Count - 1)
+            {
+                charLabel.text = "NHÂN\nVẬT";
+            }
+            else
+            {
+                int tangMo = (gs.BossesKilled + 1) * gs.BossEvery;
+                int con = Mathf.Max(0, tangMo - gs.HighestCleared);
+                charLabel.text = $"NHÂN VẬT\nCÒN {con} TẦNG";
+            }
+            charLabel.color = Ink;
+        }
+
         private void RefreshSweep(GameState gs)
         {
             if (sweepButton == null) return;

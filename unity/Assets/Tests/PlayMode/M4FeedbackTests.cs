@@ -397,6 +397,58 @@ namespace TowerRpg.Tests
         }
 
         [UnityTest]
+        public IEnumerator The_nhan_vat_khoa_phai_NOI_RA_SO_TANG()
+        {
+            var ch = Object.FindFirstObjectByType<UI.CharacterScreen>();
+            Assert.IsNotNull(ch);
+            ch.Toggle();
+            yield return null; yield return null; yield return null;
+
+            var texts = new System.Collections.Generic.List<string>();
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (TMPro.TMP_Text t in root.GetComponentsInChildren<TMPro.TMP_Text>(true))
+                    if (t.text.Contains("Tầng") || t.text.Contains("boss")) texts.Add(t.text);
+
+            // Bản đầu ghi "Hạ boss 2 để mở" mà KHÔNG nói boss 2 là tầng 20 — đúng câu chủ
+            // dự án hỏi, và màn hình từ chối trả lời dù gs.BossEvery nằm sẵn trong tay.
+            int tangMo = 1 * _gs.BossEvery;
+            bool coSoTang = texts.Exists(t => t.Contains($"Tầng {tangMo}"));
+            Assert.IsTrue(coSoTang,
+                $"không thẻ khoá nào nói ra số tầng. Thấy: {string.Join(" | ", texts)}");
+            ch.Toggle();
+        }
+
+        [UnityTest]
+        public IEnumerator Nut_TRANG_BI_tu_noi_con_thieu_bao_nhieu()
+        {
+            GameObject go = null;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == "GearButton") { go = t.gameObject; break; }
+            Assert.IsNotNull(go, "không thấy GearButton");
+            var label = go.GetComponentInChildren<TMPro.TMP_Text>(true);
+            yield return null; yield return null;
+
+            // Người chơi mới: 0 Mảnh, chưa mua được gì — nút phải nói còn thiếu bao nhiêu.
+            StringAssert.Contains("CÒN", label.text,
+                $"nút TRANG BỊ không nói còn thiếu bao nhiêu Mảnh: '{label.text}'");
+
+            _gs.AddShards(1_000_000f);
+            yield return null; yield return null;
+            StringAssert.Contains("NÂNG ĐƯỢC", label.text,
+                $"đủ Mảnh rồi mà nút vẫn không mời bấm: '{label.text}'");
+
+            // KHÔNG được hiện số âm: Equipment.NextCost trả -1 khi ô chạm trần.
+            while (_gs.TryUpgrade(Slot.Weapon)) { }
+            while (_gs.TryUpgrade(Slot.Armor)) { }
+            while (_gs.TryUpgrade(Slot.Glove)) { }
+            while (_gs.TryUpgrade(Slot.Ring)) { }
+            yield return null; yield return null;
+            StringAssert.DoesNotContain("-1", label.text,
+                $"nút báo số âm khi mọi ô đã chạm trần: '{label.text}'");
+        }
+
+        [UnityTest]
         public IEnumerator Man_cot_moc_dung_game_roi_TRA_LAI_timeScale()
         {
             var ms = Object.FindFirstObjectByType<UI.MilestoneOverlay>();

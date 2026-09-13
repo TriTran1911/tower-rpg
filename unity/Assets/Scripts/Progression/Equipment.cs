@@ -14,8 +14,14 @@ namespace TowerRpg.Progression
     }
 
     /// <summary>
-    /// Trang bị: bốn ô, mỗi ô một cấp. Không có ô nào "tốt hơn" ô nào — chúng nhân vào
-    /// bốn thừa số khác nhau của công thức ở §5.7.
+    /// Trang bị: bốn ô, mỗi ô một cấp, nhân vào bốn thừa số khác nhau của công thức §5.7.
+    ///
+    /// ⚠️ CHÚ THÍCH CŨ Ở ĐÂY GHI "Không có ô nào tốt hơn ô nào" — SAI, VÀ ĐO ĐƯỢC LÀ SAI.
+    /// Cùng một cái giá 300 Mảnh cho lần nâng đầu: Vũ khí +4,40% DPS · Găng +3,44% ·
+    /// Nhẫn +1,15% (vì hệ số chí mạng chỉ vào công thức qua 1 + (cm-1)/meterSize, tức bị
+    /// chia cho 5). Nhẫn đắt gấp 3,8 lần Vũ khí trên mỗi phần trăm sức mạnh — NGAY TỪ
+    /// TẦNG 1, không phải chỉ ở tầng 100 như §5.5 thú nhận.
+    /// Chính câu sai này là lý do suốt từ M2 không ai đi kiểm lại ô Nhẫn.
     ///
     /// Từ M3 mỗi ô có TRẦN RIÊNG, nâng bằng Lõi: trần = maxLevel + bậc × capStep.
     /// Đó là toàn bộ cuộc chơi phân bổ ở §5.6 — Lõi hữu hạn tuyệt đối, tiêu vào ô nào

@@ -294,37 +294,113 @@ namespace TowerRpg.UI
         /// Nút phân biệt NÂNG với ĐỘT PHÁ bằng SẮC NỀN, không bằng màu chữ: chữ trên gỗ
         /// sáng bắt buộc phải là mực mới đọc được, nên màu chữ không còn là kênh rảnh.
         /// </summary>
-        /// <summary>"Sát thương 10,0 → 10,4" thay vì "×1,04".</summary>
+        /// <summary>
+        /// In ra HẬU QUẢ ĐẾM ĐƯỢC, không phải chỉ số thô.
+        ///
+        /// §5.11 khoá cứng tăng trưởng ở 4,4%/cấp, nên "Sát thương 10,0 → 10,4" là đúng
+        /// nhưng không ai CẢM được 4%. Cùng con số đó, đọc trên số đòn cần để giết một
+        /// con quái, ra "8 đòn → 7 đòn" — tức 12,5% nhanh hơn ngay ở trận kế tiếp.
+        ///
+        /// Đây là việc duy nhất làm bốn ô thành bốn thứ KHÁC NHAU mà không đụng một con
+        /// số cân bằng nào: Vũ khí và Nhẫn đổi SỐ ĐÒN, Găng đổi ĐỒNG HỒ, Giáp đổi THỜI
+        /// GIAN SỐNG. Và vì bậc thang số đòn xê dịch theo tầng, câu hỏi "mua ô nào" có
+        /// đáp án khác nhau ở mỗi tầng — thứ mà bảng "×1,04" không bao giờ nói ra.
+        /// </summary>
         private static string MoTaNang(GameState gs, Slot s)
         {
             PlayerStats st = PlayerStats.Instance;
-            if (st == null || !st.Ready) return $"{Equipment.StatName(s)} — ×{gs.Gear.Mult(s):0.00}";
+            BalanceConfig b = BalanceConfig.Instance;
+            if (st == null || !st.Ready || b == null || !b.IsLoaded)
+                return $"{Equipment.StatName(s)} — ×{gs.Gear.Mult(s):0.00}";
 
-            float nay = s switch
+            int cap = gs.Gear.Level(s);
+            bool conNang = cap < gs.Gear.CapOf(s);
+
+            // Máu một con quái ở ĐÚNG tầng đang đứng — bậc thang đổi theo tầng.
+            int soQuai = Mathf.Max(1, b.GetInt("enemy.count"));
+            float mauMotCon = b.Get("enemy.hpFloor1")
+                            * Mathf.Pow(1f + b.Get("enemy.hpGrowth"), gs.Floor - 1) / soQuai;
+            // KHÔNG chia cho số quái: lấy sát thương của CẢ TẦNG. Chia ra thì ở tầng 1
+            // con số là "chịu được 400 giây" — to tới mức vô nghĩa, và nó không bao giờ
+            // nhỏ lại vì máu nền tăng 4,5%/tầng còn sát thương quái chỉ 4,0%. Lấy cả tầng
+            // cho ra 67 giây: vẫn là cận dưới an toàn (hình học cho thấy thường chỉ 1 trong
+            // 6 con với tới người chơi), nhưng là con số đọc được và so sánh được.
+            float dpsTang = b.Get("enemy.dpsFloor1")
+                          * Mathf.Pow(1f + b.Get("enemy.dpsGrowth"), gs.Floor - 1);
+
+            // Hệ số của ô ở cấp bất kỳ, để xem trước mà không phải mua thật.
+            float MultO(Slot o, int lv) => gs.Gear.MultAtLevel(o, lv);
+            float TiLe(Slot o, int lv) => gs.Gear.Mult(o) > 0f ? MultO(o, lv) / gs.Gear.Mult(o) : 1f;
+
+            float SatThuongMoiDon(int lvVuKhi, int lvNhan)
             {
-                Slot.Weapon => st.Damage,
-                Slot.Armor  => st.MaxHp,
-                Slot.Glove  => st.AttacksPerSec,
-                Slot.Ring   => st.CritMultiplier,
-                _           => 0f,
-            };
-            // Cấp kế tiếp nhân thêm đúng một bậc tăng trưởng của ô đó.
-            float buoc = gs.Gear.Level(s) < gs.Gear.CapOf(s)
-                       ? gs.Gear.Mult(s) > 0f
-                         ? nay * (gs.Gear.MultAtLevel(s, gs.Gear.Level(s) + 1) / gs.Gear.Mult(s))
-                         : nay
-                       : nay;
+                float d = st.Damage * TiLe(Slot.Weapon, lvVuKhi);
+                float heSoCm = st.CritMultiplier * TiLe(Slot.Ring, lvNhan);
+                float meter = Mathf.Max(2, b.GetInt("crit.meterSize"));
+                return d * (1f + (heSoCm - 1f) / meter);   // trung bình theo thanh dồn §5.4
+            }
 
-            // BA NHÁNH, không phải hai. Với một chữ số thập phân, Găng cấp 1→2 là
-            // 1,0 x 1,03441 = 1,034 -> in ra "1.0 → 1.0": người chơi trả 300 Mảnh, tức ba
-            // phần tư thu nhập cả tầng 1, để đổi một con số thành CHÍNH NÓ. Đúng cái bẫy
-            // mà m1-balance.csv đã viết hẳn một đoạn để phòng cho số sát thương bay lên,
-            // nhưng không phòng cho chính màn nâng cấp — và nó rơi trúng Găng, ô mà §5.5
-            // tự thú là "sai nhiều hơn đúng". Giao diện đang xác nhận hộ nghi ngờ tệ nhất.
-            string F(float v) => v >= 100f ? v.ToString("N0")
-                               : v >= 10f  ? v.ToString("0.0")
-                                           : v.ToString("0.00");
-            return $"{Equipment.StatName(s)}  {F(nay)} → {F(buoc)}";
+            int DonCan(int lvVuKhi, int lvNhan)
+            {
+                float moiDon = SatThuongMoiDon(lvVuKhi, lvNhan);
+                return moiDon > 0f ? Mathf.CeilToInt(mauMotCon / moiDon) : 999;
+            }
+
+            string ten = Equipment.StatName(s);
+
+            switch (s)
+            {
+                case Slot.Weapon:
+                case Slot.Ring:
+                {
+                    int nay = s == Slot.Weapon ? DonCan(cap, gs.Gear.Level(Slot.Ring))
+                                               : DonCan(gs.Gear.Level(Slot.Weapon), cap);
+                    if (!conNang) return $"Giết 1 quái: {nay} đòn  —  tới hạn";
+
+                    int sau = s == Slot.Weapon ? DonCan(cap + 1, gs.Gear.Level(Slot.Ring))
+                                               : DonCan(gs.Gear.Level(Slot.Weapon), cap + 1);
+                    if (sau < nay) return $"Giết 1 quái: {nay} đòn → {sau} đòn";
+
+                    // Chưa qua bậc thang: nói RÕ còn mấy cấp nữa mới xuống — đúng khuôn
+                    // "CÒN 17 TẦNG" của nút tự đánh, một lời hứa kiểm chứng được.
+                    for (int them = 2; cap + them <= gs.Gear.CapOf(s); them++)
+                    {
+                        int thu = s == Slot.Weapon ? DonCan(cap + them, gs.Gear.Level(Slot.Ring))
+                                                   : DonCan(gs.Gear.Level(Slot.Weapon), cap + them);
+                        if (thu < nay) return $"{nay} đòn  ·  còn {them} cấp nữa xuống {thu}";
+                    }
+
+                    // KHÔNG cấp nào trong trần hiện tại hạ được số đòn — nói THẲNG.
+                    // Đây là chỗ ô Nhẫn tự lộ mặt: cùng 300 Mảnh, Vũ khí cho +4,40% DPS
+                    // còn Nhẫn +1,15% (hệ số chí mạng bị chia cho meterSize = 5), nên Nhẫn
+                    // cần 12 cấp để bớt một đòn trong khi Vũ khí cần 4 — mà trần chỉ có 10.
+                    // §5.5 gọi Nhẫn là "ô đổ rác" nhưng chưa bao giờ nói ra trên màn hình;
+                    // im lặng ở đây là để người chơi tự đốt Mảnh rồi tự đoán.
+                    return $"{nay} đòn  ·  chưa trần nào hạ được — cần đột phá";
+                }
+
+                case Slot.Glove:
+                {
+                    int don = DonCan(gs.Gear.Level(Slot.Weapon), gs.Gear.Level(Slot.Ring));
+                    float nay = st.AttacksPerSec > 0f ? don / st.AttacksPerSec : 0f;
+                    if (!conNang) return $"{don} đòn  ·  {nay:0.0}s  —  tới hạn";
+
+                    float apsSau = st.AttacksPerSec * TiLe(Slot.Glove, cap + 1);
+                    float sau = apsSau > 0f ? don / apsSau : 0f;
+                    // Nói thẳng: Găng KHÔNG đổi số đòn, chỉ đổi đồng hồ.
+                    return $"{don} đòn  ·  {nay:0.0}s → {sau:0.0}s";
+                }
+
+                default:
+                {
+                    float nay = dpsTang > 0f ? st.MaxHp / dpsTang : 0f;
+                    if (!conNang) return $"Trụ giữa bầy: {nay:0.0}s  —  tới hạn";
+
+                    float mauSau = st.MaxHp * TiLe(Slot.Armor, cap + 1);
+                    float sau = dpsTang > 0f ? mauSau / dpsTang : 0f;
+                    return $"Trụ giữa bầy: {nay:0.0}s → {sau:0.0}s";
+                }
+            }
         }
 
         private static void SetButton(Row r, bool on, Color tint)

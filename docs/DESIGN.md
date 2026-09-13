@@ -550,7 +550,10 @@ thao túng người chơi.
   Bảng tính dùng **máu ĐẦY** ở `'Kiểm chứng build'!P` nên hồi đầy trước boss là đúng mô hình.
   Chưa sửa vì nó chồng lên ba lớp buff sinh tồn vừa thêm (van #4, `dpsFloor1` 1,5, đóng băng
   hồi chiêu) — phải nhân ra một lần rồi mới quyết.
-- ⚠️ **HAI TÍNH NĂNG ĐANG MỞ THÌ CÂM, HAI TÍNH NĂNG ĐANG KHOÁ THÌ NÓI NHIỀU.** Nhóm điều
+- ~~⚠️ **HAI TÍNH NĂNG ĐANG MỞ THÌ CÂM**~~ — **ĐÃ SỬA** (gói giao tiếp). Nút TRANG BỊ đếm
+  *"CÒN 180"* → *"NÂNG ĐƯỢC"* → *"ĐỘT PHÁ ĐƯỢC"*; nút NHÂN VẬT đếm *"CÒN 10 TẦNG"*; thẻ
+  khoá ghi *"Tầng 20 · còn 10 tầng"*; màn nhân vật hiện số thật (*"đòn 14,1 · máu 110"*) và
+  nói thẳng rằng đổi nhân vật KHÔNG làm mạnh hơn. Xoá `PlayerAppearance` (mã chết). Nội dung cũ: Nhóm điều
   tra chỉ ra một bất đối xứng không ai để ý: QUÉT NHANH và TỰ ĐÁNH (đang khoá) được chăm
   từng li — đổi nền, đổi màu chữ, đếm ngược *"CÒN 20 TẦNG"*. Còn TRANG BỊ và NHÂN VẬT
   (đang MỞ từ giây 0) thì `HudUI` không giữ nổi một tham chiếu, và `BuildM1Scene.cs:345`
@@ -560,7 +563,13 @@ thao túng người chơi.
   tầng 20 — đúng câu chủ dự án hỏi, màn hình từ chối trả lời. Chưa sửa (chủ dự án chọn chỉ
   vá bốn lỗi trước); gói giao tiếp còn nguyên trong `docs/KE-HOACH-NHIP-DO.md`.
 - **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
-  thì phá §5.1. Chưa có lời giải rẻ.
+  thì phá §5.1. Chưa có lời giải rẻ. **Cập nhật:** đo lại cho thấy nó là bẫy **ngay từ tầng 1**,
+  không phải chỉ ở tầng 100 như mục này từng ghi — cùng 300 Mảnh, Vũ khí cho **+4,40%** DPS còn
+  Nhẫn **+1,15%** (hệ số chí mạng chỉ vào công thức qua `1 + (cm−1)/meterSize`, tức bị chia cho 5),
+  đắt gấp **3,8 lần** trên mỗi phần trăm sức mạnh. Chú thích `Equipment.cs:17` ghi *"không có ô nào
+  tốt hơn ô nào"* — **sai đo được**, và chính câu đó là lý do suốt từ M2 không ai đi kiểm lại ô này.
+  Chưa cân bằng lại (đụng `can-bang.xlsx`), nhưng giao diện giờ **nói thẳng**: Nhẫn hiện
+  *"7 đòn · chưa trần nào hạ được — cần đột phá"* trong khi Vũ khí hiện *"còn 4 cấp nữa xuống 6"*.
 - ~~⚠️ **QUÉT NHANH ĐANG VƯỢT TRẦN CỦA BẢNG TÍNH**~~ — **ĐÃ SỬA** (Việc 2). Trần ngân sách
   `sweep.totalMult = 2` lấy thẳng từ ô `B32`: quét kiếm thêm được tối đa `(2−1) × Mảnh-đã-leo`,
   hết thì nút báo *HẾT NGÂN SÁCH*, leo thêm thì trần tự nới. Save lên v3 để lưu hai nguồn Mảnh

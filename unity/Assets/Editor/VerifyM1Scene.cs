@@ -47,14 +47,14 @@ namespace TowerRpg.EditorTools
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
                                       "sweepFill", "auto", "autoButton", "autoLabel", "runner",
-                                      "eventBanner", "eventBannerRoot", "cameraShake");
+                                      "eventBanner", "eventBannerRoot", "cameraShake",
+                                      "gearButton", "gearLabel", "charLabel");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
                                               "coreLabel", "respecButton", "respecLabel");
             fail += Check<CharacterScreen>(log, "root", "cardParent", "hintLabel",
                                                 "panelSprite", "bgSprite", "cellSprite");
             fail += Check<AutoBattle>(log, "player", "joystick");
-            fail += Check<PlayerAppearance>(log, "target");
             fail += Check<PlayerAnimator>(log, "target", "controller");
             fail += Check<SlashFxSpawner>(log, "prefab");
             fail += Check<AudioDirector>(log, "normalTrack", "bossTrack", "runner");
@@ -217,16 +217,6 @@ namespace TowerRpg.EditorTools
                            faceCount == CharacterRoster.Count,
                            $"{faceCount}/{CharacterRoster.Count}");
 
-            var look = Object.FindFirstObjectByType<PlayerAppearance>();
-            var lookSo = look != null ? new SerializedObject(look) : null;
-            SerializedProperty looks = lookSo?.FindProperty("sprites");
-            int lookCount = 0;
-            if (looks != null)
-                for (int i = 0; i < looks.arraySize; i++)
-                    if (looks.GetArrayElementAtIndex(i).objectReferenceValue != null) lookCount++;
-            fail += Assert(log, $"đủ {CharacterRoster.Count} hình người chơi",
-                           lookCount == CharacterRoster.Count,
-                           $"{lookCount}/{CharacterRoster.Count}");
 
             // Hoạt ảnh: 3 bộ x 5 nhân vật x 4 hướng = 60 sprite. Thiếu một cái là nhân
             // vật đứng hình ở đúng hướng đó và không gì báo cho biết.

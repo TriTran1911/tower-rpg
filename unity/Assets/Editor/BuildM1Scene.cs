@@ -146,7 +146,6 @@ namespace TowerRpg.EditorTools
             var meter  = playerGo.AddComponent<CritMeter>();
             var attack = playerGo.AddComponent<AutoAttack>();
             var autoBattle = playerGo.AddComponent<AutoBattle>();
-            var look   = playerGo.AddComponent<PlayerAppearance>();
             var anim   = playerGo.AddComponent<PlayerAnimator>();
 
             // thanh chí mạng ngay dưới chân nhân vật (§5.4) — CHIA VẠCH, không liền mạch
@@ -342,7 +341,7 @@ namespace TowerRpg.EditorTools
 
             // Ba nút M3 xếp dọc dưới nút trang bị. Đáy nút cuối ở -848, vùng chạm cần gạt
             // bắt đầu ở -864 — cố ý không chồng lên nhau, chạm nút không thành ra đi bộ.
-            (Button charBtn, TMP_Text _)     = SideButton("CharButton", canvasGo.transform, panelSp,
+            (Button charBtn, TMP_Text charTxt) = SideButton("CharButton", canvasGo.transform, panelSp,
                                                           "NHÂN\nVẬT", -392, UiInk);
             (Button sweepBtn, TMP_Text sweepTxt) = SideButton("SweepButton", canvasGo.transform, panelSp,
                                                           "QUÉT NHANH", -552, UiInk);
@@ -593,6 +592,7 @@ namespace TowerRpg.EditorTools
                            ("sweepLabel", sweepTxt), ("sweepFill", sweepFill),
                            ("auto", autoBattle), ("autoButton", autoBtn), ("autoLabel", autoTxt),
                            ("runner", runner), ("eventBanner", eventBanner),
+                           ("gearButton", gearBtn), ("gearLabel", gbTxt), ("charLabel", charTxt),
                            ("eventBannerRoot", bannerBg.gameObject), ("milestone", milestone),
                            ("cameraShake", shake));
             Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
@@ -666,15 +666,6 @@ namespace TowerRpg.EditorTools
             animSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(anim);
 
-            // hình người chơi theo từng nhân vật
-            var lookSo = new SerializedObject(look);
-            lookSo.FindProperty("target").objectReferenceValue = psr;
-            SerializedProperty looks = lookSo.FindProperty("sprites");
-            looks.arraySize = CharacterRoster.Count;
-            for (int i = 0; i < CharacterRoster.Count; i++)
-                looks.GetArrayElementAtIndex(i).objectReferenceValue = charSprites[i];
-            lookSo.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(look);
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);

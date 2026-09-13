@@ -90,8 +90,12 @@ namespace TowerRpg.UI
             if (hintLabel != null)
                 // KHÔNG dùng dấu "÷": font dự phòng của TMP không có glyph đó và nó hiện
                 // ra thành "+", tức là nói NGƯỢC hẳn ý nghĩa. Viết chữ cho chắc.
-                hintLabel.text = "Sát thương nhân k, máu chia k — tích không đổi, nên không con "
-                               + "nào mạnh hơn con nào. Khác nhau ở chỗ tha thứ sai lầm đến đâu.";
+                // Nói THẲNG rằng đổi nhân vật không làm mạnh lên. Người chơi quen gacha sẽ
+                // đi tìm con "tốt nhất" và không tin là không có; giấu điều đó chỉ khiến họ
+                // mở được Kiếm sĩ sau 8 phút rồi thấy hụt hẫng mà không hiểu vì sao.
+                hintLabel.text = "Cùng một tổng sức mạnh, chia khác nhau. Đổi nhân vật KHÔNG "
+                               + "làm bạn mạnh hơn — đòn đau hơn thì máu mỏng hơn, đúng bấy "
+                               + "nhiêu. Khác nhau ở chỗ tha thứ sai lầm đến đâu.";
         }
 
         private Card BuildCard(int index)
@@ -187,11 +191,30 @@ namespace TowerRpg.UI
                 bool current = gs.CharacterIndex == i;
                 float k = CharacterRoster.DamageMult(i);
 
-                c.Stats.text = $"sát thương ×{k:0.00}   ·   máu ×{1f / k:0.00}";
+                // SỐ THẬT thay vì hệ số. "×1,80 · ×0,56" bắt người chơi tự nhân; "đòn 23 ·
+                // máu 84" là thứ họ thấy lại trên màn hình ngay sau khi đổi. Quy đổi từ
+                // chỉ số HIỆN TẠI nên nó đúng với trang bị đang mặc, không phải số trên giấy.
+                PlayerStats st = PlayerStats.Instance;
+                if (st != null && st.Ready)
+                {
+                    float kNay = CharacterRoster.DamageMult(gs.CharacterIndex);
+                    float donCon = st.Damage / (kNay > 0f ? kNay : 1f) * k;
+                    float mauCon = st.MaxHp * (kNay > 0f ? kNay : 1f) / k;
+                    c.Stats.text = $"đòn {donCon:0.#}   ·   máu {mauCon:0}";
+                }
+                else c.Stats.text = $"sát thương ×{k:0.00}   ·   máu ×{1f / k:0.00}";
 
                 if (!unlocked)
                 {
-                    c.State.text = $"Hạ boss {i} để mở";
+                    // NÓI RA SỐ TẦNG. Bản đầu ghi "Hạ boss 2 để mở" mà không nói boss 2 là
+                    // tầng 20 — đúng câu chủ dự án hỏi ("khi nào tôi mới dùng được nhân
+                    // vật"), và màn hình từ chối trả lời dù gs.BossEvery nằm sẵn trong tay.
+                    // Ngay cạnh đó, nút TỰ ĐÁNH ghi "CÒN 20 TẦNG" — cùng một dự án, hai
+                    // chuẩn khác nhau.
+                    int tangMo = i * gs.BossEvery;
+                    int con = Mathf.Max(0, tangMo - gs.HighestCleared);
+                    c.State.text = con > 0 ? $"Tầng {tangMo}  ·  còn {con} tầng"
+                                           : $"Tầng {tangMo}  ·  hạ boss để mở";
                     c.State.color = dim;
                 }
                 else if (current)
@@ -207,8 +230,11 @@ namespace TowerRpg.UI
 
                 c.Button.interactable = unlocked && !current;
                 c.Bg.color = unlocked ? Color.white : new Color(0.62f, 0.60f, 0.58f, 1f);
+                // Chân dung khoá chỉ mờ đi, KHÔNG tô gần đen: hình con nhân vật chính là
+                // phần thưởng duy nhất của một hệ sưu tầm mà §5.5b cố ý không cho thêm sức
+                // mạnh. Tô 0,15 là xoá mất thứ duy nhất còn lại để thèm.
                 if (c.Portrait != null)
-                    c.Portrait.color = unlocked ? Color.white : new Color(0.15f, 0.15f, 0.15f, 1f);
+                    c.Portrait.color = unlocked ? Color.white : new Color(0.55f, 0.52f, 0.50f, 1f);
                 c.Name.color = unlocked ? paper : dim;
             }
         }
