@@ -39,7 +39,10 @@ namespace TowerRpg.UI
         // Tức là tôi đã dồn công giải thích thứ người chơi CHƯA có, và bỏ mặc thứ họ ĐANG có.
         [SerializeField] private Button gearButton;
         [SerializeField] private TMP_Text gearLabel;
+        [SerializeField] private Button charButton;
         [SerializeField] private TMP_Text charLabel;
+        [SerializeField] private UpgradeScreen upgrade;
+        [SerializeField] private CharacterScreen character;
         [SerializeField] private GameObject eventBannerRoot;
         [SerializeField] private TMP_Text eventBanner;
         [SerializeField] private Juice.CameraShake cameraShake;
@@ -84,10 +87,26 @@ namespace TowerRpg.UI
         private float _flashUntil, _bannerUntil;
         private Color _shardBase = Color.white;
 
+
+        // ── NỐI NÚT LÚC CHẠY, KHÔNG NỐI Ở BỘ DỰNG SCENE ───────────────────────────
+        // Bốn nút TRANG BỊ · NHÂN VẬT · hai nút ĐÓNG từng được nối trong
+        // BuildM1Scene.cs bằng `btn.onClick.AddListener(...)`. Dòng đó CHẠY ĐÚNG trong
+        // phiên Editor dựng scene, rồi BIẾN MẤT khi scene được lưu: AddListener tạo
+        // đăng ký LÚC CHẠY, Unity chỉ tuần tự hoá `m_PersistentCalls`. File M1.unity
+        // ghi đúng điều đó — `m_PersistentCalls: m_Calls: []` ở cả 66 chỗ.
+        //
+        // Hệ quả: hai màn hình lớn nhất của game KHÔNG MỞ ĐƯỢC BẰNG NGÓN TAY kể từ M2,
+        // và nếu mở được thì cũng không đóng được. Mọi ảnh chụp hai màn đó đều do test
+        // gọi thẳng Toggle() — tức bốn lớp kiểm chứng đều đi vòng qua đúng cái hỏng.
+        //
+        // Nút QUÉT NHANH và TỰ ĐÁNH thì luôn chạy, vì chúng nối ở đây, lúc chạy.
+        // Đó là khuôn đúng; giờ cả bốn nút kia theo nó.
         private void Start()
         {
             if (sweepButton != null) sweepButton.onClick.AddListener(OnSweep);
             if (autoButton  != null) autoButton.onClick.AddListener(OnAuto);
+            if (gearButton != null && upgrade  != null) gearButton.onClick.AddListener(upgrade.Toggle);
+            if (charButton != null && character != null) charButton.onClick.AddListener(character.Toggle);
             if (sweep != null) sweep.Progress += OnSweepProgress;
             if (runner != null)
             {

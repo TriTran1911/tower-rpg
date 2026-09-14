@@ -19,6 +19,7 @@ namespace TowerRpg.UI
     {
         [Header("Khung")]
         [SerializeField] private GameObject root;
+        [SerializeField] private Button closeButton;
         [SerializeField] private RectTransform hudInfo;
         [SerializeField] private RectTransform cardParent;
         [SerializeField] private TMP_Text hintLabel;
@@ -58,6 +59,9 @@ namespace TowerRpg.UI
                 return;
             }
             root.SetActive(false);
+            // Nút ĐÓNG nối Ở ĐÂY, lúc chạy. Nối trong bộ dựng scene thì AddListener bay
+            // mất lúc lưu scene — xem ghi chú dài trong HudUI.Start().
+            if (closeButton != null) closeButton.onClick.AddListener(Toggle);
         }
 
         private void OnDisable()

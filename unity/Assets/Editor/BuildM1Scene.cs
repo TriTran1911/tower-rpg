@@ -475,8 +475,12 @@ namespace TowerRpg.EditorTools
             upGo.SetActive(false);
 
             var upScreen = canvasGo.AddComponent<UpgradeScreen>();
-            gearBtn.onClick.AddListener(upScreen.Toggle);
-            closeBtn.onClick.AddListener(upScreen.Toggle);
+            // KHÔNG nối onClick ở đây nữa. `AddListener` tạo đăng ký LÚC CHẠY, mà bộ
+            // dựng này chạy trong Editor rồi LƯU scene — Unity chỉ tuần tự hoá
+            // `m_PersistentCalls`, nên đăng ký đó bay sạch. Bốn nút (TRANG BỊ, NHÂN VẬT,
+            // hai nút ĐÓNG) đã CÂM SUỐT TỪ M2 vì đúng hai dòng từng nằm ở đây.
+            // Giờ HudUI.Start() và UpgradeScreen/CharacterScreen.Start() tự nối lấy —
+            // cùng khuôn với QUÉT NHANH và TỰ ĐÁNH, hai nút chưa bao giờ hỏng.
 
             // ── MÀN HÌNH NHÂN VẬT §5.5b ──────────────────────────────────────────────
             var chGo = new GameObject("CharacterScreen", typeof(RectTransform));
@@ -507,7 +511,10 @@ namespace TowerRpg.EditorTools
             chRows.anchoredPosition = new Vector2(0f, -490f);
             chRows.sizeDelta = new Vector2(0f, 1200f);
 
-            var chCloseGo = new GameObject("Close", typeof(RectTransform));
+            // Tên RIÊNG, không trùng nút ĐÓNG của bảng trang bị. Hai đối tượng cùng tên
+            // "Close" trong một scene làm mọi phép tìm theo tên thành xổ số — đã cắn một
+            // lần ngay trong bộ đo của chính lỗi này.
+            var chCloseGo = new GameObject("CloseChar", typeof(RectTransform));
             chCloseGo.transform.SetParent(chGo.transform, false);
             var ccRt = chCloseGo.GetComponent<RectTransform>();
             ccRt.anchorMin = ccRt.anchorMax = new Vector2(0.5f, 0f);
@@ -525,8 +532,7 @@ namespace TowerRpg.EditorTools
             chGo.SetActive(false);   // như màn nâng cấp: lưu ở trạng thái ĐÓNG
 
             var chScreen = canvasGo.AddComponent<CharacterScreen>();
-            charBtn.onClick.AddListener(chScreen.Toggle);
-            chCloseBtn.onClick.AddListener(chScreen.Toggle);
+            // (xem ghi chú ở nút TRANG BỊ phía trên — nối lúc chạy, không nối ở đây)
 
             // ── MÀN HÌNH CỘT MỐC BOSS ────────────────────────────────────────────────
             var msGo = new GameObject("MilestoneOverlay", typeof(RectTransform));
@@ -711,14 +717,16 @@ namespace TowerRpg.EditorTools
                            ("sweepLabel", sweepTxt), ("sweepFill", sweepFill),
                            ("auto", autoBattle), ("autoButton", autoBtn), ("autoLabel", autoTxt),
                            ("runner", runner), ("eventBanner", eventBanner),
-                           ("gearButton", gearBtn), ("gearLabel", gbTxt), ("charLabel", charTxt),
+                           ("gearButton", gearBtn), ("gearLabel", gbTxt),
+                           ("charButton", charBtn), ("charLabel", charTxt),
+                           ("upgrade", upScreen), ("character", chScreen),
                            ("eventBannerRoot", bannerBg.gameObject), ("milestone", milestone),
                            ("victory", victory), ("cameraShake", shake));
-            Wire(upScreen, ("hudInfo", hudInfo), ("auto", autoBattle),
+            Wire(upScreen, ("hudInfo", hudInfo), ("auto", autoBattle), ("closeButton", closeBtn),
                            ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
                            ("coreLabel", upCores), ("critLabel", upCrit), ("respecButton", respecBtn),
                            ("respecLabel", respecTxt));
-            Wire(chScreen, ("hudInfo", hudInfo),
+            Wire(chScreen, ("hudInfo", hudInfo), ("closeButton", chCloseBtn),
                            ("root", chGo), ("cardParent", chRows), ("hintLabel", chHint));
 
             // ── ÂM THANH ─────────────────────────────────────────────────────────────

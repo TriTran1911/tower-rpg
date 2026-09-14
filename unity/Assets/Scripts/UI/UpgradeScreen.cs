@@ -78,6 +78,9 @@ namespace TowerRpg.UI
             root.SetActive(false);
 
             if (respecButton != null) respecButton.onClick.AddListener(OnRespec);
+            // Nút ĐÓNG cũng phải nối Ở ĐÂY. Nối trong bộ dựng scene thì AddListener bay
+            // mất lúc lưu scene — xem ghi chú dài trong HudUI.Start().
+            if (closeButton != null) closeButton.onClick.AddListener(Toggle);
         }
 
         private void OnEnable()
@@ -90,6 +93,7 @@ namespace TowerRpg.UI
             if (GameState.Instance != null) GameState.Instance.Changed -= Refresh;
         }
 
+        [SerializeField] private Button closeButton;
         [SerializeField] private RectTransform hudInfo;
         [SerializeField] private Player.AutoBattle auto;
 

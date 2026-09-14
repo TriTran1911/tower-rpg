@@ -49,14 +49,15 @@ namespace TowerRpg.EditorTools
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
                                       "sweepFill", "auto", "autoButton", "autoLabel", "runner",
                                       "eventBanner", "eventBannerRoot", "cameraShake",
-                                      "gearButton", "gearLabel", "charLabel", "milestone", "victory");
+                                      "gearButton", "gearLabel", "charButton", "charLabel",
+                                      "upgrade", "character", "milestone", "victory");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
                                               "coreLabel", "respecButton", "respecLabel",
-                                              "hudInfo", "auto");
+                                              "hudInfo", "auto", "closeButton");
             fail += Check<CharacterScreen>(log, "root", "cardParent", "hintLabel",
                                                 "panelSprite", "bgSprite", "cellSprite",
-                                                "hudInfo");
+                                                "hudInfo", "closeButton");
             fail += Check<AutoBattle>(log, "player", "joystick");
             fail += Check<PlayerAnimator>(log, "target", "controller");
             fail += Check<SlashFxSpawner>(log, "prefab");
