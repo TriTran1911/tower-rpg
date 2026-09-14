@@ -720,7 +720,7 @@ Lộ trình dưới đây thiết kế để luôn có thứ chạy được tr�
 | ~~**M2 — Tiến trình**~~ | 20 tầng, rơi Mảnh, nâng cấp 4 ô trang bị, save/load | ✅ **XONG** — 17/17 test PlayMode |
 | ~~**M3 — Xương sống**~~ | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle, **mở khoá và đổi nhân vật (§5.5b)** | ✅ **XONG** — 30/30 test PlayMode, 37 mục kiểm scene. Tháp 40 tầng, 4 boss, 12 Lõi, 5 nhân vật |
 | ~~**M4 — Nội dung**~~ | 100 tầng, 5 chương, 10 boss | ✅ **XONG** — 66/66 test, 53 mục kiểm. Mô phỏng leo hết: cả 10 boss đạt biên ≥ 1,50 |
-| ~~**M5 — Bóng bẩy**~~ | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | ✅ **XONG** — 79/79 test, 62 mục kiểm. **Tháp 100 tầng lần đầu có KẾT THÚC** |
+| ~~**M5 — Bóng bẩy**~~ | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | ✅ **XONG** — **96/96 test, 94 mục kiểm** (số hiện tại, sau các đợt vá #36-#39). **Tháp 100 tầng lần đầu có KẾT THÚC** |
 
 **Cảnh báo (giữ lại làm ghi chép):** M5 là phần dev hay bỏ qua nhất và cũng là phần
 người xem portfolio đánh giá đầu tiên. Đừng cắt nó để thêm tầng.
