@@ -159,6 +159,9 @@ namespace TowerRpg.EditorTools
                            vcDimImg != null && vcDimImg.color.a >= 0.999f,
                            vcDimImg == null ? "không có" : $"alpha = {vcDimImg.color.a}");
 
+            // ── BA TẦNG ĐỌC (quyết định #23) ─────────────────────────────────────────
+            fail += KiemBaTangDoc(log);
+
             var cv = Object.FindFirstObjectByType<CanvasScaler>();
             fail += Assert(log, "Canvas referencePixelsPerUnit = 64 (phóng 4x nguyên)",
                            cv != null && Mathf.Approximately(cv.referencePixelsPerUnit, 64f),
@@ -439,5 +442,80 @@ namespace TowerRpg.EditorTools
             log.AppendLine($"  {(ok ? "✓" : "✗")} {what}" + (ok ? "" : $"  -> {actual}"));
             return ok ? 0 : 1;
         }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // BA TẦNG ĐỌC — thế giới xám · quái ĐỎ · nhân vật LAM (quyết định #23, §5.5b)
+        //
+        // VÌ SAO KIỂM Ở ĐÂY chứ không ở test PlayMode: đây là tính chất của FILE ART,
+        // không phải hành vi lúc chạy. Và texture trong bản build cố ý KHÔNG bật
+        // Read/Write (bật là nhân đôi RAM texture trên máy yếu), nên GetPixels32 lúc
+        // chạy sẽ ném lỗi. Trong Editor thì đọc thẳng byte của file PNG là xong.
+        //
+        // VÌ SAO PHẢI CÓ: quy tắc lam ĐÃ TỒN TẠI trong tools/doi-bang-mau.py từ đầu,
+        // và đã TỰ TẮT TRONG IM LẶNG suốt từ M3 — rule_for() chỉ tô cho
+        // Actor/CharacterAnimated, còn M3 đổi nguồn nhân vật sang Actor/Character.
+        // Không lớp kiểm nào bắt được: mã đúng, tham chiếu đủ, 82 test xanh, ảnh chụp
+        // vẫn ra một nhân vật — chỉ là nhân vật đó cùng màu với cái sàn.
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        private static bool LaLam(Color32 c) => c.g - c.r > 40 && c.b - c.r > 30;
+        private static bool LaDo(Color32 c)  => c.r - c.g > 40 && c.r - c.b > 40;
+
+        /// <summary>Pixel thân: đục và không phải viền tối (viền thì sắc nào cũng tối).</summary>
+        private static List<Color32> ThanPng(string assetPath, int cell = 16)
+        {
+            var ra = new List<Color32>();
+            string full = System.IO.Path.GetFullPath(assetPath);
+            if (!System.IO.File.Exists(full)) return ra;
+
+            var tex = new Texture2D(2, 2);
+            if (!ImageConversion.LoadImage(tex, System.IO.File.ReadAllBytes(full))) return ra;
+
+            // Chỉ ô đầu tiên — đó là khung game thật sự bày ra (SliceAndGet index 0).
+            int w = Mathf.Min(cell, tex.width), h = Mathf.Min(cell, tex.height);
+            Color32[] all = tex.GetPixels32();
+            for (int y = tex.height - h; y < tex.height; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    Color32 c = all[y * tex.width + x];
+                    if (c.a > 200 && c.r + c.g + c.b > 150) ra.Add(c);
+                }
+            Object.DestroyImmediate(tex);
+            return ra;
+        }
+
+        private static int TyLe(List<Color32> px, System.Func<Color32, bool> hop) =>
+            px.Count == 0 ? -1 : px.FindAll(c => hop(c)).Count * 100 / px.Count;
+
+        private static int KiemBaTangDoc(StringBuilder log)
+        {
+            const string Art = "Assets/Art/NinjaAdventure-MucSon";
+            int fail = 0;
+
+            // NHÂN VẬT — cả năm, vì §5.5b cho đổi. Tô đúng mỗi người đầu thì người chơi
+            // mở khoá xong, đổi sang người thứ hai, và tự tắt mất tầng đọc thứ ba.
+            foreach (string ten in Progression.CharacterRoster.ArtFolders)
+            {
+                var px = ThanPng($"{Art}/Actor/Character/{ten}/SpriteSheet.png");
+                int t = TyLe(px, LaLam);
+                fail += Assert(log, $"nhân vật {ten}: thân LAM",
+                               t >= 60,
+                               t < 0 ? "không đọc được file"
+                                     : $"chỉ {t}% pixel thân đạt sắc lam — kiểm rule_for() "
+                                       + "trong tools/doi-bang-mau.py có tô cho Actor/Character không");
+            }
+
+            // QUÁI — năm loại của năm chương. Hai tầng đọc chỉ có nghĩa khi CẢ HAI đúng.
+            foreach (string ten in new[] { "Skull", "Bamboo", "Flam", "BlueBat", "Spirit" })
+            {
+                var px = ThanPng($"{Art}/Actor/Monster/{ten}/SpriteSheet.png");
+                int t = TyLe(px, LaDo);
+                fail += Assert(log, $"quái {ten}: thân ĐỎ", t >= 60,
+                               t < 0 ? "không đọc được file" : $"chỉ {t}% đạt sắc đỏ");
+            }
+
+            return fail;
+        }
+
     }
 }

@@ -166,10 +166,20 @@ def hero_tint(rgb):
 
 def threat_tint(rgb, key=""):
     """Đỏ, nhưng lệch sắc nhẹ theo TÊN thư mục để các loài còn phân biệt được.
-    Dùng crc32 chứ không dùng hash() — hash() của Python đổi theo mỗi lần chạy."""
+    Dùng crc32 chứ không dùng hash() — hash() của Python đổi theo mỗi lần chạy.
+
+    TRẦN SÁNG 0,66 — KHÔNG PHẢI 0,86 như bản đầu. QUÁI KHÔNG BAO GIỜ ĐƯỢC NHẠT.
+    Con Spirit của chương 5 vẽ gần như toàn pixel TRẮNG (255,255,255); ở trần 0,86
+    trắng ra (240,209,197) — kem nhạt, và sàn chương 5 "Sương Lệch" là (221,213,222).
+    Đo được ΔE 14,1 với 51% pixel thân CHÌM vào sàn, trong khi bốn con kia đạt
+    46-66 và 0% chìm. Đó là 20 tầng CUỐI, và chính tài liệu chương 5 tự viết:
+    "nền càng nhạt thì biên tương phản còn lại càng dồn cho hai tầng đọc cố định —
+    ở 20 tầng khó nhất, quái đỏ và nhân vật lam là hai thứ duy nhất còn màu thật."
+    Hạ trần xuống 0,66 đưa Spirit lên ΔE 41,5 / 0% chìm, và bốn con kia xê dịch
+    KHÔNG QUÁ 0,2 — vì chúng vốn gần như không có pixel nào vượt trần đó."""
     off = (_zlib.crc32(key.encode()) % 100) / 100.0      # 0..1
     hue = (0.935 + off * 0.115) % 1.0                    # đỏ thẫm -> đỏ cam
-    return _ramp_tint(rgb, hue, 0.60)
+    return _ramp_tint(rgb, hue, 0.60, hi=0.66)
 
 def boss_tint(rgb, key=""):
     off = (_zlib.crc32(key.encode()) % 100) / 100.0
@@ -195,7 +205,19 @@ if __name__ == "__main__":
         """-> (ten_quy_tac, khoa_lech_sac). Khoá là tên thư mục loài."""
         parts = path.replace("\\", "/").split("/")
         if "Ui" in parts: return "ui", ""          # giao diện: giữ nguyên, không đụng
-        if "CharacterAnimated" in parts: return "hero", ""
+        # CẢ HAI thư mục nhân vật, không chỉ CharacterAnimated.
+        #
+        # Đây là lỗi đã âm thầm tắt tầng đọc thứ ba suốt từ M3. Bản đầu chỉ liệt kê
+        # CharacterAnimated vì lúc đó game lấy nhân vật từ đó. Tới M3 (§5.5b, 5 nhân vật)
+        # BuildM1Scene.cs:65 đổi nguồn sang Actor/Character — thư mục DUY NHẤT có đủ
+        # 5 người và cùng cỡ ô 16px — nhưng không ai sửa dòng này. Từ đó hero_tint chỉ
+        # còn tô cho một thư mục game KHÔNG ĐỌC NỮA, và cả 5 nhân vật rơi vào nhánh
+        # "world" ở cuối hàm, tức bị XÁM HOÁ CÙNG VỚI CÁI SÀN HỌ ĐANG ĐỨNG.
+        #
+        # Đo trên sprite thật ở chương 1 (tầng 1-20): ΔE giữa thân nhân vật và sàn là
+        # 12,6 và 70% pixel thân nằm dưới ΔE 25 — tức phần lớn nhân vật CHÌM vào nền.
+        # Sau khi sửa: ΔE 49,0 và 0% chìm.
+        if "CharacterAnimated" in parts or "Character" in parts: return "hero", ""
         for anchor, rule in (("Monster", "threat"), ("Boss", "boss")):
             if anchor in parts:
                 k = parts[parts.index(anchor)+1] if parts.index(anchor)+1 < len(parts) else ""
