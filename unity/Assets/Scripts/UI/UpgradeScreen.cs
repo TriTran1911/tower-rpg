@@ -168,7 +168,12 @@ namespace TowerRpg.UI
             {
                 Name     = Label(rowGo.transform, Equipment.DisplayName(slot), 36f, paper, textX, -20f),
                 Level    = Label(rowGo.transform, "Cấp 1", 30f, gold, textX, -66f),
-                Progress = Label(rowGo.transform, Equipment.StatName(slot), 23f, dim, textX, -108f),
+                // TỰ CO. Dòng này mang mô tả DÀI NHẤT của bảng và nội dung đổi lúc chạy
+                // ("6→5 đòn t.bình · chí mạng 26 % ×2.2 → 27 % ×2.3"), nên câu dài nhất
+                // không phải câu viết trong mã — nó là câu chưa ai viết. Bộ soi màn hình
+                // đo được nó cần 538 đơn vị trong khung 460.
+                Progress = Label(rowGo.transform, Equipment.StatName(slot), 23f, dim, textX, -108f,
+                                 coChuToiThieu: 15f),
             };
 
             // thanh tiến tới cấp kế
@@ -244,7 +249,7 @@ namespace TowerRpg.UI
         private static TMP_Text Label(Transform parent, string text, float size, Color colour,
                                       float x, float y,
                                       TextAlignmentOptions align = TextAlignmentOptions.Left,
-                                      bool stretch = false)
+                                      bool stretch = false, float coChuToiThieu = 0f)
         {
             var go = new GameObject("Label", typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -255,6 +260,12 @@ namespace TowerRpg.UI
             t.alignment = align;
             t.raycastTarget = false;
             t.textWrappingMode = TextWrappingModes.NoWrap;
+            if (coChuToiThieu > 0f)
+            {
+                t.enableAutoSizing = true;
+                t.fontSizeMax = size;
+                t.fontSizeMin = coChuToiThieu;
+            }
 
             RectTransform rt = t.rectTransform;
             if (stretch)

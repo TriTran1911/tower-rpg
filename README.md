@@ -149,27 +149,49 @@ U=/Applications/Unity/Hub/Editor/6000.0.83f1/Unity.app/Contents/MacOS/Unity
 # dựng lại scene M1 từ đầu
 "$U" -batchmode -quit -projectPath . -executeMethod TowerRpg.EditorTools.BuildM1Scene.Build -logFile -
 
-# soi 18 tham chiếu + 10 mục dễ hỏng
+# soi 94 mục: tham chiếu, ba tầng đọc, hình học ở 6 tỉ lệ màn hình
 "$U" -batchmode -quit -projectPath . -executeMethod TowerRpg.EditorTools.VerifyM1Scene.Verify -logFile -
 
-# 9 test PlayMode chạy game thật
+# 100 test PlayMode chạy game thật
 "$U" -runTests -batchmode -projectPath . -testPlatform PlayMode -testResults ket-qua.xml -logFile -
 ```
 
-Bốn trong chín test khoá chặt luật cốt lõi: đứng yên thì đánh **và** ăn đòn, di chuyển thì quái
-không mất một điểm máu nào, đúng 5 đòn một chí mạng, và thanh chí mạng **không** reset khi
-di chuyển. Sửa gì làm chúng đỏ thì đừng sửa test — sửa mã, hoặc thừa nhận đã đổi thiết kế.
+### Soi màn hình — thay cho việc ngồi chơi để tìm lỗi hiển thị
+
+```bash
+cd unity
+"$U" -runTests -batchmode -projectPath . -testPlatform PlayMode -testFilter SoiManHinh -logFile -
+cd .. && python3 tools/soi-man-hinh.py
+```
+
+Lái game qua **7 cảnh tiêu biểu × 2 tỉ lệ màn hình**, mỗi cảnh xuất một ảnh PNG và một bản
+kê JSON mọi phần tử giao diện đang hiện. Rồi `soi-man-hinh.py` báo lỗi **đo được**:
+
+| Kiểm | Đã từng bắt được |
+|---|---|
+| Chữ tràn khung | banner sự kiện · nhãn Mảnh · nhãn nút · mô tả hàng nâng cấp |
+| Tương phản dưới ngưỡng WCAG | số tầng và số Mảnh mờ trên gỗ sáng suốt từ M1 |
+| Phần tử lọt ra ngoài màn hình | khung thanh máu ở 19,5:9 trở lên |
+| Cú chạm không tới được nút | vùng chạm cần gạt nuốt nút |
+
+**Cái nó không làm được:** không biết câu chữ có *dễ hiểu* không, và không biết game có
+*vui* không. Hai thứ đó vẫn cần người ngồi chơi — nhưng chỉ hai thứ đó thôi.
+
+Các test khoá chặt luật cốt lõi: đứng yên thì đánh **và** ăn đòn, di chuyển thì quái không mất
+một điểm máu nào, bấm nút thật thì hai màn hình lớn phải mở được, và mọi thanh vơi đầy phải
+THẬT SỰ vơi. Sửa gì làm chúng đỏ thì đừng sửa test — sửa mã, hoặc thừa nhận đã đổi thiết kế.
 
 ## Cấu trúc
 
 ```
 docs/            DESIGN.md · can-bang.xlsx · M1-dung-scene.md
-tools/           doi-bang-mau.py — sinh mọi biến thể màu từ bản gốc
+tools/           doi-bang-mau.py  — sinh mọi biến thể màu từ bản gốc
+                 soi-man-hinh.py  — soi ảnh chụp, báo lỗi hiển thị đo được
 art-source/      Ninja Adventure bản gốc (CC0) — ngoài Unity, không bị import
 unity/Assets/
-  Scripts/       16 file mã game
+  Scripts/       39 file mã game
   Editor/        dựng scene · kiểm scene
-  Tests/         9 test PlayMode
+  Tests/         100 test PlayMode + bộ soi màn hình
   Art/           bản đã đổi màu + 5 nền theo chương
   StreamingAssets/m1-balance.csv
 ```

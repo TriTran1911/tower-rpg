@@ -27,3 +27,6 @@ crashlytics-build.properties
 # ảnh chụp tự động khi chạy thử
 anh-chup/
 *.slnx
+
+# ảnh + bản kê do bộ soi màn hình sinh ra
+soi-man-hinh/

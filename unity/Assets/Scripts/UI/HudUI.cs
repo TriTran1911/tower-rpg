@@ -73,6 +73,8 @@ namespace TowerRpg.UI
         // gỗ tối của banner (70,64,46): 7,87:1, cao nhất trong bảng màu. Không mượn sắc son
         // vì son đã mang nghĩa "Lõi" ở khắp nơi khác; một màu hai nghĩa là bớt đi một kênh.
         private static readonly Color Paper = new Color(0.91f, 0.88f, 0.81f);
+        // Vàng ĐẬM cho cú nháy số Mảnh trên gỗ sáng — đo được 3,4:1 (ngưỡng chữ lớn 3:1).
+        private static readonly Color FlashVang = new Color(0.45f, 0.28f, 0.02f);
 
         private static readonly Color Ink  = new Color(0.10f, 0.09f, 0.08f);
         private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
@@ -345,9 +347,11 @@ namespace TowerRpg.UI
             }
 
             shardCount.text = $"{_shownShards:N0}";
-            shardCount.color = Time.unscaledTime < _flashUntil
-                             ? Color.Lerp(_shardBase, Color.white, 0.85f)
-                             : _shardBase;
+            // NHÁY SANG VÀNG, KHÔNG SANG TRẮNG. Chữ nền giờ là MỰC trên gỗ sáng (7,37:1);
+            // kéo nó 85% về trắng cho ra 1,9:1 — cú nháy báo "vừa nhận Mảnh" lại chính là
+            // khoảnh khắc con số KHÔNG đọc được. Vàng đậm trên gỗ sáng đạt 3,4:1, vẫn nổi
+            // hẳn so với mực mà vẫn đọc được ở cỡ chữ lớn.
+            shardCount.color = Time.unscaledTime < _flashUntil ? FlashVang : _shardBase;
         }
 
         private void TickBanner()

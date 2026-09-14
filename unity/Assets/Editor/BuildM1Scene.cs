@@ -222,9 +222,13 @@ namespace TowerRpg.EditorTools
             Anchor(floorPanel.rectTransform, new Vector2(0f, 1f), new Vector2(Edge, -Edge), new Vector2(240, 128));
             floorPanel.rectTransform.pivot = new Vector2(0f, 1f);
 
-            var floorLabel = UiText("FloorLabel", floorPanel.transform, "TẦNG", 26f, UiGold);
+            // MỰC, KHÔNG PHẢI VÀNG/GIẤY. Quyết định #28 đo sẵn: trên gỗ SÁNG (243,140,76)
+            // thì vàng đạt 1,27:1 · ngọc 1,25:1 · giấy 1,85:1 — đều dưới xa ngưỡng, chỉ
+            // MỰC đạt (7,37:1). Luật đó đã áp cho NÚT ở M2 nhưng KHÔNG áp cho ba khung
+            // thông tin này, nên số tầng và số Mảnh mờ suốt từ M1. Bộ soi màn hình tìm ra.
+            var floorLabel = UiText("FloorLabel", floorPanel.transform, "TẦNG", 26f, UiInk);
             Anchor(floorLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(200, 30));
-            var floorNum = UiText("FloorNumber", floorPanel.transform, "01", 50f, UiPaper);
+            var floorNum = UiText("FloorNumber", floorPanel.transform, "01", 50f, UiInk);
             Anchor(floorNum.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -62f), new Vector2(200, 56));
 
             // thanh máu — khung gỗ 9-patch + ruột đầy vơi
@@ -287,11 +291,12 @@ namespace TowerRpg.EditorTools
             Anchor(shardPanel.rectTransform, new Vector2(0f, 1f),
                    new Vector2(Edge, -(Edge + 128 + Unit)), new Vector2(360, 96));
             shardPanel.rectTransform.pivot = new Vector2(0f, 1f);
-            var shardLbl = UiText("ShardLabel", shardPanel.transform, "Mảnh", 24f, UiGold,
+            // Mực, không phải vàng/giấy — xem ghi chú ở khung TẦNG.
+            var shardLbl = UiText("ShardLabel", shardPanel.transform, "Mảnh", 24f, UiInk,
                                   TextAlignmentOptions.Left);
             Anchor(shardLbl.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -20f), new Vector2(140, 28));
             shardLbl.rectTransform.pivot = new Vector2(0f, 1f);
-            var shardVal = UiText("ShardCount", shardPanel.transform, "0", 34f, UiPaper,
+            var shardVal = UiText("ShardCount", shardPanel.transform, "0", 34f, UiInk,
                                   TextAlignmentOptions.Right);
             Anchor(shardVal.rectTransform, new Vector2(1f, 1f), new Vector2(-30f, -46f), new Vector2(300, 40));
             shardVal.rectTransform.pivot = new Vector2(1f, 1f);
@@ -301,11 +306,11 @@ namespace TowerRpg.EditorTools
             Anchor(corePanel.rectTransform, new Vector2(0f, 1f),
                    new Vector2(Edge + 360 + Unit, -(Edge + 128 + Unit)), new Vector2(260, 96));
             corePanel.rectTransform.pivot = new Vector2(0f, 1f);
-            var coreLbl = UiText("CoreLabel", corePanel.transform, "Lõi", 24f, UiCinnabar,
+            var coreLbl = UiText("CoreLabel", corePanel.transform, "Lõi", 24f, UiInk,
                                  TextAlignmentOptions.Left);
             Anchor(coreLbl.rectTransform, new Vector2(0f, 1f), new Vector2(28f, -20f), new Vector2(120, 28));
             coreLbl.rectTransform.pivot = new Vector2(0f, 1f);
-            var coreVal = UiText("CoreCount", corePanel.transform, "0", 34f, UiPaper,
+            var coreVal = UiText("CoreCount", corePanel.transform, "0", 34f, UiInk,
                                  TextAlignmentOptions.Right);
             Anchor(coreVal.rectTransform, new Vector2(1f, 1f), new Vector2(-28f, -46f), new Vector2(200, 40));
             coreVal.rectTransform.pivot = new Vector2(1f, 1f);
