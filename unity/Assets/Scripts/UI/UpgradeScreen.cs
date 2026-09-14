@@ -90,6 +90,9 @@ namespace TowerRpg.UI
             if (GameState.Instance != null) GameState.Instance.Changed -= Refresh;
         }
 
+        [SerializeField] private RectTransform hudInfo;
+        [SerializeField] private Player.AutoBattle auto;
+
         public bool IsOpen => root != null && root.activeSelf;
 
         public void Toggle()
@@ -100,7 +103,9 @@ namespace TowerRpg.UI
             root.SetActive(open);
 
             // Bảo đảm vẽ SAU mọi thứ khác trong Canvas — thứ tự anh em quyết định thứ tự vẽ.
-            if (open) root.transform.SetAsLastSibling();
+            // ...rồi nhấc HUD lên TRÊN nó, để người chơi thấy trận đánh vẫn đang chạy.
+            if (open) { root.transform.SetAsLastSibling(); NhacHudLen(); }
+            else TraHudVeCho();
 
             if (!open) return;
 
@@ -441,7 +446,20 @@ namespace TowerRpg.UI
             GameState gs = GameState.Instance;
             if (gs == null || !gs.Ready || !_built) return;
 
-            if (shardLabel != null) shardLabel.text = $"{gs.Shards:N0} Mảnh";
+            // "+N đang chạy" — NÓI THẲNG rằng mở bảng này KHÔNG dừng trò chơi. Đo A/B:
+            // 30 giây ngồi trong bảng lúc tự đánh vẫn +1 tầng, +400 Mảnh, y hệt lúc không
+            // mở. Điều đó đúng từ M2 và chưa bao giờ hiện ra một chữ nào, nên người chơi
+            // hợp lý mà cho rằng phải đóng bảng lại mới cày tiếp được.
+            // Chỉ nói khi TỰ ĐÁNH đang chạy: lúc đó vòng lặp thật sự tự tiếp diễn. Tắt tự
+            // đánh mà vẫn hứa "vẫn đang chạy" thì là nói dối — tấm phủ chặn cần gạt nên
+            // người chơi đứng im, và đứng im thì không kiếm được gì.
+            if (shardLabel != null)
+            {
+                bool dangCay = auto != null && auto.Enabled;
+                shardLabel.text = dangCay
+                    ? $"{gs.Shards:N0} Mảnh   ·   tầng {gs.Floor}, tự đánh vẫn chạy"
+                    : $"{gs.Shards:N0} Mảnh   ·   tầng {gs.Floor}";
+            }
             // "x / N cả game" — §5.6: Lõi hữu hạn TUYỆT ĐỐI. N suy từ tower.floors và
             // tower.bossEvery chứ KHÔNG cắm cứng 100 như bản đầu (§9.2). Con số tổng
             // phải nằm cạnh con số đang có, nếu không người chơi không có cách nào biết
@@ -519,5 +537,32 @@ namespace TowerRpg.UI
                 r.Fill.color = atCap ? (maxTier ? cinnabar : gold) : jade;
             }
         }
+
+        // ── GIỮ HUD SỐNG TRÊN BẢNG (quyết định #36) ───────────────────────────────
+        // Đo A/B: mở bảng này giữa lúc tự đánh KHÔNG tốn gì cả — 30 giây ngồi trong
+        // bảng vẫn +1 tầng, +400 Mảnh, nhân vật vẫn đi 11,8 đơn vị, y hệt lúc không
+        // mở. Khả năng "vừa thu thập vừa nâng cấp" ĐÃ CÓ SẴN từ M2; thứ thiếu là
+        // người chơi không có cách nào THẤY nó, vì tấm phủ che kín màn hình.
+        // Nhấc cụm HUD lên trên tấm phủ là đủ: số tầng nhảy, Mảnh chạy, máu vơi —
+        // ngay trước mắt trong lúc họ đang cân nhắc tiêu tiền.
+        //
+        // TRẢ VỀ ĐÚNG CHỖ CŨ khi đóng. Để nó nằm trên cùng vĩnh viễn thì thẻ chương
+        // và màn đỉnh tháp bị HUD đè lên — hai thứ đó phải che được mọi thứ.
+        private int _choCuHud = -1;
+
+        private void NhacHudLen()
+        {
+            if (hudInfo == null) return;
+            if (_choCuHud < 0) _choCuHud = hudInfo.GetSiblingIndex();
+            hudInfo.SetAsLastSibling();
+        }
+
+        private void TraHudVeCho()
+        {
+            if (hudInfo == null || _choCuHud < 0) return;
+            hudInfo.SetSiblingIndex(_choCuHud);
+            _choCuHud = -1;
+        }
+
     }
 }

@@ -203,8 +203,26 @@ namespace TowerRpg.EditorTools
             scaler.referencePixelsPerUnit = UiPpu;
             canvasGo.AddComponent<GraphicRaycaster>();
 
+            // ── HỘP CHỨA HUD SỐNG ────────────────────────────────────────────────────
+            // Bốn khung "đang xảy ra chuyện gì" (tầng · máu · Mảnh · Lõi) gom vào MỘT cha,
+            // để màn TRANG BỊ và NHÂN VẬT nhấc cả cụm lên trên tấm phủ của chúng.
+            //
+            // VÌ SAO CẦN: đo A/B thì mở bảng TRANG BỊ giữa lúc tự đánh KHÔNG tốn gì cả —
+            // 30 giây trong bảng vẫn +1 tầng, +400 Mảnh, nhân vật vẫn đi 11,8 đơn vị, y hệt
+            // lúc không mở. Nhưng tấm phủ che kín màn hình nên người chơi KHÔNG CÓ CÁCH NÀO
+            // biết điều đó. Khả năng đã có sẵn, chỉ là game không bao giờ nói ra — cùng kiểu
+            // lỗi với hai nút câm của gói giao tiếp.
+            //
+            // Hộp trải kín màn hình và KHÔNG ăn chạm, nên neo của bốn khung con giữ nguyên
+            // y hệt lúc chúng còn treo thẳng vào Canvas.
+            var hudInfoGo = new GameObject("HudInfo", typeof(RectTransform));
+            hudInfoGo.transform.SetParent(canvasGo.transform, false);
+            var hudInfo = hudInfoGo.GetComponent<RectTransform>();
+            hudInfo.anchorMin = Vector2.zero; hudInfo.anchorMax = Vector2.one;
+            hudInfo.offsetMin = hudInfo.offsetMax = Vector2.zero;
+
             // khung số tầng, góc trên-trái
-            Image floorPanel = UiImage("FloorPanel", canvasGo.transform, panelSp);
+            Image floorPanel = UiImage("FloorPanel", hudInfo, panelSp);
             Anchor(floorPanel.rectTransform, new Vector2(0f, 1f), new Vector2(Edge, -Edge), new Vector2(240, 128));
             floorPanel.rectTransform.pivot = new Vector2(0f, 1f);
 
@@ -214,7 +232,7 @@ namespace TowerRpg.EditorTools
             Anchor(floorNum.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -62f), new Vector2(200, 56));
 
             // thanh máu — khung gỗ 9-patch + ruột đầy vơi
-            Image hpFrame = UiImage("HealthFrame", canvasGo.transform, panelSp);
+            Image hpFrame = UiImage("HealthFrame", hudInfo, panelSp);
             int hpX = Edge + 240 + Unit, hpW = UiRefW - hpX - Edge;
             Anchor(hpFrame.rectTransform, new Vector2(0f, 1f), new Vector2(hpX, -Edge), new Vector2(hpW, 128));
             hpFrame.rectTransform.pivot = new Vector2(0f, 1f);
@@ -244,7 +262,7 @@ namespace TowerRpg.EditorTools
             var hpUi = canvasGo.AddComponent<PlayerHealthUI>();
 
             // ô Mảnh, ngay dưới thanh máu
-            Image shardPanel = UiImage("ShardPanel", canvasGo.transform, panelSp);
+            Image shardPanel = UiImage("ShardPanel", hudInfo, panelSp);
             Anchor(shardPanel.rectTransform, new Vector2(0f, 1f),
                    new Vector2(Edge, -(Edge + 128 + Unit)), new Vector2(360, 96));
             shardPanel.rectTransform.pivot = new Vector2(0f, 1f);
@@ -258,7 +276,7 @@ namespace TowerRpg.EditorTools
             shardVal.rectTransform.pivot = new Vector2(1f, 1f);
 
             // ô Lõi, cạnh ô Mảnh. Ẩn tới khi hạ boss đầu tiên — HudUI lo việc đó.
-            Image corePanel = UiImage("CorePanel", canvasGo.transform, panelSp);
+            Image corePanel = UiImage("CorePanel", hudInfo, panelSp);
             Anchor(corePanel.rectTransform, new Vector2(0f, 1f),
                    new Vector2(Edge + 360 + Unit, -(Edge + 128 + Unit)), new Vector2(260, 96));
             corePanel.rectTransform.pivot = new Vector2(0f, 1f);
@@ -377,7 +395,10 @@ namespace TowerRpg.EditorTools
             upRt.anchorMin = Vector2.zero; upRt.anchorMax = Vector2.one;
             upRt.offsetMin = upRt.offsetMax = Vector2.zero;
 
-            var dimImg = UiImage("Dim", upGo.transform, null, new Color(0.04f, 0.03f, 0.03f, 0.92f), false);
+            // 0,84 chứ không 0,92: phải NHÌN THẤY trận đánh phía sau thì câu "vừa thu thập
+            // vừa nâng cấp" mới có nghĩa. Hàng nâng cấp đều có nền gỗ đục riêng nên chữ
+            // trong bảng không phụ thuộc tấm phủ này — nó chỉ làm dịu đấu trường.
+            var dimImg = UiImage("Dim", upGo.transform, null, new Color(0.04f, 0.03f, 0.03f, 0.84f), false);
             dimImg.rectTransform.anchorMin = Vector2.zero;
             dimImg.rectTransform.anchorMax = Vector2.one;
             dimImg.rectTransform.offsetMin = dimImg.rectTransform.offsetMax = Vector2.zero;
@@ -386,8 +407,14 @@ namespace TowerRpg.EditorTools
             var upHead = UiText("Title", upGo.transform, "TRANG BỊ", 44f, UiGold);
             Anchor(upHead.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -340f), new Vector2(600, 60));
 
+            // Khung 940 chứ không 600: dòng này giờ mang thêm "· tầng N, tự đánh vẫn chạy"
+            // và để NoWrap, nên khung 600 là tràn ra ngoài — đúng lỗi banner của M5, chỉ
+            // khác là ở đây không có tấm gỗ nào để lộ ra cho dễ thấy.
             var upShards = UiText("Shards", upGo.transform, "0 Mảnh", 32f, UiPaper);
-            Anchor(upShards.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -396f), new Vector2(600, 44));
+            Anchor(upShards.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -396f), new Vector2(940, 44));
+            upShards.enableAutoSizing = true;
+            upShards.fontSizeMax = 32f;
+            upShards.fontSizeMin = 22f;
 
             var upCores = UiText("Cores", upGo.transform, "0 Lõi", 32f, UiCinnabar);
             Anchor(upCores.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -434f), new Vector2(600, 44));
@@ -458,7 +485,7 @@ namespace TowerRpg.EditorTools
             chRt.anchorMin = Vector2.zero; chRt.anchorMax = Vector2.one;
             chRt.offsetMin = chRt.offsetMax = Vector2.zero;
 
-            var chDim = UiImage("Dim", chGo.transform, null, new Color(0.04f, 0.03f, 0.03f, 0.92f), false);
+            var chDim = UiImage("Dim", chGo.transform, null, new Color(0.04f, 0.03f, 0.03f, 0.84f), false);
             chDim.rectTransform.anchorMin = Vector2.zero;
             chDim.rectTransform.anchorMax = Vector2.one;
             chDim.rectTransform.offsetMin = chDim.rectTransform.offsetMax = Vector2.zero;
@@ -687,10 +714,12 @@ namespace TowerRpg.EditorTools
                            ("gearButton", gearBtn), ("gearLabel", gbTxt), ("charLabel", charTxt),
                            ("eventBannerRoot", bannerBg.gameObject), ("milestone", milestone),
                            ("victory", victory), ("cameraShake", shake));
-            Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
+            Wire(upScreen, ("hudInfo", hudInfo), ("auto", autoBattle),
+                           ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
                            ("coreLabel", upCores), ("critLabel", upCrit), ("respecButton", respecBtn),
                            ("respecLabel", respecTxt));
-            Wire(chScreen, ("root", chGo), ("cardParent", chRows), ("hintLabel", chHint));
+            Wire(chScreen, ("hudInfo", hudInfo),
+                           ("root", chGo), ("cardParent", chRows), ("hintLabel", chHint));
 
             // ── ÂM THANH ─────────────────────────────────────────────────────────────
             // Thứ tự PHẢI khớp enum Sfx. Chọn bằng số đo, không bằng cảm tính — xem chú thích.

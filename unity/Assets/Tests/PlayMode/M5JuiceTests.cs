@@ -373,6 +373,75 @@ namespace TowerRpg.Tests
             return null;
         }
 
+        // ── VỪA THU THẬP VỪA NÂNG CẤP (quyết định #36) ────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Mo_bang_trang_bi_KHONG_dung_vong_lap_cay()
+        {
+            // Chủ dự án hỏi: "tôi không điều chỉnh trang bị ở tầng khác được hay sao?"
+            // Đo A/B thì hoá ra ĐƯỢC, và không tốn gì: 30 giây ngồi trong bảng lúc tự
+            // đánh vẫn +1 tầng, +400 Mảnh, nhân vật vẫn đi 11,8 đơn vị — y hệt lúc không
+            // mở. Vấn đề thuần là KHÔNG THẤY. Test này khoá cái "được" đó lại: ai đó thêm
+            // Time.timeScale = 0 vào Toggle() cho "gọn" là hỏng ngay tại đây.
+            var up = Object.FindFirstObjectByType<UpgradeScreen>();
+            var autoB = Object.FindFirstObjectByType<Player.AutoBattle>();
+            Assert.IsNotNull(up); Assert.IsNotNull(autoB);
+
+            int moKhoa = BalanceConfig.Instance.GetInt("auto.unlockFloor");
+            while (_gs.Floor <= moKhoa) { _gs.MarkCleared(_gs.Floor); _gs.AdvanceFloor(); }
+            _gs.MarkCleared(_gs.Floor);
+            _gs.AddShards(500000f);
+            for (int i = 0; i < 15; i++)
+                foreach (Slot sl in new[] { Slot.Weapon, Slot.Armor, Slot.Glove, Slot.Ring })
+                    _gs.TryUpgrade(sl);
+            yield return null;
+
+            autoB.Toggle();
+            up.Toggle();
+            yield return null;
+
+            Assert.AreEqual(1f, Time.timeScale, 0.001f,
+                "bảng TRANG BỊ KHÔNG được dừng trò chơi — cả điểm của nó là cày tiếp khi đang mở");
+
+            int tang0 = _gs.Floor; float manh0 = _gs.Shards;
+            float t = 0f;
+            while (t < 25f) { t += Time.deltaTime; yield return null; }
+
+            Assert.Greater(_gs.Shards, manh0,
+                $"ngồi 25 giây trong bảng lúc tự đánh mà KHÔNG kiếm thêm Mảnh nào " +
+                $"(tầng {tang0} -> {_gs.Floor}) — vòng lặp cày đã bị bảng chặn");
+
+            up.Toggle();
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Mo_bang_thi_HUD_noi_len_TREN_tam_phu()
+        {
+            // Nhấc HUD lên trên là toàn bộ cách game nói "trận đánh vẫn chạy". Tụt xuống
+            // dưới tấm phủ là câu đó câm trở lại, mà không lỗi nào ném ra.
+            var up = Object.FindFirstObjectByType<UpgradeScreen>();
+            var f = typeof(UpgradeScreen).GetField("hudInfo",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var hud = (RectTransform)f.GetValue(up);
+            var root = (GameObject)typeof(UpgradeScreen).GetField("root",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(up);
+            Assert.IsNotNull(hud, "chưa nối cụm HUD sống");
+            yield return null;
+
+            int choBanDau = hud.GetSiblingIndex();
+
+            up.Toggle();
+            yield return null;
+            Assert.Greater(hud.GetSiblingIndex(), root.transform.GetSiblingIndex(),
+                "mở bảng mà HUD vẫn nằm DƯỚI tấm phủ — người chơi không thấy Mảnh chảy vào");
+
+            up.Toggle();
+            yield return null;
+            Assert.AreEqual(choBanDau, hud.GetSiblingIndex(),
+                "đóng bảng mà HUD không trả về chỗ cũ — thẻ chương và màn đỉnh tháp sẽ bị HUD đè lên");
+        }
+
         // ── ÂM THANH ──────────────────────────────────────────────────────────────────
 
         [UnityTest]

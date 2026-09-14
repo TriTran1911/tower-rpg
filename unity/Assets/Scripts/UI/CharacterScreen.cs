@@ -19,6 +19,7 @@ namespace TowerRpg.UI
     {
         [Header("Khung")]
         [SerializeField] private GameObject root;
+        [SerializeField] private RectTransform hudInfo;
         [SerializeField] private RectTransform cardParent;
         [SerializeField] private TMP_Text hintLabel;
 
@@ -70,7 +71,8 @@ namespace TowerRpg.UI
 
             bool open = !root.activeSelf;
             root.SetActive(open);
-            if (open) root.transform.SetAsLastSibling();
+            if (open) { root.transform.SetAsLastSibling(); NhacHudLen(); }
+            else TraHudVeCho();
             if (!open) return;
 
             if (!_built) Build();
@@ -238,5 +240,32 @@ namespace TowerRpg.UI
                 c.Name.color = unlocked ? paper : dim;
             }
         }
+
+        // ── GIỮ HUD SỐNG TRÊN BẢNG (quyết định #36) ───────────────────────────────
+        // Đo A/B: mở bảng này giữa lúc tự đánh KHÔNG tốn gì cả — 30 giây ngồi trong
+        // bảng vẫn +1 tầng, +400 Mảnh, nhân vật vẫn đi 11,8 đơn vị, y hệt lúc không
+        // mở. Khả năng "vừa thu thập vừa nâng cấp" ĐÃ CÓ SẴN từ M2; thứ thiếu là
+        // người chơi không có cách nào THẤY nó, vì tấm phủ che kín màn hình.
+        // Nhấc cụm HUD lên trên tấm phủ là đủ: số tầng nhảy, Mảnh chạy, máu vơi —
+        // ngay trước mắt trong lúc họ đang cân nhắc tiêu tiền.
+        //
+        // TRẢ VỀ ĐÚNG CHỖ CŨ khi đóng. Để nó nằm trên cùng vĩnh viễn thì thẻ chương
+        // và màn đỉnh tháp bị HUD đè lên — hai thứ đó phải che được mọi thứ.
+        private int _choCuHud = -1;
+
+        private void NhacHudLen()
+        {
+            if (hudInfo == null) return;
+            if (_choCuHud < 0) _choCuHud = hudInfo.GetSiblingIndex();
+            hudInfo.SetAsLastSibling();
+        }
+
+        private void TraHudVeCho()
+        {
+            if (hudInfo == null || _choCuHud < 0) return;
+            hudInfo.SetSiblingIndex(_choCuHud);
+            _choCuHud = -1;
+        }
+
     }
 }

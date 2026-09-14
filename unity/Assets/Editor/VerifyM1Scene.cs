@@ -52,9 +52,11 @@ namespace TowerRpg.EditorTools
                                       "gearButton", "gearLabel", "charLabel", "milestone", "victory");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
-                                              "coreLabel", "respecButton", "respecLabel");
+                                              "coreLabel", "respecButton", "respecLabel",
+                                              "hudInfo", "auto");
             fail += Check<CharacterScreen>(log, "root", "cardParent", "hintLabel",
-                                                "panelSprite", "bgSprite", "cellSprite");
+                                                "panelSprite", "bgSprite", "cellSprite",
+                                                "hudInfo");
             fail += Check<AutoBattle>(log, "player", "joystick");
             fail += Check<PlayerAnimator>(log, "target", "controller");
             fail += Check<SlashFxSpawner>(log, "prefab");
@@ -161,6 +163,22 @@ namespace TowerRpg.EditorTools
 
             // ── BA TẦNG ĐỌC (quyết định #23) ─────────────────────────────────────────
             fail += KiemBaTangDoc(log);
+
+            // Cụm HUD sống phải là một hộp RIÊNG, đủ bốn khung, và KHÔNG ăn chạm —
+            // nó trải kín màn hình, ăn raycast là nuốt sạch mọi cú chạm của trò chơi.
+            var manNang = Object.FindFirstObjectByType<UpgradeScreen>();
+            RectTransform hudBox = manNang != null
+                ? new SerializedObject(manNang).FindProperty("hudInfo").objectReferenceValue as RectTransform
+                : null;
+            fail += Assert(log, "cụm HUD sống không ăn chạm",
+                           hudBox != null && hudBox.GetComponent<Graphic>() == null,
+                           hudBox == null ? "không có" : "có Graphic nên chặn chạm");
+            int duKhung = 0;
+            if (hudBox != null)
+                foreach (Transform t in hudBox)
+                    if (t.name is "FloorPanel" or "HealthFrame" or "ShardPanel" or "CorePanel") duKhung++;
+            fail += Assert(log, "cụm HUD sống đủ 4 khung (tầng·máu·Mảnh·Lõi)",
+                           duKhung == 4, $"{duKhung}/4");
 
             var cv = Object.FindFirstObjectByType<CanvasScaler>();
             fail += Assert(log, "Canvas referencePixelsPerUnit = 64 (phóng 4x nguyên)",
