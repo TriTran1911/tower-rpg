@@ -125,6 +125,21 @@ namespace TowerRpg.Tests
                 // chữ đã co vừa khít — bản đầu của bộ soi này báo tràn ở mọi cảnh vì thế.
                 float can = t.textBounds.size.x;
                 float khung = t.rectTransform.rect.width - t.margin.x - t.margin.z;
+                // CẢ CHIỀU DỌC NỮA. Nhãn để xuống dòng thì không tràn NGANG — nó xuống
+                // thêm dòng rồi bị cắt cụt theo chiều DỌC, và bản đầu của bộ soi này soi
+                // mỗi bề ngang nên không thấy. Phát hiện ra bằng cách cố ý tắt tự co ở
+                // nhãn nút HUD rồi xem bộ soi có kêu không: nó im.
+                float canCao = t.textBounds.size.y;
+                float khungCao = t.rectTransform.rect.height - t.margin.y - t.margin.w;
+                // VƯỢT KHUNG ≠ BỊ CẮT. TMP mặc định vẽ tràn ra ngoài khung chứ không xén,
+                // nên chữ cao hơn khung vẫn hiện đủ — trừ khi có Mask ở trên cắt thật,
+                // hoặc chế độ tràn được đặt thành Truncate/Ellipsis. Bản đầu của bộ soi
+                // này báo dòng gợi ý của màn cột mốc là "bị cắt" trong khi ảnh chụp cho
+                // thấy cả hai dòng đều hiện — một bộ soi kêu nhầm thì không ai đọc nữa.
+                bool xenThat = t.GetComponentInParent<UnityEngine.UI.RectMask2D>() != null
+                            || t.GetComponentInParent<UnityEngine.UI.Mask>() != null
+                            || t.overflowMode == TextOverflowModes.Truncate
+                            || t.overflowMode == TextOverflowModes.Ellipsis;
                 dong.Add($"    {{\"ten\": \"{An(TenDay(t.transform))}\", \"chu\": \"{An(t.text)}\", " +
                          $"\"rect\": [{r.x:0.0}, {r.y:0.0}, {r.width:0.0}, {r.height:0.0}], " +
                          $"\"mau\": [{t.color.r:0.000}, {t.color.g:0.000}, {t.color.b:0.000}], " +
@@ -134,6 +149,8 @@ namespace TowerRpg.Tests
                          // "chữ lớn" là bắt nhầm cả những nhãn vốn đã đủ to.
                          $"\"coChuThietKe\": {t.fontSize:0.0}, \"coChuAnh\": {r.height:0.0}, " +
                          $"\"canRong\": {can:0.0}, \"khungRong\": {khung:0.0}, " +
+                         $"\"canCao\": {canCao:0.0}, \"khungCao\": {khungCao:0.0}, " +
+                         $"\"xenThat\": {(xenThat ? "true" : "false")}, " +
                          $"\"nhieuDong\": {(t.textInfo.lineCount > 1 ? "true" : "false")}, " +
                          $"\"biChe\": {(BiChe(t.rectTransform, r) ? "true" : "false")}, " +
                          $"\"tuCo\": {(t.enableAutoSizing ? "true" : "false")}}}");

@@ -6,7 +6,8 @@
 Đọc cặp file mà `SoiManHinh.cs` xuất ra — một PNG và một JSON kê mọi phần tử giao
 diện đang hiện — rồi kiểm bốn thứ:
 
-  1. CHỮ TRÀN KHUNG. Bề rộng chữ cần > bề rộng khung. Đã cắn ba lần: banner sự kiện,
+  1. CHỮ TRÀN KHUNG (ngang) hoặc BỊ CẮT (dọc). Nhãn cho xuống dòng không tràn
+     ngang bao giờ — nó xuống thêm dòng rồi bị cắt cụt. Đã cắn ba lần: banner sự kiện,
      nhãn Mảnh trong bảng trang bị, nhãn nút TRANG BỊ.
   2. TƯƠNG PHẢN. Lấy màu chữ và màu nền THẬT trong vùng đó trên ảnh, tính theo WCAG.
      Ngưỡng 4,5:1 chữ thường, 3:1 chữ lớn (>= 24 đơn vị THIẾT KẾ, không phải px ảnh).
@@ -88,6 +89,15 @@ def soi(js_path):
         if not t["nhieuDong"] and t["canRong"] > t["khungRong"] + 1.5:
             loi.append(("chữ tràn khung",
                         f'"{chu}" cần {t["canRong"]:.0f}, khung {t["khungRong"]:.0f}'
+                        f'{"" if t["tuCo"] else "  (chưa bật tự co)"}'))
+
+        # 1b. bị cắt theo CHIỀU DỌC. Nhãn cho xuống dòng không tràn ngang — nó xuống
+        #     thêm dòng rồi bị cắt cụt, và soi mỗi bề ngang thì không bao giờ thấy.
+        #     Chỉ tính là lỗi khi chữ THẬT SỰ bị xén — có Mask ở trên hoặc chế độ tràn
+        #     là Truncate/Ellipsis. TMP mặc định vẽ tràn ra ngoài khung và vẫn hiện đủ.
+        if t.get("xenThat") and t.get("canCao", 0) > t.get("khungCao", 1e9) + 1.5:
+            loi.append(("chữ bị cắt theo chiều dọc",
+                        f'"{chu}" cần cao {t["canCao"]:.0f}, khung cao {t["khungCao"]:.0f}'
                         f'{"" if t["tuCo"] else "  (chưa bật tự co)"}'))
 
         # 3. lọt ra ngoài
