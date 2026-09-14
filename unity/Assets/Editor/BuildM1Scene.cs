@@ -43,6 +43,9 @@ namespace TowerRpg.EditorTools
         private const int   Unit   = 32;    // đơn vị khoảng cách
         private const int   Edge   = 64;    // lề an toàn
         private const int   Touch  = 144;   // vùng chạm tối thiểu (Android 48dp ≈ 132px)
+        // Bề ngang mà CỘT NÚT bên phải chiếm, tính cả lề. Mọi thứ neo trái mà trải ngang
+        // phải chừa đúng chỗ này ra, nếu không nó chui xuống dưới nút.
+        private const int   CotNut = Edge + Touch + 40 + Unit;   // 280
 
         // Tầng giao diện: ẤM, KHÔNG đổi theo chương (docs/GIAO-DIEN.md §1)
         private static readonly Color UiPaper = new Color(0.91f, 0.88f, 0.81f);
@@ -54,7 +57,10 @@ namespace TowerRpg.EditorTools
         private static readonly Color UiDim   = new Color(0.71f, 0.67f, 0.63f);
         private static readonly Color UiCinnabar = new Color(0.89f, 0.61f, 0.58f);  // son — Lõi
         private static readonly Color UiInk   = new Color(0.10f, 0.09f, 0.08f);     // chữ trên gỗ sáng
-        private const float ArenaSize = 14f;      // bề rộng sàn, đơn vị Unity
+        // 24 chứ không 14. Ở 21:9 camera phải nới orthographicSize lên 9,33 để đấu trường
+        // lọt ngang, tức nhìn thấy 18,7 đơn vị theo chiều DỌC — sàn 14 đơn vị không phủ nổi
+        // và lòi ra nền trống ở trên dưới. Sàn vẽ theo kiểu Tiled nên nới rộng gần như miễn phí.
+        private const float ArenaSize = 24f;      // bề rộng sàn, đơn vị Unity
         private const float OrthoSize = 7.2f;     // bề rộng 8.1 đơn vị: đủ chỗ cho quái ở bán kính 3.5
                                           // cộng nửa sprite, không bị cắt mép
 
@@ -104,6 +110,7 @@ namespace TowerRpg.EditorTools
             cam.transform.position = new Vector3(0f, 0f, -10f);
             camGo.AddComponent<AudioListener>();
             var shake = camGo.AddComponent<CameraShake>();
+            var camFit = camGo.AddComponent<CameraFit>();
 
             // ── Sàn đấu trường ────────────────────────────────────────────────────────
             var floorGo = new GameObject("Floor");
@@ -199,7 +206,20 @@ namespace TowerRpg.EditorTools
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(UiRefW, UiRefH);
-            scaler.matchWidthOrHeight = 0.5f;
+            // KHỚP THEO BỀ NGANG (0), KHÔNG PHẢI TRUNG BÌNH (0,5).
+            //
+            // Đây là game màn hình DỌC chơi một tay: bề ngang là trục BỊ BÓ, bề cao là
+            // trục dư. Với 0,5, CanvasScaler lấy trung bình hình học hai tỉ lệ, nên trên
+            // máy càng cao thì khung thiết kế càng HẸP LẠI — 1080 tụt còn 978 ở 19,5:9,
+            // 966 ở 20:9, 943 ở 21:9. Mọi thứ neo trái và neo phải xích vào nhau, và cả
+            // một lớp lỗi chồng lấn sinh ra từ đó.
+            //
+            // Với 0, bề ngang khung thiết kế LUÔN đúng 1080 ở mọi tỉ lệ, còn máy cao hơn
+            // thì được thêm chỗ trống ở dưới — đúng thứ một game dọc cần. Đổi lại, máy
+            // THẤP hơn 16:9 (máy tính bảng 4:3) sẽ có khung cao chỉ 1440; giao diện vẫn
+            // vừa, nhưng vùng chạm cần gạt trùm lên cột nút — vô hại vì cột nút được
+            // SetAsFirstSibling nên luôn thắng raycast (xem chú thích ở JoystickZone).
+            scaler.matchWidthOrHeight = 0f;
             scaler.referencePixelsPerUnit = UiPpu;
             canvasGo.AddComponent<GraphicRaycaster>();
 
@@ -233,13 +253,26 @@ namespace TowerRpg.EditorTools
 
             // thanh máu — khung gỗ 9-patch + ruột đầy vơi
             Image hpFrame = UiImage("HealthFrame", hudInfo, panelSp);
-            int hpX = Edge + 240 + Unit, hpW = UiRefW - hpX - Edge;
-            Anchor(hpFrame.rectTransform, new Vector2(0f, 1f), new Vector2(hpX, -Edge), new Vector2(hpW, 128));
-            hpFrame.rectTransform.pivot = new Vector2(0f, 1f);
+            // TRẢI NGANG, không rộng cứng. Bản cũ tính `hpW = UiRefW - hpX - Edge` từ HẰNG
+            // SỐ 1080, nên khung này luôn rộng đúng 680 dù khung thiết kế thật có rộng bao
+            // nhiêu. Đo được: ở 19,5:9 nó tràn ra ngoài mép phải 38 đơn vị, ở 21:9 là 73.
+            int hpX = Edge + 240 + Unit;
+            var hpRt = hpFrame.rectTransform;
+            hpRt.anchorMin = new Vector2(0f, 1f);
+            hpRt.anchorMax = new Vector2(1f, 1f);
+            hpRt.pivot     = new Vector2(0f, 1f);
+            hpRt.offsetMin = new Vector2(hpX, -(Edge + 128));
+            hpRt.offsetMax = new Vector2(-Edge, -Edge);
 
             Image hpTrack = UiImage("HealthTrack", hpFrame.transform, bgSp);
-            Anchor(hpTrack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(28f, -6f), new Vector2(hpW - 112, 48));
-            hpTrack.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            // Ruột cũng phải trải theo khung, nếu không khung giãn mà ruột đứng yên.
+            var htRt = hpTrack.rectTransform;
+            htRt.anchorMin = new Vector2(0f, 0.5f);
+            htRt.anchorMax = new Vector2(1f, 0.5f);
+            htRt.pivot     = new Vector2(0.5f, 0.5f);
+            htRt.offsetMin = new Vector2(84f, -24f);
+            htRt.offsetMax = new Vector2(-28f, 24f);
+            htRt.anchoredPosition = new Vector2(htRt.anchoredPosition.x, -6f);
 
             // SPRITE LÀ BẮT BUỘC VỚI Image.Type.Filled. Không có sprite thì
             // Image.OnPopulateMesh thoát ngay ở dòng đầu —
@@ -311,10 +344,16 @@ namespace TowerRpg.EditorTools
             var bossBarGo = new GameObject("BossBar", typeof(RectTransform));
             bossBarGo.transform.SetParent(canvasGo.transform, false);
             var bbRt = bossBarGo.GetComponent<RectTransform>();
-            bbRt.anchorMin = new Vector2(0.5f, 1f); bbRt.anchorMax = new Vector2(0.5f, 1f);
-            bbRt.pivot = new Vector2(0.5f, 1f);
-            bbRt.anchoredPosition = new Vector2(0f, -(Edge + 128 + Unit + 96 + Unit + 74));
-            bbRt.sizeDelta = new Vector2(UiRefW - Edge * 2, 44);
+            // CHỪA CỘT NÚT RA, và trải ngang. Bản cũ căn giữa rộng `UiRefW - Edge*2` = 952,
+            // tức x đi từ 64 tới 1016 — mà nút NHÂN VẬT bắt đầu ở 832. Nghĩa là 184 đơn vị
+            // bên phải của thanh máu boss CHUI XUỐNG DƯỚI NÚT, ở MỌI độ phân giải kể cả
+            // đúng khung thiết kế 1080x1920, suốt từ M3. Đúng con bọ đã sửa một lần cho
+            // banner sự kiện (xem chú thích ở đó) mà không ai áp ngược lại cho thanh này.
+            int bbY = Edge + 128 + Unit + 96 + Unit + 74;
+            bbRt.anchorMin = new Vector2(0f, 1f); bbRt.anchorMax = new Vector2(1f, 1f);
+            bbRt.pivot = new Vector2(0f, 1f);
+            bbRt.offsetMin = new Vector2(Edge, -(bbY + 44));
+            bbRt.offsetMax = new Vector2(-CotNut, -bbY);
 
             Image bossTrack = UiImage("Track", bossBarGo.transform, bgSp);
             bossTrack.rectTransform.anchorMin = Vector2.zero;
@@ -339,10 +378,16 @@ namespace TowerRpg.EditorTools
             // Nhìn ảnh chụp mới thấy — kích thước "cả bề ngang trừ hai lề" nghe rất hợp lý
             // cho tới lúc có một cột nút chiếm mất bên phải.
             Image bannerBg = UiImage("EventBanner", canvasGo.transform, bgSp);
-            bannerBg.rectTransform.anchorMin = bannerBg.rectTransform.anchorMax = new Vector2(0f, 1f);
-            bannerBg.rectTransform.pivot = new Vector2(0f, 1f);
-            bannerBg.rectTransform.anchoredPosition = new Vector2(Edge, -(UiRefH * 0.32f));
-            bannerBg.rectTransform.sizeDelta = new Vector2(UiRefW - Edge - (Edge + Touch + 40 + Unit), 96);
+            // Trải ngang tới đúng mép cột nút. Bản trước neo trái với bề rộng tính từ hằng
+            // số 1080 — đúng ở 16:9 và chồng lên nút QUÉT NHANH ở mọi tỉ lệ cao hơn
+            // (30 đơn vị ở 18:9, 82 ở 20:9, 105 ở 21:9).
+            float bnY = UiRefH * 0.32f;
+            var bnRt = bannerBg.rectTransform;
+            bnRt.anchorMin = new Vector2(0f, 1f);
+            bnRt.anchorMax = new Vector2(1f, 1f);
+            bnRt.pivot = new Vector2(0f, 1f);
+            bnRt.offsetMin = new Vector2(Edge, -(bnY + 96f));
+            bnRt.offsetMax = new Vector2(-CotNut, -bnY);
 
             var eventBanner = UiText("Label", bannerBg.transform, "", 38f, UiGold);
             eventBanner.rectTransform.anchorMin = Vector2.zero;
@@ -728,6 +773,7 @@ namespace TowerRpg.EditorTools
             Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
                            ("handle", joyHandle.rectTransform), ("canvas", canvas));
             Wire(shake,    ("target", camGo.transform));
+            Wire(camFit,   ("target", cam));
             Wire(autoBattle, ("player", ctrl), ("joystick", joystick));
             Wire(hudUi,    ("floorNumber", floorNum), ("shardCount", shardVal),
                            ("coreCount", coreVal), ("coreGroup", corePanel.gameObject),

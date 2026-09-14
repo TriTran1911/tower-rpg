@@ -285,6 +285,36 @@ namespace TowerRpg.Tests
         }
 
         [UnityTest]
+        public IEnumerator Doi_ti_le_man_hinh_thi_dau_truong_van_lot_khung()
+        {
+            // Camera trực giao khoá nửa chiều CAO, nên màn hình càng cao thì thấy càng
+            // HẸP. Đo được: OrthoSize 7,2 cho nửa bề ngang 4,05 ở 16:9 — vừa đủ cho quái
+            // ở bán kính 3,5 cộng nửa thân, dư 1,2%. Ở 20:9 tụt còn 3,24, tức TÂM hai con
+            // quái hai bên nằm NGOÀI màn hình: người chơi đánh nhau với thứ họ thấy một nửa.
+            //
+            // Mục kiểm trong VerifyM1Scene tính chuyện này bằng công thức. Test này chứng
+            // minh CameraFit THẬT SỰ CHẠY — khác biệt duy nhất giữa "nối đúng" và
+            // "chạy đúng", và dự án đã trả giá cho khoảng cách đó nhiều lần.
+            var cam = Camera.main;
+            Assert.IsNotNull(cam.GetComponent<Core.CameraFit>(), "camera không có CameraFit");
+            float can = BalanceConfig.Instance.Get("enemy.spawnRadius")
+                      + BalanceConfig.Instance.Get("camera.marginX");
+            yield return null; yield return null;
+
+            foreach (float aspect in new[] { 1080f / 1920f, 1080f / 2340f, 1080f / 2400f, 1080f / 2520f })
+            {
+                cam.aspect = aspect;
+                yield return null; yield return null;
+
+                float nuaNgang = cam.orthographicSize * cam.aspect;
+                Assert.GreaterOrEqual(nuaNgang, can - 0.01f,
+                    $"tỉ lệ {aspect:0.000}: chỉ thấy được {nuaNgang:0.00} đơn vị mỗi bên, " +
+                    $"mà quái bày ở {can:0.00} — quái bị cắt mất một phần thân");
+            }
+            cam.ResetAspect();
+        }
+
+        [UnityTest]
         public IEnumerator Khong_co_gi_che_len_bon_nut_HUD()
         {
             // Cú chạm phải tới được nút. Dự án đã dính một lần: vùng chạm cần gạt trong

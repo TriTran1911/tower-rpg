@@ -205,6 +205,7 @@ boss.healOnEnter,1,1 = hồi đầy máu khi bước vào tầng boss
 enemy.telegraphSeconds,0.25,Quái sáng lên trước khi ra đòn bao lâu
 enemy.telegraphNudge,0.12,Quái nhích về phía người chơi bao xa khi báo hiệu
 juice.slashSeconds,0.16,Vệt chém tồn tại bao lâu
+camera.marginX,0.6,Lề ngang camera phải chừa ngoài bán kính bày quái — nửa thân quái 0.5 cộng một chút thở
 juice.puffSeconds,0.34,Cụm khói ở chỗ quái chết tồn tại bao lâu — M5
 juice.puffScale,1,Cỡ cụm khói quái thường — ĐỪNG NÂNG. Ảnh chụp bắt ngẫu nhiên một khung trong sáu nên nhìn ra khói bé; dựng lại cả vòng đời thì ở 1.0 khung giữa đã rộng hơn thân quái và khung cuối rộng gấp ba. Nâng lên 1.45 là khói to gấp 2.5 lần con vật nó vừa thay
 juice.puffBossScale,2.2,Cỡ cụm khói boss — boss to gấp 2 lần nên khói phải theo

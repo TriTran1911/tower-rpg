@@ -165,6 +165,9 @@ namespace TowerRpg.EditorTools
             // ── BA TẦNG ĐỌC (quyết định #23) ─────────────────────────────────────────
             fail += KiemBaTangDoc(log);
 
+            // ── HÌNH HỌC Ở TỈ LỆ MÀN HÌNH THẬT ───────────────────────────────────────
+            fail += KiemTiLeManHinh(log);
+
             // Cụm HUD sống phải là một hộp RIÊNG, đủ bốn khung, và KHÔNG ăn chạm —
             // nó trải kín màn hình, ăn raycast là nuốt sạch mọi cú chạm của trò chơi.
             var manNang = Object.FindFirstObjectByType<UpgradeScreen>();
@@ -566,6 +569,134 @@ namespace TowerRpg.EditorTools
             foreach (T c in Resources.FindObjectsOfTypeAll<T>())
                 if (c.name == ten && c.gameObject.scene.IsValid()) return c;
             return null;
+        }
+
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // HÌNH HỌC Ở TỈ LỆ MÀN HÌNH THẬT
+        //
+        // Giao diện dựng ở khung 1080x1920 (16:9), nhưng điện thoại thật hôm nay là
+        // 19,5:9 hoặc 20:9. Với `matchWidthOrHeight = 0,5`, CanvasScaler lấy trung bình
+        // hình học của hai tỉ lệ, nên trên máy 1080x2400 bề ngang HỮU DỤNG trong khung
+        // thiết kế co còn ~966 chứ không phải 1080 — thứ neo TRÁI và thứ neo PHẢI xích
+        // lại gần nhau 114 đơn vị.
+        //
+        // Đây là lớp lỗi đã lặp BA LẦN trong dự án, và chú thích ở BuildM1Scene tự ghi
+        // từ M2: "ở 1080x1920 các nút chỉ cách vùng chạm 8px; đổi sang màn hình lùn hơn
+        // là chúng chồng lên nhau". Chưa lần nào có ai đo.
+        //
+        // Tính TOÁN HỌC chứ không dựng cửa sổ: batchmode không có Game view để đổi cỡ,
+        // và công thức của CanvasScaler thì xác định hoàn toàn.
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        private static readonly (string ten, int w, int h)[] ManHinh =
+        {
+            ("16:9   1080x1920", 1080, 1920),   // khung thiết kế
+            ("18:9   1080x2160", 1080, 2160),
+            ("19,5:9 1080x2340", 1080, 2340),   // iPhone X trở đi
+            ("20:9   1080x2400", 1080, 2400),   // phổ biến nhất hôm nay
+            ("21:9   1080x2520", 1080, 2520),
+            ("4:3    1536x2048", 1536, 2048),   // máy tính bảng dọc
+        };
+
+        /// <summary>Cỡ khung thiết kế thật, theo đúng công thức ScaleWithScreenSize.</summary>
+        private static Vector2 KhungThietKe(CanvasScaler sc, int w, int h)
+        {
+            float lw = Mathf.Log(w / sc.referenceResolution.x, 2f);
+            float lh = Mathf.Log(h / sc.referenceResolution.y, 2f);
+            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, sc.matchWidthOrHeight));
+            return new Vector2(w / scale, h / scale);
+        }
+
+        /// <summary>Hình chữ nhật của một RectTransform trong khung cha cỡ 'cha'.</summary>
+        private static Rect RectTrongKhung(RectTransform rt, Vector2 cha)
+        {
+            Vector2 aMin = new Vector2(rt.anchorMin.x * cha.x, rt.anchorMin.y * cha.y);
+            Vector2 aMax = new Vector2(rt.anchorMax.x * cha.x, rt.anchorMax.y * cha.y);
+            Vector2 size = (aMax - aMin) + rt.sizeDelta;
+            Vector2 chot = aMin + Vector2.Scale(aMax - aMin, rt.pivot) + rt.anchoredPosition;
+            Vector2 min = chot - Vector2.Scale(size, rt.pivot);
+            return new Rect(min, size);
+        }
+
+        private static readonly string[] CotNut =
+            { "GearButton", "CharButton", "SweepButton", "AutoButton" };
+        private static readonly string[] KhoiTrai =
+            { "FloorPanel", "HealthFrame", "ShardPanel", "CorePanel", "EventBanner", "BossBar" };
+
+        private static int KiemTiLeManHinh(StringBuilder log)
+        {
+            int fail = 0;
+            var sc = Object.FindFirstObjectByType<CanvasScaler>();
+            if (sc == null) return Assert(log, "hình học theo tỉ lệ: có CanvasScaler", false, "không có");
+
+            foreach ((string ten, int w, int h) in ManHinh)
+            {
+                Vector2 khung = KhungThietKe(sc, w, h);
+                var r = new Dictionary<string, Rect>();
+                foreach (string n in CotNut.Concat(KhoiTrai))
+                {
+                    RectTransform rt = FindIncludingInactive<RectTransform>(n);
+                    if (rt != null) r[n] = RectTrongKhung(rt, khung);
+                }
+
+                var loi = new List<string>();
+
+                // (1) không gì được tràn ra ngoài khung
+                foreach (var kv in r)
+                    if (kv.Value.xMin < -0.5f || kv.Value.xMax > khung.x + 0.5f)
+                        loi.Add($"{kv.Key} tràn ngang ({kv.Value.xMin:0}..{kv.Value.xMax:0} / {khung.x:0})");
+
+                // (2) cột nút bên phải không được chồng lên khối trái
+                foreach (string a in CotNut)
+                    foreach (string b in KhoiTrai)
+                    {
+                        if (!r.ContainsKey(a) || !r.ContainsKey(b)) continue;
+                        if (!r[a].Overlaps(r[b])) continue;
+                        float cx = Mathf.Min(r[a].xMax, r[b].xMax) - Mathf.Max(r[a].xMin, r[b].xMin);
+                        float cy = Mathf.Min(r[a].yMax, r[b].yMax) - Mathf.Max(r[a].yMin, r[b].yMin);
+                        loi.Add($"{b} đè {a} ({cx:0}x{cy:0})");
+                    }
+
+                fail += Assert(log, $"tỉ lệ {ten}: không chồng lấn, không tràn",
+                               loi.Count == 0,
+                               $"khung {khung.x:0}x{khung.y:0} — " + string.Join(" · ", loi));
+
+                // ── ĐẤU TRƯỜNG CÓ LỌT KHÔNG ────────────────────────────────────────
+                // Camera trực giao khoá nửa chiều CAO, nên màn hình càng cao thì thấy
+                // càng HẸP. Ở 20:9 nửa bề ngang chỉ còn 3,24 đơn vị trong khi quái bày
+                // ở bán kính 3,5 — TÂM con quái nằm ngoài màn hình.
+                fail += KiemDauTruong(log, ten, (float)w / h);
+            }
+            return fail;
+        }
+
+        private static int KiemDauTruong(StringBuilder log, string ten, float aspect)
+        {
+            var cam = Camera.main;
+            var fit = cam != null ? cam.GetComponent<CameraFit>() : null;
+            if (cam == null || fit == null)
+                return Assert(log, $"tỉ lệ {ten}: đấu trường lọt khung", false, "không có CameraFit");
+
+            var so = new SerializedObject(fit);
+            float thietKe = so.FindProperty("designOrthoSize").floatValue;
+            float banKinh = BalanceConfig.Instance != null && BalanceConfig.Instance.IsLoaded
+                          ? BalanceConfig.Instance.Get("enemy.spawnRadius") : 3.5f;
+            float le = BalanceConfig.Instance != null && BalanceConfig.Instance.IsLoaded
+                     ? BalanceConfig.Instance.Get("camera.marginX") : 0.6f;
+            float can = banKinh + le;
+
+            float ortho = Mathf.Max(thietKe, can / aspect);
+            float nuaNgang = ortho * aspect;
+            float nuaDoc = ortho;
+
+            var san = GameObject.Find("Floor")?.GetComponent<SpriteRenderer>();
+            float sanNua = san != null ? san.size.x * 0.5f : 0f;
+
+            bool ok = nuaNgang >= can - 0.001f && sanNua >= nuaDoc && sanNua >= nuaNgang;
+            return Assert(log, $"tỉ lệ {ten}: đấu trường lọt khung + sàn phủ kín", ok,
+                          $"nửa ngang {nuaNgang:0.00} (cần {can:0.00}) · nửa dọc {nuaDoc:0.00} · " +
+                          $"nửa sàn {sanNua:0.00}");
         }
 
     }
