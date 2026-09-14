@@ -15,6 +15,7 @@ namespace TowerRpg.Juice
         Upgrade = 6,    // nâng cấp trang bị thành công
         PlayerHit = 7,  // người chơi ăn đòn
         PlayerDie = 8,  // người chơi ngã xuống — M5
+        Locked = 9,     // bấm vào nút đang khoá — phải nghe KHÁC hẳn một cú bấm thành công
     }
 
     /// <summary>
@@ -31,7 +32,7 @@ namespace TowerRpg.Juice
     [DefaultExecutionOrder(-40)]
     public sealed class SfxPlayer : MonoBehaviour
     {
-        public const int SfxCount = 9;
+        public const int SfxCount = 10;
 
         [SerializeField] private AudioClip[] clips = new AudioClip[SfxCount];
         [SerializeField] private int sourceCount = 8;

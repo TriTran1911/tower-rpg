@@ -69,6 +69,10 @@ namespace TowerRpg.UI
         // màu mới chỉ để báo cái chết. Đo trên nền gỗ tối của banner (70,64,46): 4,65:1,
         // qua cả ngưỡng 4,5:1 của chữ thường chứ không chỉ 3:1 của chữ lớn.
         private static readonly Color Cinnabar = new Color(0.89f, 0.61f, 0.58f);
+        // Giấy — cho thông báo THUẦN THÔNG TIN, ví dụ lý do một nút đang khoá. Đo trên nền
+        // gỗ tối của banner (70,64,46): 7,87:1, cao nhất trong bảng màu. Không mượn sắc son
+        // vì son đã mang nghĩa "Lõi" ở khắp nơi khác; một màu hai nghĩa là bớt đi một kênh.
+        private static readonly Color Paper = new Color(0.91f, 0.88f, 0.81f);
 
         private static readonly Color Ink  = new Color(0.10f, 0.09f, 0.08f);
         private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
@@ -85,6 +89,14 @@ namespace TowerRpg.UI
         private float _countFrom, _countTarget, _countElapsed;
         private float _countSeconds = 0.25f, _flashSeconds = 0.18f;
         private float _flashUntil, _bannerUntil;
+        // Nút vẫn nhận chạm khi khoá; hai cờ này mới là thứ quyết định nó LÀM hay TỪ CHỐI.
+        // MẶC ĐỊNH LÀ KHOÁ. Refresh() thoát sớm khi GameState chưa Ready (nạp CSV trên
+        // Android là một UnityWebRequest bất đồng bộ), nên suốt cửa sổ đó RefreshSweep/
+        // RefreshAuto chưa chạy lần nào và hai nút còn mặc nguyên bộ áo "đang mở" đã lưu
+        // trong scene. Để hai cờ này false thì cú bấm trong cửa sổ đó đi thẳng xuống
+        // Toggle(), mà Toggle() từ chối im lặng vì chưa mở khoá — lại đúng kiểu "bấm mà
+        // không thấy gì". Chưa chứng minh được là mở thì coi như khoá.
+        private bool _quetBiKhoa = true, _tuDanhBiKhoa = true;
         private Color _shardBase = Color.white;
 
 
@@ -165,14 +177,40 @@ namespace TowerRpg.UI
             Refresh();
         }
 
+        /// <summary>Nút khoá bị bấm: nói LÝ DO, đừng im lặng. Tiếng + chữ, hai kênh.</summary>
+        private void BaoKhoa(string vi_sao)
+        {
+            Juice.SfxPlayer.Play(Juice.Sfx.Locked);
+            ShowBanner(vi_sao, Paper, _floorBannerSeconds);
+        }
+
         private void OnSweep()
         {
+            if (_quetBiKhoa)
+            {
+                GameState gs = GameState.Instance;
+                // Hai lý do khoá HOÀN TOÀN khác nhau, và nói nhầm còn tệ hơn im lặng:
+                // một bên là "chưa tới lượt", một bên là trần ngân sách của ô B32.
+                bool daDon = gs != null && gs.HighestCleared >= 1;
+                BaoKhoa(daDon
+                    ? "HẾT NGÂN SÁCH QUÉT   ·   LEO THÊM TẦNG ĐỂ NỚI TRẦN"
+                    : "QUÉT NHANH MỞ SAU KHI BẠN DỌN XONG MỘT TẦNG");
+                return;
+            }
             if (sweep != null) sweep.Toggle();
             Refresh();
         }
 
         private void OnAuto()
         {
+            if (_tuDanhBiKhoa)
+            {
+                GameState gs = GameState.Instance;
+                int can = auto != null ? auto.UnlockFloor : 20;
+                int con = gs != null ? Mathf.Max(0, can - gs.HighestCleared) : can;
+                BaoKhoa($"TỰ ĐÁNH MỞ Ở TẦNG {can}   ·   CÒN {con} TẦNG");
+                return;
+            }
             if (auto != null) auto.Toggle();
             Refresh();
         }
@@ -366,6 +404,7 @@ namespace TowerRpg.UI
 
             // NextCost trả -1 khi ô đã chạm trần — bỏ qua số âm, nếu không nút báo "CÒN -1".
             float reNhat = float.MaxValue;
+            int thieuLoi = int.MaxValue;
             bool dotPhaDuoc = false;
             for (int i = 0; i < Equipment.SlotCount; i++)
             {
@@ -374,6 +413,8 @@ namespace TowerRpg.UI
                 {
                     int loi = gs.Gear.NextTierCost(s);
                     if (loi >= 0 && gs.Cores >= loi) dotPhaDuoc = true;
+                    // loi < 0 nghĩa là ô này đã kịch bậc — hết đường thật, không đếm.
+                    else if (loi >= 0) thieuLoi = Mathf.Min(thieuLoi, loi - gs.Cores);
                     continue;
                 }
                 float gia = gs.Gear.NextCost(s);
@@ -383,6 +424,11 @@ namespace TowerRpg.UI
             if (dotPhaDuoc)                      gearLabel.text = "TRANG BỊ\nĐỘT PHÁ ĐƯỢC";
             else if (reNhat <= gs.Shards)        gearLabel.text = "TRANG BỊ\nNÂNG ĐƯỢC";
             else if (reNhat < float.MaxValue)    gearLabel.text = $"TRANG BỊ\nCÒN {reNhat - gs.Shards:N0}";
+            // "TỚI HẠN" nghĩa là HẾT ĐƯỜNG NÂNG, và nó chỉ đúng khi cả bốn ô đã kịch bậc.
+            // Bốn ô chạm trần CẤP mà thiếu Lõi thì vẫn còn đường — đếm ngược đúng khuôn
+            // ba trạng thái anh em, đừng bảo người chơi dừng lại đúng lúc hệ thống đang
+            // chờ họ đi gom Lõi.
+            else if (thieuLoi < int.MaxValue)    gearLabel.text = $"TRANG BỊ\nCÒN {thieuLoi} LÕI";
             else                                 gearLabel.text = "TRANG BỊ\nTỚI HẠN";
 
             // Nền LUÔN sáng: cánh cửa này chưa bao giờ khoá, đừng làm nó trông như bị khoá.
@@ -416,7 +462,14 @@ namespace TowerRpg.UI
             bool on = sweep != null && sweep.Running;
 
             sweepButton.gameObject.SetActive(true);
-            sweepButton.interactable = can;
+            // interactable LUÔN true, kể cả khi khoá. Đây là sửa một lỗi chủ dự án báo:
+            // "bấm QUÉT NHANH không thấy có gì khác biệt". Với interactable = false,
+            // Unity NUỐT cú chạm ở tầng Selectable — không tiếng, không chữ, không gì.
+            // Người chơi không phân biệt được "nút đang khoá" với "game hỏng".
+            // Khoá hay không giờ nằm ở _quetBiKhoa; trạng thái vẫn đọc bằng SẮC NỀN
+            // (quyết định #28), còn cú bấm thì được TRẢ LỜI.
+            sweepButton.interactable = true;
+            _quetBiKhoa = !can && !on;
 
             Image sweepBg = sweepButton.targetGraphic as Image;
             if (sweepBg != null) sweepBg.color = on ? TintOn : can ? TintOpen : TintLock;
@@ -431,7 +484,10 @@ namespace TowerRpg.UI
                 if (on)         sweepLabel.text = $"QUÉT\nT{sweep.TargetFloor}";
                 else if (can)   sweepLabel.text = "QUÉT\nNHANH";
                 else if (daDon) sweepLabel.text = "QUÉT NHANH\nHẾT NGÂN SÁCH";
-                else            sweepLabel.text = "QUÉT NHANH\nDỌN TẦNG 1";
+                // "DỌN TẦNG 1" đọc ra như MÔ TẢ VIỆC NÚT LÀM ("quét nhanh: dọn tầng 1"),
+                // không phải điều kiện để mở. Ba nút kia đều dùng khuôn đếm ngược
+                // "CÒN N TẦNG" và khuôn đó không thể hiểu nhầm thành một hành động.
+                else            sweepLabel.text = "QUÉT NHANH\nCÒN 1 TẦNG";
                 sweepLabel.color = can || on ? Ink : InkOff;
             }
             if (sweepFill != null && !on) sweepFill.fillAmount = 0f;
@@ -445,7 +501,8 @@ namespace TowerRpg.UI
             bool on = unlocked && auto.Enabled;
 
             autoButton.gameObject.SetActive(true);
-            autoButton.interactable = unlocked;
+            autoButton.interactable = true;      // xem ghi chú ở RefreshSweep
+            _tuDanhBiKhoa = !unlocked;
 
             Image autoBg = autoButton.targetGraphic as Image;
             if (autoBg != null) autoBg.color = on ? TintOn : unlocked ? TintOpen : TintLock;

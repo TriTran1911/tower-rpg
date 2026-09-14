@@ -181,6 +181,16 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, "cụm HUD sống đủ 4 khung (tầng·máu·Mảnh·Lõi)",
                            duKhung == 4, $"{duKhung}/4");
 
+            // Số clip PHẢI khớp enum. ClipAt() trả null êm ru cho chỉ số vượt biên và
+            // SfxPlayer.Play() thoát im lặng, nên thêm một Sfx mới mà quên clip là mất
+            // hẳn một tiếng động mà không lớp nào kêu.
+            var sfxComp = Object.FindFirstObjectByType<SfxPlayer>();
+            SerializedProperty mangClip = sfxComp != null
+                ? new SerializedObject(sfxComp).FindProperty("clips") : null;
+            fail += Assert(log, $"đủ {SfxPlayer.SfxCount} clip âm thanh khớp enum Sfx",
+                           mangClip != null && mangClip.arraySize == SfxPlayer.SfxCount,
+                           mangClip == null ? "không có" : $"{mangClip.arraySize}/{SfxPlayer.SfxCount}");
+
             var cv = Object.FindFirstObjectByType<CanvasScaler>();
             fail += Assert(log, "Canvas referencePixelsPerUnit = 64 (phóng 4x nguyên)",
                            cv != null && Mathf.Approximately(cv.referencePixelsPerUnit, 64f),
@@ -198,10 +208,23 @@ namespace TowerRpg.EditorTools
                            rb != null && (rb.constraints & RigidbodyConstraints2D.FreezeRotation) != 0,
                            rb == null ? "không có" : $"{rb.constraints}");
 
-            foreach (Image img in Object.FindObjectsByType<Image>(FindObjectsSortMode.None)
-                                        .Where(i => i.name is "HealthBar"))
-                fail += Assert(log, $"{img.name}: Image.Type = Filled",
-                               img.type == Image.Type.Filled, img.type.ToString());
+            // MỌI THANH VƠI ĐẦY: phải Filled VÀ phải CÓ SPRITE.
+            //
+            // Mục kiểm cũ ở đây chỉ khẳng định `type == Image.Type.Filled` — tức nó xác
+            // nhận đúng cái tính chất GÂY RA lỗi, và vì thế đã cấp giấy thông hành cho
+            // ba thanh đứng im suốt từ M1. Image.OnPopulateMesh thoát ngay ở dòng đầu khi
+            // sprite rỗng và vẽ nguyên khối chữ nhật; fillAmount bị bỏ qua hoàn toàn.
+            // Đo bằng lưới thật ở fillAmount = 0,25: 940/940, 556/556, 160/160 pixel.
+            foreach (string ten in new[] { "HealthBar", "Fill", "SweepFill" })
+            {
+                Image img = FindIncludingInactive<Image>(ten);
+                fail += Assert(log, $"thanh {ten}: Image.Type = Filled",
+                               img != null && img.type == Image.Type.Filled,
+                               img == null ? "không có" : img.type.ToString());
+                fail += Assert(log, $"thanh {ten}: CÓ sprite (Filled không có sprite thì không vơi)",
+                               img != null && img.sprite != null,
+                               img == null ? "không có" : "sprite rỗng — sẽ vẽ nguyên khối 100%");
+            }
 
             var cam = Camera.main;
             fail += Assert(log, "camera trực giao", cam != null && cam.orthographic,
@@ -534,6 +557,15 @@ namespace TowerRpg.EditorTools
             }
 
             return fail;
+        }
+
+
+        /// <summary>Tìm theo tên kể cả khi đối tượng đang TẮT — thanh máu boss lưu ở trạng thái tắt.</summary>
+        private static T FindIncludingInactive<T>(string ten) where T : Component
+        {
+            foreach (T c in Resources.FindObjectsOfTypeAll<T>())
+                if (c.name == ten && c.gameObject.scene.IsValid()) return c;
+            return null;
         }
 
     }

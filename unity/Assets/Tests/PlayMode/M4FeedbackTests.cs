@@ -182,8 +182,16 @@ namespace TowerRpg.Tests
             var label = go.GetComponentInChildren<TMPro.TMP_Text>(true);
             yield return null; yield return null;
 
-            StringAssert.Contains("DỌN TẦNG", label.text,
-                "chưa dọn tầng nào thì nhãn phải bảo đi dọn tầng");
+            // KHOÁ TÍNH CHẤT, KHÔNG KHOÁ CHỮ. Điều phải giữ là HAI LÝ DO KHOÁ KHÔNG ĐƯỢC
+            // LẪN VÀO NHAU — một bên "chưa tới lượt", một bên "hết trần ngân sách B32".
+            // Bản đầu của test này ghim đúng cụm "DỌN TẦNG", nên khi nhãn đổi sang khuôn
+            // đếm ngược "CÒN 1 TẦNG" (để không đọc nhầm thành một hành động) thì test hỏng
+            // dù tính chất vẫn nguyên. Ghim chữ là ghim luôn cả những chữ chưa ai viết.
+            string chuaDon = label.text;
+            StringAssert.Contains("TẦNG", chuaDon,
+                "chưa dọn tầng nào thì nhãn phải chỉ vào một mốc TẦNG");
+            StringAssert.DoesNotContain("NGÂN SÁCH", chuaDon,
+                "chưa quét lần nào mà đã báo hết ngân sách — sai lý do");
 
             // Dọn tầng 1 rồi tiêu sạch ngân sách quét.
             _gs.AddShards(_gs.ShardReward(1));
@@ -197,6 +205,9 @@ namespace TowerRpg.Tests
             StringAssert.Contains("NGÂN SÁCH", label.text,
                 $"hết ngân sách mà nhãn vẫn ghi '{label.text.Replace("\n", " / ")}' — "
                 + "người chơi đã dọn tầng 1 rồi, bảo họ dọn nữa là nói dối");
+            Assert.AreNotEqual(chuaDon, label.text,
+                "hai lý do khoá khác hẳn nhau mà nhãn in ra y hệt — người chơi không có "
+                + "cách nào biết mình đang bị chặn bởi cái gì");
         }
 
         // ── Đợt 2 ─────────────────────────────────────────────────────────────────

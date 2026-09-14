@@ -241,7 +241,19 @@ namespace TowerRpg.EditorTools
             Anchor(hpTrack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(28f, -6f), new Vector2(hpW - 112, 48));
             hpTrack.rectTransform.pivot = new Vector2(0.5f, 0.5f);
 
-            Image hpFill = UiImage("HealthBar", hpTrack.transform, null, new Color(0.80f, 0.24f, 0.26f), false);
+            // SPRITE LÀ BẮT BUỘC VỚI Image.Type.Filled. Không có sprite thì
+            // Image.OnPopulateMesh thoát ngay ở dòng đầu —
+            //     if (activeSprite == null) { base.OnPopulateMesh(toFill); return; }
+            // — tức nhánh Filled KHÔNG BAO GIỜ CHẠY và nó vẽ nguyên khối chữ nhật.
+            // Ba thanh của game (máu người chơi, máu boss, tiến trình quét) đều dựng
+            // kiểu sprite rỗng và vì thế ĐỨNG IM Ở 100% suốt từ M1/M3: đo bằng lưới thật
+            // ra 940/940, 556/556, 160/160 pixel ở fillAmount = 0,25.
+            // Hỏng theo kiểu tệ nhất: không lỗi, không cảnh báo, và mục kiểm cũ lại đi
+            // khẳng định `type == Image.Type.Filled` — tức xác nhận đúng cái tính chất
+            // gây ra lỗi. Chủ dự án báo "bấm QUÉT NHANH không thấy gì khác biệt"; đây là
+            // câu trả lời, vì tín hiệu DUY NHẤT của lượt quét là vạch đó.
+            Image hpFill = UiImage("HealthBar", hpTrack.transform, WhitePixelSprite(),
+                                   new Color(0.80f, 0.24f, 0.26f), false);
             hpFill.rectTransform.anchorMin = new Vector2(0f, 0f);
             hpFill.rectTransform.anchorMax = new Vector2(1f, 1f);
             hpFill.rectTransform.offsetMin = new Vector2(6f, 6f);
@@ -309,7 +321,8 @@ namespace TowerRpg.EditorTools
             bossTrack.rectTransform.anchorMax = Vector2.one;
             bossTrack.rectTransform.offsetMin = bossTrack.rectTransform.offsetMax = Vector2.zero;
 
-            Image bossFill = UiImage("Fill", bossTrack.transform, null, UiCinnabar, false);
+            // sprite BẮT BUỘC — xem ghi chú ở thanh máu người chơi.
+            Image bossFill = UiImage("Fill", bossTrack.transform, WhitePixelSprite(), UiCinnabar, false);
             bossFill.rectTransform.anchorMin = Vector2.zero;
             bossFill.rectTransform.anchorMax = Vector2.one;
             bossFill.rectTransform.offsetMin = new Vector2(6f, 6f);
@@ -361,7 +374,13 @@ namespace TowerRpg.EditorTools
             gbImg.type = Image.Type.Sliced;
             var gearBtn = gearBtnGo.AddComponent<Button>();
             gearBtn.targetGraphic = gbImg;
+            // Nút TRANG BỊ dựng riêng (không qua SideButton) nên phải tự đặt trần co chữ
+            // ở đây — nhãn của nó là nhãn đổi nhiều nhất trong game.
             var gbTxt = UiText("Label", gearBtnGo.transform, "TRANG\nBỊ", 28f, UiInk);
+            gbTxt.enableAutoSizing = true;
+            gbTxt.fontSizeMax = 28f;
+            gbTxt.fontSizeMin = 13f;
+            gbTxt.margin = new Vector4(6f, 4f, 6f, 4f);
             gbTxt.rectTransform.anchorMin = Vector2.zero;
             gbTxt.rectTransform.anchorMax = Vector2.one;
             gbTxt.rectTransform.offsetMin = gbTxt.rectTransform.offsetMax = Vector2.zero;
@@ -377,7 +396,8 @@ namespace TowerRpg.EditorTools
                                                           "TỰ ĐÁNH", -712, UiInk);
 
             // vạch tiến trình của lượt quét, chạy dọc đáy nút quét
-            Image sweepFill = UiImage("SweepFill", sweepBtn.transform, null, UiJade, false);
+            // sprite BẮT BUỘC — xem ghi chú ở thanh máu người chơi.
+            Image sweepFill = UiImage("SweepFill", sweepBtn.transform, WhitePixelSprite(), UiJade, false);
             sweepFill.rectTransform.anchorMin = new Vector2(0f, 0f);
             sweepFill.rectTransform.anchorMax = new Vector2(1f, 0f);
             sweepFill.rectTransform.pivot = new Vector2(0f, 0f);
@@ -746,6 +766,13 @@ namespace TowerRpg.EditorTools
                 //   bài 1,57s còn đang kêu lúc tầng đã bày lại xong — một tiếng "thua"
                 //   chồng lên tầng mới là nói dối người chơi. Trong hai bài còn đủ ngắn,
                 //   GameOver2 tối hơn hẳn (sắc 0,052 so với 0,206 của GameOver).
+                "Sounds/Menu/Cancel2.wav",           // Locked    0,31s · đục (sắc 0,086)
+                //   PHẢI nằm ở CUỐI, index 9, khớp Sfx.Locked. Bản đầu tôi chèn nó trước
+                //   GameOver2 và thế là tiếng "ngã xuống" với tiếng "bấm hụt" hoán chỗ cho
+                //   nhau — đúng cái bẫy mà dòng chú thích "Thứ tự PHẢI khớp enum Sfx" ở
+                //   đầu khối này cảnh báo, và không test nào bắt được vì cả hai đều có clip.
+                //   Chọn Cancel2 chứ không Cancel (0,47s): cú bấm hụt phải trả lời NGAY rồi
+                //   im. Đục hẳn (0,086) nên không lẫn với Slash chí mạng (0,448).
             });
 
             // sprite dùng chung + 4 icon trang bị cho màn nâng cấp
@@ -842,6 +869,14 @@ namespace TowerRpg.EditorTools
             t.rectTransform.anchorMax = Vector2.one;
             t.rectTransform.offsetMin = t.rectTransform.offsetMax = Vector2.zero;
             t.textWrappingMode = TextWrappingModes.Normal;
+            // TỰ CO cho vừa nút 184px. Nhãn bốn nút này đổi chữ lúc chạy theo trạng thái
+            // ("CÒN 300" -> "NÂNG ĐƯỢC" -> "ĐỘT PHÁ ĐƯỢC" -> "CÒN 2 LÕI"), nên câu dài
+            // nhất KHÔNG phải câu viết trong bộ dựng — nó là câu chưa ai viết. Đặt trần
+            // ở đây thì không câu nào sau này tràn được, cùng lý lẽ với banner của M5.
+            t.enableAutoSizing = true;
+            t.fontSizeMax = 20f;
+            t.fontSizeMin = 13f;
+            t.margin = new Vector4(6f, 4f, 6f, 4f);
             return (btn, t);
         }
 

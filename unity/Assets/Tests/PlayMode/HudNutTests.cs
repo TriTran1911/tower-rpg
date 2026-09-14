@@ -129,6 +129,161 @@ namespace TowerRpg.Tests
                 "tầng 1 mà màn nhân vật không đủ thẻ — khoá thì vẫn phải THẤY, xem §7");
         }
 
+        private static (GameObject root, TMPro.TMP_Text chu) Banner()
+        {
+            var hud = Object.FindFirstObjectByType<HudUI>();
+            var f1 = typeof(HudUI).GetField("eventBannerRoot",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var f2 = typeof(HudUI).GetField("eventBanner",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return ((GameObject)f1.GetValue(hud), (TMPro.TMP_Text)f2.GetValue(hud));
+        }
+
+        [UnityTest]
+        public IEnumerator Bam_nut_KHOA_thi_phai_noi_LY_DO_chu_khong_im_lang()
+        {
+            // Chủ dự án báo: "bấm QUÉT NHANH tôi không thấy có gì khác biệt". Đúng — với
+            // interactable = false, Unity NUỐT cú chạm ở tầng Selectable: không tiếng,
+            // không chữ, không gì. Người chơi không phân biệt được "đang khoá" với "hỏng".
+            var (root, chu) = Banner();
+            Assert.IsFalse(root.activeSelf, "banner phải tắt lúc chưa bấm gì");
+
+            Nut("SweepButton").onClick.Invoke();
+            yield return null; yield return null;
+
+            Assert.IsTrue(root.activeSelf,
+                "bấm nút QUÉT NHANH đang khoá mà KHÔNG có phản hồi nào — đúng triệu chứng "
+                + "chủ dự án báo. Nút khoá phải nói được lý do.");
+            StringAssert.Contains("QUÉT NHANH", chu.text);
+            StringAssert.Contains("DỌN", chu.text, "phải nói ĐIỀU KIỆN để mở, không chỉ nói 'khoá'");
+        }
+
+        [UnityTest]
+        public IEnumerator Bam_TU_DANH_khi_khoa_thi_noi_con_bao_nhieu_tang()
+        {
+            var (root, chu) = Banner();
+            Nut("AutoButton").onClick.Invoke();
+            yield return null; yield return null;
+
+            Assert.IsTrue(root.activeSelf, "bấm TỰ ĐÁNH đang khoá mà im lặng");
+            StringAssert.Contains("TỰ ĐÁNH", chu.text);
+            StringAssert.Contains("CÒN", chu.text, "phải đếm ngược, đó là khuôn của ba nút kia");
+        }
+
+        [UnityTest]
+        public IEnumerator Nhan_nut_khoa_KHONG_duoc_doc_ra_nhu_mot_hanh_dong()
+        {
+            // "QUÉT NHANH / DỌN TẦNG 1" đọc ra như MÔ TẢ VIỆC NÚT LÀM, không phải điều
+            // kiện để mở. Ba nút kia đều dùng khuôn "CÒN N TẦNG" và khuôn đó không thể
+            // hiểu nhầm thành một hành động. Test khoá sự nhất quán đó.
+            yield return null;
+            string quet = Nut("SweepButton").GetComponentInChildren<TMPro.TMP_Text>(true).text;
+            string tu   = Nut("AutoButton").GetComponentInChildren<TMPro.TMP_Text>(true).text;
+            foreach (var (ten, t) in new[] { ("QUÉT NHANH", quet), ("TỰ ĐÁNH", tu) })
+                StringAssert.Contains("CÒN", t,
+                    $"nhãn nút {ten} lúc khoá là \"{t.Replace("\n", " / ")}\" — không theo khuôn "
+                    + "đếm ngược \"CÒN N\", nên đọc được thành một hành động");
+        }
+
+        [UnityTest]
+        public IEnumerator Moi_thanh_voi_day_PHAI_THAT_SU_VOI()
+        {
+            // LỖI TỆ NHẤT MÀ BỐN LỚP KIỂM ĐỀU CẤP GIẤY THÔNG HÀNH. Ba thanh của game
+            // (máu người chơi, máu boss, tiến trình quét) dựng với Image.Type.Filled
+            // nhưng sprite RỖNG. Image.OnPopulateMesh thoát ngay ở dòng đầu khi không có
+            // sprite và vẽ NGUYÊN KHỐI, nên fillAmount bị bỏ qua hoàn toàn: thanh máu
+            // chưa bao giờ vơi kể từ M1, thanh boss kể từ M3, vạch quét chưa bao giờ chạy.
+            //
+            // Và mục kiểm cũ trong VerifyM1Scene lại đi khẳng định `type == Filled` —
+            // tức xác nhận đúng cái tính chất gây ra lỗi.
+            //
+            // Test này ĐO LƯỚI THẬT mà Image sinh ra, không hỏi thuộc tính. Đó là khác
+            // biệt duy nhất giữa "nối đúng" và "chạy đúng" ở đây.
+            yield return null; yield return null;
+
+            foreach (string ten in new[] { "HealthBar", "Fill", "SweepFill" })
+            {
+                Image img = Resources.FindObjectsOfTypeAll<Image>()
+                    .FirstOrDefault(i => i.name == ten && i.gameObject.scene.isLoaded);
+                Assert.IsNotNull(img, $"không thấy thanh {ten}");
+                Assert.IsNotNull(img.sprite,
+                    $"thanh {ten}: Image.Type.Filled mà sprite RỖNG — Unity sẽ vẽ nguyên khối "
+                    + "100% và bỏ qua fillAmount, không lỗi nào ném ra");
+
+                // ĐO NGAY, KHÔNG yield. PlayerHealthUI ghi lại fillAmount MỖI KHUNG HÌNH
+                // theo máu thật, nên nhường một khung hình là nó kéo thanh về đầy và test
+                // đo nhầm sản phẩm thành hỏng. (Bản đầu của test này dính đúng vậy — con
+                // số 556/556 là do bộ đo đua với mã, không phải do mã sai.)
+                img.fillAmount = 0.25f;
+                float ve = BeNgangVe(img), khung = img.rectTransform.rect.width;
+                Assert.Less(ve, khung * 0.6f,
+                    $"thanh {ten}: đặt fillAmount = 0,25 mà lưới vẫn vẽ {ve:0}/{khung:0} px "
+                    + $"({100f * ve / khung:0}%) — thanh này KHÔNG VƠI, nó chỉ trông như một thanh");
+                img.fillAmount = 1f;
+            }
+        }
+
+        /// <summary>Bề ngang lưới mà Image THẬT SỰ sinh ra — hỏi mesh, không hỏi thuộc tính.</summary>
+        private static float BeNgangVe(Image img)
+        {
+            var vh = new VertexHelper();
+            var m = typeof(Graphic).GetMethod("OnPopulateMesh",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+                null, new[] { typeof(VertexHelper) }, null);
+            m.Invoke(img, new object[] { vh });
+            float min = float.MaxValue, max = float.MinValue;
+            for (int i = 0; i < vh.currentVertCount; i++)
+            { UIVertex v = default; vh.PopulateUIVertex(ref v, i);
+              min = Mathf.Min(min, v.position.x); max = Mathf.Max(max, v.position.x); }
+            return vh.currentVertCount == 0 ? 0f : max - min;
+        }
+
+        [UnityTest]
+        public IEnumerator Mat_mau_THAT_thi_thanh_mau_phai_ngan_lai()
+        {
+            // Đường đầu-cuối, không poke fillAmount: đánh người chơi mất máu thật rồi đo
+            // lưới. Đây mới là thứ người chơi nhìn thấy trong lúc đánh nhau.
+            var hp = Object.FindFirstObjectByType<Player.PlayerHealth>();
+            Image thanh = Resources.FindObjectsOfTypeAll<Image>()
+                .First(i => i.name == "HealthBar" && i.gameObject.scene.isLoaded);
+            yield return null; yield return null;
+
+            float day = BeNgangVe(thanh);
+            Assert.Greater(day, 1f, "thanh máu đầy mà không vẽ gì");
+
+            hp.TakeDamage(hp.MaxHp * 0.7f);
+            yield return null; yield return null;
+
+            float con = BeNgangVe(thanh);
+            Assert.Less(con, day * 0.6f,
+                $"mất 70% máu mà thanh vẫn vẽ {con:0}/{day:0} px — thanh máu KHÔNG VƠI. " +
+                "Đây là thứ người chơi nhìn suốt 100 tầng để biết mình sắp chết.");
+            hp.ResetHealth();
+        }
+
+        [UnityTest]
+        public IEnumerator Truoc_khi_GameState_san_sang_nut_khoa_van_phai_tu_choi_ra_tieng()
+        {
+            // Refresh() thoát sớm khi GameState chưa Ready, nên RefreshSweep/RefreshAuto
+            // chưa chạy lần nào và hai nút còn mặc bộ áo "đang mở" lưu trong scene. Nếu
+            // hai cờ khoá mặc định là false thì cú bấm trong cửa sổ đó rơi thẳng xuống
+            // Toggle() và bị từ chối IM LẶNG.
+            var hud = Object.FindFirstObjectByType<HudUI>();
+            foreach (string ten in new[] { "_quetBiKhoa", "_tuDanhBiKhoa" })
+            {
+                var f = typeof(HudUI).GetField(ten,
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(f, $"HudUI không còn trường {ten}");
+            }
+            yield return null;
+
+            // Ở tầng 1 cả hai vẫn phải khoá, và bấm vào vẫn phải nói lý do.
+            var (root, _) = Banner();
+            Nut("AutoButton").onClick.Invoke();
+            yield return null; yield return null;
+            Assert.IsTrue(root.activeSelf, "TỰ ĐÁNH khoá mà bấm vào vẫn im lặng");
+        }
+
         [UnityTest]
         public IEnumerator Khong_co_gi_che_len_bon_nut_HUD()
         {
