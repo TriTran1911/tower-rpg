@@ -146,7 +146,7 @@ namespace TowerRpg.Tests
         [UnityTest]
         public IEnumerator Mot_con_quai_chet_co_it_nhat_ba_kenh_phan_hoi()
         {
-            var drops = Object.FindFirstObjectByType<ShardDropSpawner>();
+            var drops = BoThaManh();
             var sfx = Object.FindFirstObjectByType<Juice.SfxPlayer>();
             yield return null; yield return null;
 
@@ -545,5 +545,30 @@ namespace TowerRpg.Tests
             Assert.AreEqual(before - 1, EnemyRegistry.Count,
                 "hoạt ảnh chết 0,22s đang cộng vào thời lượng mỗi tầng");
         }
+
+        /// <summary>
+        /// Lấy ĐÚNG bộ thả Mảnh, không phải bộ thả Lõi.
+        ///
+        /// Scene có HAI ShardDropSpawner: một trên Bootstrap (Mảnh, do quái thả) và một
+        /// trên CoreDrops (Lõi tím của boss). `FindFirstObjectByType` trả về CÁI NÀO là
+        /// do thứ tự Unity đăng ký đối tượng — không có gì bảo đảm cả. Bốn test rơi vật
+        /// phẩm đã ĐỖ NHỜ MAY suốt từ Việc 5, rồi hỏng đồng loạt ở M5 chỉ vì thêm MỘT
+        /// component (PuffFxSpawner) vào Bootstrap làm đảo thứ tự đó.
+        ///
+        /// Cùng hệt cái bẫy `FindFirstObjectByType&lt;Canvas&gt;()` đã cắn ở phiên chơi thử.
+        /// Hỏi thẳng FloorRunner nó đang dùng bộ nào thì không còn chỗ cho may rủi.
+        /// </summary>
+        private static ShardDropSpawner BoThaManh()
+        {
+            var runner = Object.FindFirstObjectByType<FloorRunner>();
+            Assert.IsNotNull(runner, "không có FloorRunner trong scene");
+            var f = typeof(FloorRunner).GetField("drops",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(f, "FloorRunner không còn trường 'drops'");
+            var s = f.GetValue(runner) as ShardDropSpawner;
+            Assert.IsNotNull(s, "FloorRunner chưa được nối bộ thả Mảnh");
+            return s;
+        }
+
     }
 }

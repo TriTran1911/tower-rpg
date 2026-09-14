@@ -517,6 +517,7 @@ thao túng người chơi.
 | 31 | **Dừng M4 để sửa nhịp độ 5 phút đầu — bảy việc, và bốn lỗi cân bằng lộ ra giữa đường** | Làm tiếp M4 nội dung *(loại: §8 giao tiêu chí M1 là "thấy vui hoặc không vui — nếu không vui, DỪNG LẠI VÀ SỬA Ở ĐÂY", và chủ dự án vừa nói thẳng là chán)*; chỉ thêm hiệu ứng *(loại: không chữa được nhịp trả thưởng 1 lần/49 giây)* | Người chơi phản hồi *"chạy vòng vòng đánh quái rất nhàm chán, không thấy rơi vật phẩm hay chế độ auto"*. Đo ra: 7 giây đứng yên để giết MỘT con, nâng cấp +4,4% in ra màn hình vẫn là `"10"`, **không hề có rơi vật phẩm**, nút tự đánh `SetActive(false)` suốt 16 phút, **không một dòng mã âm thanh** trong khi 188 file CC0 nằm không, quái chết là `Destroy()` trong im lặng tuyệt đối. Nhóm 12 agent chẩn đoán rồi 3 giám khảo chấm chéo: gói phản hồi 43/50, rơi vật phẩm 41–42/50, cả ba đều kết luận GHÉP. **Nhưng thứ đắt giá nhất lại là bốn lỗi CÂN BẰNG mà đợt sửa này vô tình đào lên** — xem quyết định #30 và §7. Kết quả đo được sau bảy việc: nhịp trả thưởng **48–54 s → 8,4 s**, khoảng lặng dài nhất **3,4 s → 1,5 s**, kênh phản hồi khi quái chết **0 → 3**, và boss tầng 10 **lần đầu tiên trong đời dự án hạ được bằng đường leo**. 54 test PlayMode, 47 mục kiểm scene |
 | 32 | **Tự động hoá luôn "bảng bấm giờ chơi tay 10 tầng"** | Ghi tay 6 cột như kế hoạch giao *(loại một phần: người vẫn phải trả lời chỉ tiêu 10, nhưng 5 cột kia thì máy ghi chính xác hơn và lặp lại được)* | `M4BangBamGio.cs` bật TỰ ĐÁNH, mua nâng cấp tham lam mỗi tầng, leo 10 tầng, in bảng. **Hai lỗi của chính bộ đo phải sửa trước khi tin số của nó:** bản đầu quên mua nâng cấp nên đánh boss bằng trang bị **cấp 1** (300 giây, 0 Mảnh — số sai không phải vì game sai mà vì bộ đo không chơi như người chơi); và cột "Mảnh nhận" đo **số dư ví** nên ra số ÂM khi bộ đo tiêu tiền, còn nhịp trả thưởng gộp cả tầng boss (một trận 151 giây, đúng một phần thưởng) làm trung bình vọt lên 10,9 thay vì 8,4. **Một phát hiện ngoài dự tính:** HP tụt đều 100 → 9 % suốt tầng 1–9 rồi nhảy lên 89 % — cú nhảy đó là **một lần chết**, vì `ResetHealth()` là nguồn hồi máu DUY NHẤT trong game. Tức **hiện tại chết có lợi**. Đó đúng là số liệu mà mục "hồi máu trước tầng boss" của Đợt 2 đang chờ |
 | 33 | **M4: 100 tầng · 5 chương · 10 boss — và quét nhanh hoá ra CHỊU LỰC** | Giữ 40 tầng *(loại: §8 giao M4 là "chơi hết được từ đầu đến cuối")*; thêm tầng mà không kiểm biên từng boss *(loại: `Biên theo boss` của bảng tính neo vào trang bị CUỐI GAME nên về cấu trúc không thể phát hiện bức tường ở boss sớm)* | `tower.floors` 40 → 100, thêm `boss.hpMult5-10`, năm bảng nền đổi theo chương (thư mục `Chapters/` sinh sẵn từ M1), năm loại quái theo chủ đề chương, **mười boss mười hình không con nào lặp**. Quái vẫn ĐỎ và nhân vật vẫn LAM NGỌC suốt 100 tầng — quyết định #23 nguyên vẹn. **Mô phỏng leo thật**: cả 10 boss đạt biên ≥ 1,50, trang bị cuối 40/40/40/40 bậc 3333 — khớp đúng `MIN(40, …)` trong công thức cấp kỳ vọng của bảng tính. **Nhưng bỏ quét nhanh đi thì kẹt ở boss 2, 3, 4** (0,99 / 0,91 / 0,92): ô `B32 = 2` không phải giả định cho tiện, nó **chịu lực**. Test biên mở rộng từ 4 lên **10 boss** kèm mệnh đề chống sót: số boss kiểm được phải bằng `tower.floors / tower.bossEvery` |
+| 34 | **M5: game lần đầu biết mình đã kết thúc — và một test đỗ nhờ may suốt bốn mốc** | Bỏ qua M5 để thêm nội dung *(loại: chính §8 cảnh báo "M5 là phần dev hay bỏ qua nhất và cũng là phần người xem portfolio đánh giá đầu tiên")*; chỉ thêm hiệu ứng cho đẹp *(loại: thứ M5 thiếu nhất không phải hiệu ứng mà là KẾT THÚC)* | **Tầng 100 trước M5 không có kết thúc**: `FloorRunner` ghi một dòng `Debug.Log` còn sót chữ "M3" rồi `continue` — bày lại đúng tầng đó, mãi mãi. Người leo hai tiếng rưỡi nhận đúng thứ họ nhận ở tầng 99. Thêm **màn đỉnh tháp** (bảng bảy dòng số người chơi tự làm ra, nhạc `8 - End Theme`, chỉ hiện MỘT LẦN cả đời một file save, suy từ `HighestCleared` nên sống qua việc tắt app) và **chuyển cảnh hai cấp** (chớp tối 0,3 s giữa tầng thường vì nó xảy ra 95 lần; đen hẳn + tên chương 2 s ở đổi chương vì nó xảy ra đúng 4 lần). Thêm **khói chết** (giải mục §7 treo từ M1), **tiếng ngã xuống** `GameOver2.wav` — chọn vì 1,50 s ĐÚNG BẰNG `deathDelay`, ba bài GameOver kia còn đang kêu "thua" lúc tầng đã bày lại xong. **Ba lỗi cũ lộ ra:** boss cuối bật CẢ HAI overlay chồng nhau (cùng đặt `timeScale = 0`, cùng bắn một khung hình); `AudioDirector` cấp phát một mảng MỖI KHUNG HÌNH và fade bằng `deltaTime` nên nhạc boss treo nguyên âm lượng suốt lúc người chơi đọc màn chúc mừng; và **ngã xuống là khoảnh khắc CÂM NHẤT trong game** — 1,5 giây đứng im, không tiếng, không chữ, trong khi luật "chết không mất gì" có từ M1 và **chưa bao giờ hiện ra một chữ nào**. **Thứ đắt nhất lại là một test:** bốn test rơi vật phẩm đỗ **nhờ may** từ Việc 5 — scene có HAI `ShardDropSpawner` (Mảnh và Lõi) và chúng gọi `FindFirstObjectByType`; thêm ĐÚNG MỘT component vào `Bootstrap` là thứ tự đảo, cả bốn hỏng cùng lúc. Cùng hệt cái bẫy `FindFirstObjectByType<Canvas>()` của phiên chơi thử — tức lần thứ hai, và lần này nó đã âm thầm sai suốt bốn mốc. Giờ hỏi thẳng `FloorRunner` nó đang dùng bộ nào |
 
 ---
 
@@ -533,9 +534,30 @@ thao túng người chơi.
 - ~~Icon cho ba ô Giáp / Găng / Nhẫn~~ — **đã có sẵn**, tôi tìm nhầm chỗ: chúng nằm ở
   `Ui/Skill Icon/` chứ không phải `Items/`. Xem §5 của `GIAO-DIEN.md`.
 - ~~Tách giao diện khỏi quy tắc "world"~~ — **đã làm**, 359 file giữ nguyên tông ấm.
-- **Font HUD** — đang dùng LiberationSans; bộ asset có `Ui/Font/NormalFont.ttf` chưa dùng.
-- **Hoạt ảnh chết cho quái và boss** — bộ asset không có. Kế hoạch hiện tại là dùng FX khói/nổ
-  có sẵn. Chấp nhận được cho M1-M4; cân nhắc lại ở M5 nếu thấy chưa đã.
+- ⚠️ **NHÂN VẬT KHÔNG CÒN LAM — tầng đọc thứ ba đang hỏng, đo ra ở M5.** Quyết định #23 và
+  README đều ghi ba tầng đọc: *thế giới xám · quái ĐỎ · nhân vật LAM NGỌC, "màu duy nhất
+  không ai khác có"*. Đọc thẳng bảng màu file art sau đợt remap "Mực & Son": quái `Skull`
+  lệch đỏ rất mạnh (**B−R = −119, G−R = −131** ở màu chủ đạo) — tầng đọc của quái tốt. Nhưng
+  cả **năm** nhân vật chỉ lệch lam **+8 đến +17**, tức xám trung tính có ánh lam rất nhạt;
+  sàn đấu trường là (120,115,120) còn màu chủ đạo của nhân vật là (118,125,128) — **gần như
+  cùng một màu**. Trên ảnh chụp M5 phải nhìn kỹ mới tìm ra nhân vật giữa sàn.
+  Đây đúng là thứ quy tắc đó sinh ra để chặn: *"bạn phải theo dõi được vị trí của chính mình
+  TRONG LÚC đứng yên ăn đòn"*. Sửa rẻ (một giá trị tint trên SpriteRenderer) nhưng đổi diện
+  mạo cả 5 nhân vật, nên **để chủ dự án quyết** chứ không tự đổi trong M5.
+- ⚠️ **Font HUD — `NormalFont.ttf` KHÔNG DÙNG ĐƯỢC, đo ra rồi.** Mục này treo từ M2 với giả
+  định "bộ asset có sẵn font, chưa nối thôi". Đếm bảng mã: `NormalFont.ttf` có **147 glyph**
+  và **thiếu 23 ký tự tiếng Việt** — `ă Đ đ ũ ơ Ư ư ả ấ ầ ẫ Ậ ắ ế ệ Ỉ Ị ồ Ộ ộ ờ Ợ Ự`. Toàn bộ
+  giao diện game viết bằng tiếng Việt, nên nối nó vào là *ĐỈNH THÁP* thành *?INH TH?P*.
+  Không phải "chưa làm" mà là **làm không được**. Ba đường còn lại: (a) giữ LiberationSans —
+  đọc tốt, nhưng nó là font mặc định của TextMeshPro nên người xem portfolio đọc ra ngay là
+  "chưa ai chọn font"; (b) thêm một font OFL có dải Việt đầy đủ (*Be Vietnam Pro* thiết kế
+  riêng cho tiếng Việt) — đây là **thêm phụ thuộc mới vào repo**, nên để chủ dự án quyết;
+  (c) tự vẽ bổ sung 23 glyph vào `NormalFont.ttf` — đắt và phải giữ giấy phép CC0 sạch.
+  **Chưa chọn.**
+- ~~**Hoạt ảnh chết cho quái và boss**~~ — **ĐÃ LÀM** (M5), đúng theo kế hoạch ghi sẵn ở đây:
+  sáu khung `FX/Smoke/Smoke` bung ra 1,45 lần rồi mờ ở nửa sau, cỡ khói theo boss hay quái
+  thường (boss to gấp 2 lần nên khói bằng nhau là cái chết của boss trông NHỎ HƠN của lâu la).
+  Pool riêng, truy cập tĩnh cùng khuôn `SfxPlayer` — xem `PuffFxSpawner`.
 - ⚠️ **HÚT MÁU CHƯA CÓ TRONG MÔ HÌNH — phải chốt trước mốc M4.** §5.5 ghi Giáp cho "máu +
   hút máu" nhưng bảng tính chỉ mô hình hoá máu. Đo ngược tại tầng 100: người chơi nhận
   **72,8 sát thương/giây**, nên chỉ cần hút máu **5,85%** là build sát thương cao nhất hồi
@@ -677,10 +699,14 @@ Lộ trình dưới đây thiết kế để luôn có thứ chạy được tr�
 | ~~**M2 — Tiến trình**~~ | 20 tầng, rơi Mảnh, nâng cấp 4 ô trang bị, save/load | ✅ **XONG** — 17/17 test PlayMode |
 | ~~**M3 — Xương sống**~~ | Boss, Lõi, đột phá, tẩy điểm, quét nhanh, auto-battle, **mở khoá và đổi nhân vật (§5.5b)** | ✅ **XONG** — 30/30 test PlayMode, 37 mục kiểm scene. Tháp 40 tầng, 4 boss, 12 Lõi, 5 nhân vật |
 | ~~**M4 — Nội dung**~~ | 100 tầng, 5 chương, 10 boss | ✅ **XONG** — 66/66 test, 53 mục kiểm. Mô phỏng leo hết: cả 10 boss đạt biên ≥ 1,50 |
-| **M5 — Bóng bẩy** | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | Trông như sản phẩm thật. **Đây là phần quyết định giá trị portfolio** |
+| ~~**M5 — Bóng bẩy**~~ | Hiệu ứng, rung màn hình, âm thanh, chuyển cảnh, màn hình chúc mừng | ✅ **XONG** — 79/79 test, 62 mục kiểm. **Tháp 100 tầng lần đầu có KẾT THÚC** |
 
-**Cảnh báo:** M5 là phần dev hay bỏ qua nhất và cũng là phần người xem portfolio
-đánh giá đầu tiên. Đừng cắt nó để thêm tầng.
+**Cảnh báo (giữ lại làm ghi chép):** M5 là phần dev hay bỏ qua nhất và cũng là phần
+người xem portfolio đánh giá đầu tiên. Đừng cắt nó để thêm tầng.
+
+**Cả năm mốc đã xong.** Việc còn lại không nằm ở §8 nữa mà ở §7: hút máu chưa vào mô
+hình, Nhẫn là ô đổ rác, quét nhanh bắt buộc mà game không nói, font HUD. Và một thứ
+không lớp máy nào thay được — **chưa ai chơi hết 100 tầng**.
 
 ---
 

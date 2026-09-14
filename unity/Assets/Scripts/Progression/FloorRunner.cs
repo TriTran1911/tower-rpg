@@ -26,6 +26,9 @@ namespace TowerRpg.Progression
         [SerializeField] private Sprite[] bossSprites = new Sprite[10];
         [SerializeField] private float bossScale = 2f;
 
+        [Header("Chuyển cảnh — M5")]
+        [SerializeField] private Juice.SceneTransition transition;
+
         [Header("Chương — M4")]
         [SerializeField] private SpriteRenderer floorRenderer;
         [SerializeField] private Sprite[] chapterFloors = new Sprite[5];
@@ -38,6 +41,8 @@ namespace TowerRpg.Progression
         public event Action<int> FloorStarted;     // tầng vừa bày xong
         public event Action<int, float> FloorCleared;  // tầng, Mảnh nhận được
         public event Action<int, int> BossDefeated;    // tầng, số Lõi vừa nhận
+        public event Action TowerConquered;           // dọn sạch tầng cuối, LẦN ĐẦU (M5)
+        public event Action PlayerFell;               // người chơi ngã xuống (M5)
 
         private float _hp1, _hpG, _dps1, _dpsG, _radius, _rate, _range, _bossRangeMult;
         private bool _healOnBoss;
@@ -50,6 +55,13 @@ namespace TowerRpg.Progression
         private readonly System.Collections.Generic.List<float> _bossMult =
             new System.Collections.Generic.List<float>();
         private bool _running;
+
+        // Màn đen của chuyển cảnh kéo lên ở CUỐI vòng lặp (trước AdvanceFloor) và chỉ
+        // được kéo ra ở ĐẦU vòng sau, khi tầng mới đã bày xong. Hai cờ này bắc cầu qua
+        // ranh giới đó. Nếu kéo ra sớm hơn thì người chơi thấy đúng cái mình đang giấu:
+        // sàn cũ, quái cũ đang bị xoá, sàn chương mới đang gán.
+        private bool _canMoMan;
+        private bool _moManKieuChuong;
 
         /// <summary>Đang ở tầng boss — giao diện dùng để đổi nhạc/khung.</summary>
         public bool InBossFight { get; private set; }
@@ -138,6 +150,15 @@ namespace TowerRpg.Progression
                 SpawnFloor(floor);
                 FloorStarted?.Invoke(floor);
 
+                // Kéo màn ra. KHÔNG yield: trò chơi chạy tiếp ngay, màn chỉ mờ dần đi
+                // trên đầu. Chờ ở đây là biến một hiệu ứng trang trí thành 0,5 giây
+                // đứng hình nhân với 99 tầng.
+                if (_canMoMan && transition != null)
+                {
+                    _canMoMan = false;
+                    StartCoroutine(_moManKieuChuong ? transition.MoManChuong() : transition.MoMan());
+                }
+
                 while (EnemyRegistry.Count > 0 && _running) yield return null;
                 if (!_running) yield break;
 
@@ -172,6 +193,13 @@ namespace TowerRpg.Progression
                 float rest = Mathf.Max(0f, reward - _paid);
                 if (rest > 0f) { GameState.Instance.AddShards(rest); _paid += rest; }
 
+                // ĐỈNH THÁP — phải đọc HighestCleared TRƯỚC MarkCleared, vì chính
+                // MarkCleared là cái đẩy nó lên. Điều kiện "lần đầu" suy từ save nên nó
+                // sống qua cả việc tắt app: mở lại game rồi cày tầng 100 không làm màn
+                // hình chúc mừng hiện lại.
+                bool dinhThapLanDau = floor >= GameState.Instance.TowerFloors
+                                   && GameState.Instance.HighestCleared < GameState.Instance.TowerFloors;
+
                 GameState.Instance.MarkCleared(floor);
                 // Success1.wav dài 0,45s — jingle NGẮN NHẤT trong 15 cái. Cố ý: dọn tầng lặp
                 // mỗi ~45 giây, một jingle 2 giây sẽ còn đang kêu lúc tầng sau đã bày xong.
@@ -181,12 +209,41 @@ namespace TowerRpg.Progression
                 SaveProgress(floor);
                 FloorCleared?.Invoke(floor, reward);
 
+                // Bắn SAU SaveProgress: màn hình đỉnh tháp đọc HighestCleared và Mảnh từ
+                // GameState, và người chơi đóng app ngay trên màn hình đó là chuyện bình
+                // thường — lưu xong rồi mới khoe.
+                if (dinhThapLanDau)
+                {
+                    Debug.Log($"[FloorRunner] ĐỈNH THÁP: dọn sạch tầng {floor}/" +
+                              $"{GameState.Instance.TowerFloors} lần đầu.");
+                    TowerConquered?.Invoke();
+                }
+
                 yield return new WaitForSeconds(clearDelay);
 
                 if (floor >= GameState.Instance.TowerFloors)
                 {
-                    Debug.Log($"[FloorRunner] Đã lên tới đỉnh tháp M3 (tầng {floor}). Bày lại tầng này.");
-                    continue;                    // M3 dừng ở đây; M4 mở tiếp 100 tầng
+                    // Tầng cuối bày lại để còn cày được. Màn hình chúc mừng đã chạy ở
+                    // trên và chỉ chạy đúng một lần trong cả đời một file save.
+                    continue;
+                }
+
+                // CHUYỂN CẢNH. Chớp tối nhanh giữa hai tầng thường; đổi chương thì đen
+                // hẳn và hiện tên chương. Cả hai đều dùng đồng hồ thực nên màn hình cột
+                // mốc (timeScale = 0, đứng đúng tầng 20/40/60/80 — ngay trước MỌI lần
+                // đổi chương) không làm chúng đứng hình.
+                if (transition != null)
+                {
+                    int chuongSau = ChapterOf(floor + 1);
+                    _moManKieuChuong = chuongSau != ChapterOf(floor);
+                    if (_moManKieuChuong)
+                        yield return transition.TheChuong(
+                            chuongSau, chuongSau * _tangMoiChuong + 1,
+                            Mathf.Min((chuongSau + 1) * _tangMoiChuong,
+                                      GameState.Instance.TowerFloors));
+                    else
+                        yield return transition.ChuyenTang();
+                    _canMoMan = true;
                 }
 
                 GameState.Instance.AdvanceFloor();
@@ -307,12 +364,30 @@ namespace TowerRpg.Progression
         }
 
         /// <summary>Chết thì bày lại ĐÚNG tầng đó. Không mất Mảnh, không tụt tầng (§5.8 van 3).</summary>
+        /// <summary>
+        /// Ngã xuống rồi bày lại tầng. TRƯỚC M5 ĐÂY LÀ KHOẢNH KHẮC CÂM NHẤT TRONG GAME:
+        /// một dòng Debug.Log, 1,5 giây đứng im, rồi tầng hiện lại. Người chơi hết máu
+        /// mà trên màn hình không có một thứ gì thay đổi ngoài việc quái đột nhiên đầy
+        /// lại — nhiều người sẽ không hiểu vừa xảy ra chuyện gì.
+        ///
+        /// Và quan trọng hơn cả tiếng động: game này CỐ Ý không phạt gì khi chết (§4 —
+        /// mất tiến trình là gỡ game), nhưng chưa bao giờ NÓI ra điều đó. Banner nói.
+        /// </summary>
         private IEnumerator Retry()
         {
             Debug.Log("[FloorRunner] Người chơi chết — bày lại tầng, không mất gì.");
+            Juice.SfxPlayer.Play(Juice.Sfx.PlayerDie);
+            PlayerFell?.Invoke();
+
             yield return new WaitForSeconds(deathDelay);
+
+            // Bày lại tầng SAU tấm màn: hồi máu và sinh lại 6 con quái ngay trước mắt
+            // người chơi đọc ra như một lỗi, còn sau một cú chớp tối thì đọc ra như
+            // một lần bắt đầu lại.
+            if (transition != null) yield return transition.ChuyenTang();
             playerHealth.ResetHealth();
             SpawnFloor(GameState.Instance.Floor);
+            if (transition != null) StartCoroutine(transition.MoMan());
         }
     }
 }

@@ -195,6 +195,10 @@ namespace TowerRpg.Enemies
             _armed = false;
             EnemyRegistry.Unregister(this);
             Juice.SfxPlayer.Play(Juice.Sfx.EnemyDie, IsBoss ? 1f : 0.8f);
+            // Khói M5. Nhả ở ĐÂY chứ không trong DieVisual(): Die() chạy kể cả khi con
+            // quái đã tắt (isActiveAndEnabled == false thì nhánh dưới Destroy thẳng), và
+            // một cái chết không khói là một cái chết không ai thấy.
+            Juice.PuffFxSpawner.Puff(transform.position, IsBoss);
             _drops?.Drop(transform.position, _shardValue);
 
             // TUYỆT ĐỐI KHÔNG chuyển phần này sang OnDestroy: EnemyRegistry.ClearAll() huỷ

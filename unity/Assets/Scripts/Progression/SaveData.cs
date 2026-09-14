@@ -38,5 +38,13 @@ namespace TowerRpg.Progression
         // mà SpawnFloor coi "tầng khác với tầng đang tính sổ" là bắt đầu lượt mới — đúng.
         public int paidFloor;           // tầng đang tính sổ
         public float paidShards;        // Mảnh của tầng đó ĐÃ vào ví trong cả lượt
+
+        // ── M5 ────────────────────────────────────────────────────────────────────
+        // Tổng giây đã chơi, cộng dồn qua mọi phiên. Màn hình đỉnh tháp không có con số
+        // nào đáng giá hơn con số này — nó là thứ duy nhất đo được cái §1 hứa: khoảng
+        // cách định bởi chăm chỉ. KHÔNG cần tăng version, cùng lý lẽ với paidFloor: bản
+        // v3 cũ nạp lên có playSeconds = 0, và màn hình đỉnh tháp BỎ HẲN dòng thời gian
+        // khi số đó bằng 0 — thà không nói còn hơn nói "0 phút" với người vừa leo 100 tầng.
+        public float playSeconds;
     }
 }

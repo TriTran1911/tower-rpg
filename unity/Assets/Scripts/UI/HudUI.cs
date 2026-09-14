@@ -44,6 +44,7 @@ namespace TowerRpg.UI
         [SerializeField] private TMP_Text eventBanner;
         [SerializeField] private Juice.CameraShake cameraShake;
         [SerializeField] private MilestoneOverlay milestone;
+        [SerializeField] private VictoryScreen victory;
 
         // QUYẾT ĐỊNH #28 áp cho cả HUD: nút dùng gỗ SÁNG (243,140,76), mà trên nền đó
         // vàng đạt 1,27:1 · ngọc 1,25:1 · mờ 1,45:1 — đều dưới xa 4,5:1, tức là không đọc
@@ -61,6 +62,10 @@ namespace TowerRpg.UI
         // Trên nền gỗ tối (70,64,46) thì vàng đạt 5,40 và ngọc 5,33.
         private static readonly Color Gold = new Color(0.91f, 0.70f, 0.29f);
         private static readonly Color Jade = new Color(0.28f, 0.81f, 0.70f);
+        // Son — cùng sắc đang dùng cho Lõi ở BuildM1Scene, nên bảng màu không nở thêm một
+        // màu mới chỉ để báo cái chết. Đo trên nền gỗ tối của banner (70,64,46): 4,65:1,
+        // qua cả ngưỡng 4,5:1 của chữ thường chứ không chỉ 3:1 của chữ lớn.
+        private static readonly Color Cinnabar = new Color(0.89f, 0.61f, 0.58f);
 
         private static readonly Color Ink  = new Color(0.10f, 0.09f, 0.08f);
         private static readonly Color InkOff = new Color(0.78f, 0.75f, 0.70f);
@@ -89,6 +94,8 @@ namespace TowerRpg.UI
                 runner.FloorStarted += _ => Refresh();
                 runner.BossDefeated += OnBossDefeated;
                 runner.FloorCleared += OnFloorCleared;
+                runner.TowerConquered += OnTowerConquered;
+                runner.PlayerFell += OnPlayerFell;
             }
             if (bossBanner != null) bossBanner.gameObject.SetActive(false);
             if (bossBarRoot != null) bossBarRoot.SetActive(false);
@@ -162,8 +169,42 @@ namespace TowerRpg.UI
         /// xảy ra cả. §5.2 tự ghi "cột mốc lớn — cần màn hình chúc mừng riêng"; màn hình
         /// riêng để Đợt 2, nhưng im lặng hoàn toàn thì không chấp nhận được.
         /// </summary>
+        /// <summary>
+        /// Ngã xuống — M5. Banner PHẢI nói "không mất gì": luật đó có từ M1 và chưa bao
+        /// giờ hiện ra chữ nào. Một người chơi vừa chết sẽ tự cho rằng mình mất Mảnh của
+        /// tầng đang dở, và hành vi hợp lý tiếp theo của họ là chơi rón rén hơn — tức
+        /// game vừa dạy sai một thứ mà chính nó thiết kế ngược lại.
+        /// </summary>
+        private void OnPlayerFell()
+        {
+            ShowBanner("NGÃ XUỐNG   ·   KHÔNG MẤT GÌ", Cinnabar, _bossBannerSeconds);
+            if (cameraShake != null) cameraShake.Shake();
+        }
+
+        /// <summary>Dọn sạch tầng cuối lần đầu — M5. Đây là kết thúc của trò chơi.</summary>
+        private void OnTowerConquered()
+        {
+            if (victory != null) victory.Show();
+            else ShowBanner($"ĐỈNH THÁP   ·   ĐÃ LEO HẾT " +
+                            $"{(GameState.Instance != null ? GameState.Instance.TowerFloors : 0)} TẦNG",
+                            Gold, _bossBannerSeconds);
+            Refresh();
+        }
+
         private void OnBossDefeated(int floor, int cores)
         {
+            // BOSS CUỐI KHÔNG CÓ MÀN CỘT MỐC. Cả hai overlay đều đặt timeScale = 0 và cả
+            // hai đều bắn trong CÙNG một khung hình ở tầng cuối (boss 10 đứng đúng tầng
+            // 100), nên để nguyên là hai tấm chồng lên nhau — đúng con bọ "hai thông báo
+            // đè nhau" đã sửa một lần ở phiên chơi thử. Màn đỉnh tháp nói được mọi thứ
+            // màn cột mốc nói, và nói nhiều hơn.
+            GameState gsCuoi = GameState.Instance;
+            if (victory != null && gsCuoi != null && floor >= gsCuoi.TowerFloors)
+            {
+                Refresh();
+                return;
+            }
+
             // Màn hình cột mốc DỪNG trò chơi lại; banner chỉ là bản dự phòng khi chưa
             // nối được overlay. Không chạy cả hai — hai thứ cùng nói một điều là ồn.
             if (milestone != null)
@@ -190,6 +231,11 @@ namespace TowerRpg.UI
         private void OnDisable()
         {
             if (GameState.Instance != null) GameState.Instance.Changed -= Refresh;
+            if (runner != null)
+            {
+                runner.TowerConquered -= OnTowerConquered;
+                runner.PlayerFell -= OnPlayerFell;
+            }
         }
 
         // GameState nạp save bất đồng bộ nên có thể sẵn sàng SAU OnEnable.

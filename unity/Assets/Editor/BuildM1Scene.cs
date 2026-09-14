@@ -124,6 +124,7 @@ namespace TowerRpg.EditorTools
             var sfx      = bootGo.AddComponent<SfxPlayer>();
             var drops    = bootGo.AddComponent<ShardDropSpawner>();
             var slashes  = bootGo.AddComponent<SlashFxSpawner>();
+            var puffs    = bootGo.AddComponent<PuffFxSpawner>();
             var music    = bootGo.AddComponent<AudioDirector>();
 
             // Pool thứ hai cho Lõi tím của boss — tách riêng vì nó dùng prefab khác và
@@ -316,6 +317,15 @@ namespace TowerRpg.EditorTools
             eventBanner.rectTransform.anchorMin = Vector2.zero;
             eventBanner.rectTransform.anchorMax = Vector2.one;
             eventBanner.rectTransform.offsetMin = eventBanner.rectTransform.offsetMax = Vector2.zero;
+            // TỰ CO CHỮ. Tấm gỗ rộng 736px ở khung 1080 và chữ để NoWrap, nên MỌI câu dài
+            // hơn tấm đều tràn ra cả hai bên — không lỗi, không cảnh báo, chỉ là chữ nằm
+            // trên sàn. Banner "NGÃ XUỐNG · BÀY LẠI TẦNG, KHÔNG MẤT GÌ" của M5 tràn hẳn
+            // ra ngoài mép trái màn hình, và banner boss cũ thì sát nút. Đặt trần ở đây
+            // thì không câu nào sau này tràn được nữa, kể cả câu chưa ai viết.
+            eventBanner.enableAutoSizing = true;
+            eventBanner.fontSizeMax = 38f;
+            eventBanner.fontSizeMin = 24f;   // dưới mức này thì chữ trên gỗ khó đọc
+            eventBanner.margin = new Vector4(16f, 0f, 16f, 0f);
             bannerBg.gameObject.SetActive(false);
 
             var hudUi = canvasGo.AddComponent<HudUI>();
@@ -515,6 +525,79 @@ namespace TowerRpg.EditorTools
             msGo.SetActive(false);
             var milestone = canvasGo.AddComponent<MilestoneOverlay>();
 
+            // ── MÀN HÌNH ĐỈNH THÁP (M5) ──────────────────────────────────────────────
+            // Cùng khuôn màn cột mốc nhưng nền ĐẶC HƠN (0,97 so với 0,94) và tiêu đề to
+            // hơn: đây là lần DUY NHẤT trong cả đời một file save màn hình này bật lên.
+            var vcGo = new GameObject("VictoryScreen", typeof(RectTransform));
+            vcGo.transform.SetParent(canvasGo.transform, false);
+            var vcRt = vcGo.GetComponent<RectTransform>();
+            vcRt.anchorMin = Vector2.zero; vcRt.anchorMax = Vector2.one;
+            vcRt.offsetMin = vcRt.offsetMax = Vector2.zero;
+
+            // ALPHA 1,0 — KHÔNG PHẢI 0,97. Đo trên ảnh chụp: ở 0,97 thì nút gỗ cam
+            // (243,140,76) phía sau vẫn ra pixel (50,23,7), tức CÒN 17% tín hiệu sRGB và
+            // đọc được rõ cả chữ lẫn hình. Không phải lỗi alpha mà là GAMMA: pha trộn
+            // diễn ra trong không gian TUYẾN TÍNH (3% ánh sáng, đúng như đặt), rồi mới
+            // mã hoá sang sRGB — và sRGB kéo 3% ánh sáng lên thành 17% giá trị pixel.
+            // Trực giác "0,97 là gần như đục" sai một bậc ở mọi dự án dùng Linear.
+            Image vcDim = UiImage("Dim", vcGo.transform, null, new Color(0.03f, 0.02f, 0.02f, 1f), false);
+            vcDim.rectTransform.anchorMin = Vector2.zero;
+            vcDim.rectTransform.anchorMax = Vector2.one;
+            vcDim.rectTransform.offsetMin = vcDim.rectTransform.offsetMax = Vector2.zero;
+            vcDim.raycastTarget = true;
+
+            var vcTitle = UiText("Title", vcGo.transform, "", 84f, UiGold);
+            Anchor(vcTitle.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 400f), new Vector2(960, 110));
+
+            // Bảng bảy dòng "nhãn — số", căn TRÁI. Cột số do VictoryScreen căn bằng thẻ
+            // <pos=52%> chứ không bằng khoảng trắng; xem chú thích ở đó.
+            var vcStats = UiText("Stats", vcGo.transform, "", 36f, UiPaper, TextAlignmentOptions.TopLeft);
+            Anchor(vcStats.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(760, 440));
+            vcStats.textWrappingMode = TextWrappingModes.NoWrap;
+            vcStats.lineSpacing = 24f;
+
+            var vcHint = UiText("Hint", vcGo.transform, "", 28f, UiDim);
+            Anchor(vcHint.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -360f), new Vector2(960, 90));
+            vcHint.textWrappingMode = TextWrappingModes.Normal;
+
+            // Nguồn phát riêng cho nhạc kết — KHÔNG mượn AudioDirector: hai nguồn của nó
+            // đang bận fade chéo giữa nhạc thường và nhạc boss, chen vào là phải viết
+            // thêm một trạng thái thứ ba vào vòng fade chỉ để dùng đúng một lần.
+            var vcMusic = vcGo.AddComponent<AudioSource>();
+            vcMusic.playOnAwake = false;
+            vcMusic.loop = false;
+            vcMusic.spatialBlend = 0f;
+            vcMusic.volume = 0.55f;
+            vcMusic.ignoreListenerPause = true;
+
+            vcGo.SetActive(false);
+            var victory = canvasGo.AddComponent<VictoryScreen>();
+
+            // ── TẤM PHỦ CHUYỂN CẢNH (M5) ─────────────────────────────────────────────
+            // Nằm TRÊN toàn bộ HUD: một lần chuyển cảnh che nửa màn hình thì nó không
+            // phải chuyển cảnh, nó là một vệt tối kỳ lạ ở giữa trò chơi. Hai overlay
+            // (cột mốc, đỉnh tháp) tự SetAsLastSibling lúc bật nên vẫn nằm trên nó.
+            var veilGo = new GameObject("Transition", typeof(RectTransform));
+            veilGo.transform.SetParent(canvasGo.transform, false);
+            var veilRt = veilGo.GetComponent<RectTransform>();
+            veilRt.anchorMin = Vector2.zero; veilRt.anchorMax = Vector2.one;
+            veilRt.offsetMin = veilRt.offsetMax = Vector2.zero;
+
+            Image veil = UiImage("Veil", veilGo.transform, null, new Color(0.02f, 0.02f, 0.03f, 0f), false);
+            veil.rectTransform.anchorMin = Vector2.zero;
+            veil.rectTransform.anchorMax = Vector2.one;
+            veil.rectTransform.offsetMin = veil.rectTransform.offsetMax = Vector2.zero;
+            veil.raycastTarget = false;
+
+            var chNo   = UiText("ChapterNo", veilGo.transform, "", 34f, UiDim);
+            Anchor(chNo.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 110f), new Vector2(960, 50));
+            var chName = UiText("ChapterName", veilGo.transform, "", 62f, UiGold);
+            Anchor(chName.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 30f), new Vector2(1000, 90));
+            var chRange = UiText("ChapterRange", veilGo.transform, "", 30f, UiPaper);
+            Anchor(chRange.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -50f), new Vector2(960, 50));
+
+            var transition = veilGo.AddComponent<SceneTransition>();
+
             // ── CẦN GẠT ĐỘNG ─────────────────────────────────────────────────────────
             // Vùng chạm phủ nửa dưới màn hình; cần gạt hiện ra ngay nơi ngón đặt xuống.
             var zoneGo = new GameObject("JoystickZone", typeof(RectTransform));
@@ -561,16 +644,18 @@ namespace TowerRpg.EditorTools
             GameObject shardPrefab = MakeShardPrefab("GemYellow", UiGold, "ShardPickup");
             GameObject corePrefab  = MakeShardPrefab("GemPurple", UiCinnabar, "CorePickup");
             GameObject slashPrefab = MakeSlashPrefab();
+            GameObject puffPrefab  = MakePuffPrefab();
 
             // ── Nối tham chiếu ────────────────────────────────────────────────────────
             Wire(runner,   ("enemyPrefab", enemyPrefab.GetComponent<Enemy>()),
                            ("arenaCentre", null), ("playerHealth", health),
                            ("drops", drops), ("coreDrops", coreDrops),
-                           ("floorRenderer", floorSr));
+                           ("floorRenderer", floorSr), ("transition", transition));
             WireChuongVaBoss(runner);
             Wire(drops,     ("pickupPrefab", shardPrefab.GetComponent<ShardPickup>()));
             Wire(coreDrops, ("pickupPrefab", corePrefab.GetComponent<ShardPickup>()));
             Wire(slashes,   ("prefab", slashPrefab.GetComponent<SlashFx>()));
+            Wire(puffs,     ("prefab", puffPrefab.GetComponent<PuffFx>()));
             Wire(music,     ("runner", runner));
             WireMusic(music, "Musics/1 - Adventure Begin.ogg", "Musics/17 - Fight.ogg");
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
@@ -580,6 +665,11 @@ namespace TowerRpg.EditorTools
             Wire(anim,     ("target", psr), ("controller", ctrl));
             Wire(milestone, ("root", msGo), ("title", msTitle), ("detail", msDetail),
                             ("hint", msHint), ("shake", shake));
+            Wire(victory,   ("root", vcGo), ("title", vcTitle), ("stats", vcStats),
+                            ("hint", vcHint), ("shake", shake), ("endTheme", vcMusic));
+            Wire(transition, ("veil", veil), ("chapterNo", chNo), ("chapterName", chName),
+                             ("chapterRange", chRange));
+            WireEndTheme(vcMusic, "Musics/8 - End Theme.ogg");
             Wire(critUi,   ("meter", meter), ("segmentRoot", segRoot), ("segmentPrefab", segPrefab));
             Wire(hpUi,     ("health", health), ("fillImage", hpFill), ("label", hpText));
             Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
@@ -596,7 +686,7 @@ namespace TowerRpg.EditorTools
                            ("runner", runner), ("eventBanner", eventBanner),
                            ("gearButton", gearBtn), ("gearLabel", gbTxt), ("charLabel", charTxt),
                            ("eventBannerRoot", bannerBg.gameObject), ("milestone", milestone),
-                           ("cameraShake", shake));
+                           ("victory", victory), ("cameraShake", shake));
             Wire(upScreen, ("root", upGo), ("rowParent", rowParent), ("shardLabel", upShards),
                            ("coreLabel", upCores), ("critLabel", upCrit), ("respecButton", respecBtn),
                            ("respecLabel", respecTxt));
@@ -614,6 +704,11 @@ namespace TowerRpg.EditorTools
                 "Jingles/LevelUp1.wav",              // BossDown  1,18s · hiếm nên dài được
                 "Sounds/Bonus/PowerUp1.wav",         // Upgrade   0,47s
                 "Sounds/Hit & Impact/Hit5.wav",      // PlayerHit 0,33s · phát ở vol 0,4
+                "Jingles/GameOver2.wav",             // PlayerDie 1,50s · ĐÚNG BẰNG deathDelay
+                //   Bốn bài GameOver: 2,00 / 1,50 / 2,00 / 1,57 giây. Hai bài 2,00s và
+                //   bài 1,57s còn đang kêu lúc tầng đã bày lại xong — một tiếng "thua"
+                //   chồng lên tầng mới là nói dối người chơi. Trong hai bài còn đủ ngắn,
+                //   GameOver2 tối hơn hẳn (sắc 0,052 so với 0,206 của GameOver).
             });
 
             // sprite dùng chung + 4 icon trang bị cho màn nâng cấp
@@ -974,6 +1069,57 @@ namespace TowerRpg.EditorTools
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        /// <summary>
+        /// Cụm khói chết — sáu khung 32x32 của FX/Smoke/Smoke. Giải mục treo ở §7 từ M1:
+        /// bộ asset không có hoạt ảnh chết cho bất kỳ con quái nào, và kế hoạch ghi sẵn
+        /// là lấp bằng FX khói có sẵn, quyết lại ở M5.
+        /// </summary>
+        private static GameObject MakePuffPrefab()
+        {
+            var go = new GameObject("PuffFx");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 18;             // trên quái (5) và thanh máu (7), dưới vệt chém (20)
+            var fx = go.AddComponent<PuffFx>();
+
+            var so = new SerializedObject(fx);
+            so.FindProperty("view").objectReferenceValue = sr;
+            SerializedProperty frames = so.FindProperty("frames");
+            frames.arraySize = 6;
+            for (int i = 0; i < 6; i++)
+                frames.GetArrayElementAtIndex(i).objectReferenceValue =
+                    SliceAndGet($"{Art}/FX/Smoke/Smoke/SpriteSheet.png", 32, i);
+            if (frames.GetArrayElementAtIndex(0).objectReferenceValue is Sprite s0) sr.sprite = s0;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            string path = $"{PrefabDir}/PuffFx.prefab";
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return prefab;
+        }
+
+        /// <summary>Nhạc kết cho màn đỉnh tháp. Cùng thiết lập STREAMING như nhạc nền.</summary>
+        private static void WireEndTheme(AudioSource source, string rel)
+        {
+            string path = $"{Art}/Audio/{rel}";
+            if (AssetImporter.GetAtPath(path) is AudioImporter ai)
+            {
+                var st = ai.defaultSampleSettings;
+                st.loadType = AudioClipLoadType.Streaming;
+                st.compressionFormat = AudioCompressionFormat.Vorbis;
+                st.quality = 0.6f;
+                st.preloadAudioData = false;
+                ai.defaultSampleSettings = st;
+                ai.forceToMono = false;
+                EditorUtility.SetDirty(ai);
+                ai.SaveAndReimport();
+            }
+            AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            if (clip == null) { Debug.LogError($"[BuildM1Scene] Không thấy nhạc kết: {path}"); return; }
+            var so = new SerializedObject(source);
+            so.FindProperty("m_audioClip").objectReferenceValue = clip;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>

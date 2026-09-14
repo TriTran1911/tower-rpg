@@ -58,6 +58,7 @@ namespace TowerRpg.Core
             "hud.countSeconds", "hud.flashSeconds", "hud.floorBannerSeconds",
             "hud.bossBannerSeconds", "boss.healOnEnter", "enemy.telegraphSeconds",
             "enemy.telegraphNudge", "juice.slashSeconds", "audio.musicVolume",
+            "juice.puffSeconds", "juice.puffScale", "juice.puffBossScale",
         };
 
         private void Awake()

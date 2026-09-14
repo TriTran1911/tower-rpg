@@ -42,13 +42,14 @@ namespace TowerRpg.EditorTools
 
             // ── tham chiếu ─────────────────────────────────────────────────────────────
             log.AppendLine("\nTHAM CHIẾU");
-            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "drops", "floorRenderer");
+            fail += Check<FloorRunner>(log, "enemyPrefab", "playerHealth", "drops", "floorRenderer",
+                                            "transition");
             fail += Check<ShardDropSpawner>(log, "pickupPrefab");
             fail += Check<HudUI>(log, "floorNumber", "shardCount", "coreCount", "coreGroup",
                                       "bossBanner", "bossBarRoot", "bossFill", "sweep", "sweepButton", "sweepLabel",
                                       "sweepFill", "auto", "autoButton", "autoLabel", "runner",
                                       "eventBanner", "eventBannerRoot", "cameraShake",
-                                      "gearButton", "gearLabel", "charLabel");
+                                      "gearButton", "gearLabel", "charLabel", "milestone", "victory");
             fail += Check<UpgradeScreen>(log, "root", "rowParent", "shardLabel",
                                               "panelSprite", "bgSprite", "cellSprite",
                                               "coreLabel", "respecButton", "respecLabel");
@@ -59,6 +60,9 @@ namespace TowerRpg.EditorTools
             fail += Check<SlashFxSpawner>(log, "prefab");
             fail += Check<AudioDirector>(log, "normalTrack", "bossTrack", "runner");
             fail += Check<MilestoneOverlay>(log, "root", "title", "detail", "hint", "shake");
+            fail += Check<VictoryScreen>(log, "root", "title", "stats", "hint", "shake", "endTheme");
+            fail += Check<SceneTransition>(log, "veil", "chapterNo", "chapterName", "chapterRange");
+            fail += Check<PuffFxSpawner>(log, "prefab");
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
             fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
@@ -85,6 +89,75 @@ namespace TowerRpg.EditorTools
             fail += Assert(log, "cần gạt ẩn khi chưa chạm",
                            joyVis != null && !joyVis.gameObject.activeSelf,
                            joyVis == null ? "không có" : "đang hiện");
+
+            // ── M5 ────────────────────────────────────────────────────────────────────
+            // Tấm phủ chuyển cảnh KHÔNG ĐƯỢC ăn chạm. Nó phủ kín màn hình và sống suốt
+            // cả lượt chơi; để raycastTarget = true là nuốt mọi cú chạm, kể cả lúc trong
+            // suốt — đúng kiểu lỗi mà vùng chạm cần gạt đã gây ra một lần ở M2.
+            var trans = Object.FindFirstObjectByType<SceneTransition>();
+            Image veilImg = null;
+            if (trans != null)
+                veilImg = new SerializedObject(trans).FindProperty("veil").objectReferenceValue as Image;
+            fail += Assert(log, "tấm phủ chuyển cảnh không chặn chạm",
+                           veilImg != null && !veilImg.raycastTarget,
+                           veilImg == null ? "không có" : "raycastTarget đang bật");
+            fail += Assert(log, "tấm phủ chuyển cảnh bắt đầu trong suốt",
+                           veilImg != null && veilImg.color.a < 0.01f,
+                           veilImg == null ? "không có" : $"alpha = {veilImg.color.a}");
+            fail += Assert(log, "tấm phủ chuyển cảnh phủ kín màn hình",
+                           veilImg != null && veilImg.rectTransform.anchorMin == Vector2.zero
+                                           && veilImg.rectTransform.anchorMax == Vector2.one,
+                           veilImg == null ? "không có" : "không neo bốn góc");
+
+            // Màn đỉnh tháp PHẢI lưu ở trạng thái TẮT: bật sẵn là nó che màn hình ngay
+            // khung hình đầu tiên của trò chơi, trước cả khi ai leo được tầng nào.
+            var vic = Object.FindFirstObjectByType<VictoryScreen>();
+            GameObject vicRoot = vic != null
+                ? new SerializedObject(vic).FindProperty("root").objectReferenceValue as GameObject : null;
+            fail += Assert(log, "màn đỉnh tháp lưu ở trạng thái tắt",
+                           vicRoot != null && !vicRoot.activeSelf,
+                           vicRoot == null ? "không có" : "đang bật");
+
+            AudioSource endSrc = vic != null
+                ? new SerializedObject(vic).FindProperty("endTheme").objectReferenceValue as AudioSource : null;
+            fail += Assert(log, "nhạc kết có clip và KHÔNG lặp",
+                           endSrc != null && endSrc.clip != null && !endSrc.loop && !endSrc.playOnAwake,
+                           endSrc == null ? "không có" : $"clip={endSrc.clip?.name} loop={endSrc.loop}");
+
+            // Prefab khói: sáu khung, không khung nào rỗng. Thiếu một khung là hoạt ảnh
+            // nhảy cóc mà không ai báo lỗi.
+            var puffPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PuffFx.prefab");
+            var puffFx = puffPrefab != null ? puffPrefab.GetComponent<PuffFx>() : null;
+            int khungDu = 0;
+            if (puffFx != null)
+            {
+                SerializedProperty khungKhoi = new SerializedObject(puffFx).FindProperty("frames");
+                for (int i = 0; i < khungKhoi.arraySize; i++)
+                    if (khungKhoi.GetArrayElementAtIndex(i).objectReferenceValue != null) khungDu++;
+            }
+            fail += Assert(log, "prefab khói đủ 6 khung hình", khungDu == 6, $"{khungDu}/6");
+
+            // Banner phải TỰ CO. Không có nó thì mọi câu dài hơn tấm gỗ 736px đều tràn
+            // ra sàn — âm thầm, không lỗi, chỉ nhìn ảnh chụp mới thấy.
+            var hudM5 = Object.FindFirstObjectByType<HudUI>();
+            TMPro.TMP_Text bannerTxt = hudM5 != null
+                ? new SerializedObject(hudM5).FindProperty("eventBanner").objectReferenceValue as TMPro.TMP_Text
+                : null;
+            fail += Assert(log, "chữ banner tự co cho vừa tấm gỗ",
+                           bannerTxt != null && bannerTxt.enableAutoSizing && bannerTxt.fontSizeMin >= 20f,
+                           bannerTxt == null ? "không có"
+                                             : $"autoSize={bannerTxt.enableAutoSizing} min={bannerTxt.fontSizeMin}");
+
+            // Màn phủ của màn đỉnh tháp phải ĐỤC HẲN. Ở alpha 0,97 đo được vẫn còn 17%
+            // tín hiệu sRGB lọt qua — pha trộn làm trong không gian tuyến tính rồi mới
+            // mã hoá, nên "gần 1" không hề gần đục.
+            Image vcDimImg = null;
+            if (vic != null)
+                foreach (Image i in vic.GetComponentsInChildren<Image>(true))
+                    if (i.name == "Dim") vcDimImg = i;
+            fail += Assert(log, "màn đỉnh tháp che kín (alpha = 1)",
+                           vcDimImg != null && vcDimImg.color.a >= 0.999f,
+                           vcDimImg == null ? "không có" : $"alpha = {vcDimImg.color.a}");
 
             var cv = Object.FindFirstObjectByType<CanvasScaler>();
             fail += Assert(log, "Canvas referencePixelsPerUnit = 64 (phóng 4x nguyên)",

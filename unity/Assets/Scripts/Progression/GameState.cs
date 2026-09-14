@@ -34,6 +34,13 @@ namespace TowerRpg.Progression
         public int PaidFloor { get; private set; } = -1;
         public float PaidShards { get; private set; }
 
+        /// <summary>
+        /// Tổng giây đã chơi, cộng dồn qua mọi phiên (M5). Dùng unscaledDeltaTime: màn
+        /// hình cột mốc và màn hình đỉnh tháp đặt timeScale = 0, nhưng người chơi ĐANG
+        /// ngồi đó đọc — đó vẫn là thời gian họ bỏ vào game.
+        /// </summary>
+        public float PlaySeconds { get; private set; }
+
         public int BossEvery { get; private set; } = 10;
 
         /// <summary>
@@ -108,6 +115,7 @@ namespace TowerRpg.Progression
             ShardsSwept    = Mathf.Max(0f, d.shardsSwept);
             PaidFloor      = d.paidFloor;
             PaidShards     = Mathf.Max(0f, d.paidShards);
+            PlaySeconds    = Mathf.Max(0f, d.playSeconds);
 
             // Save v2 trở về trước không tách nguồn Mảnh; SaveSystem đánh dấu -1 để đây
             // dựng lại từ số tầng đã dọn. Làm ở đây chứ không ở SaveSystem vì cần
@@ -290,7 +298,10 @@ namespace TowerRpg.Progression
             shardsSwept = ShardsSwept,
             paidFloor = PaidFloor,
             paidShards = PaidShards,
+            playSeconds = PlaySeconds,
         });
+
+        private void Update() { if (Ready) PlaySeconds += Time.unscaledDeltaTime; }
 
         // iOS giết app trong nền mà không báo — đây là chỗ DUY NHẤT chắc chắn còn chạy.
         private void OnApplicationPause(bool paused) { if (paused && Ready) Save(); }

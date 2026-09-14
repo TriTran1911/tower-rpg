@@ -1,7 +1,8 @@
 # Tower RPG
 
 Game mobile 2D, nhìn từ trên xuống, chơi một tay trên màn hình dọc. Leo 100 tầng, đánh quái,
-nâng cấp trang bị. Đang ở mốc M1 — vòng lặp chiến đấu chạy được và đã kiểm chứng tự động.
+nâng cấp trang bị. **Cả năm mốc M1–M5 đã xong** — 100 tầng, 5 chương, 10 boss, có kết thúc.
+82 test PlayMode, 64 mục kiểm scene tự động.
 
 **Unity 6000.0.83f1 LTS · URP 2D · C#**
 
