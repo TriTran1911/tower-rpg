@@ -341,17 +341,26 @@ namespace TowerRpg.UI
             float MultO(Slot o, int lv) => gs.Gear.MultAtLevel(o, lv);
             float TiLe(Slot o, int lv) => gs.Gear.Mult(o) > 0f ? MultO(o, lv) / gs.Gear.Mult(o) : 1f;
 
-            float SatThuongMoiDon(int lvVuKhi, int lvNhan)
+            // SÁT THƯƠNG TRUNG BÌNH mỗi đòn. Chí mạng giờ NGẪU NHIÊN (quyết định #40)
+            // nên đây là KỲ VỌNG, không phải con số chắc chắn như thời thanh dồn: một
+            // lượt xui thật sự cần nhiều đòn hơn con số in ra. Vẫn in kỳ vọng vì đó là
+            // thứ duy nhất so sánh được giữa hai cấp — nhưng chữ "trung bình" phải có
+            // trên màn hình, xem nhánh Vũ khí bên dưới.
+            float TiLeChiMang(int lvVuKhi) => Mathf.Min(
+                b.Get("crit.chanceCap"),
+                b.Get("crit.chance1") * Mathf.Pow(1f + b.Get("crit.chanceGrowth"), lvVuKhi - 1));
+            float HeSoChiMang(int lvVuKhi) =>
+                b.Get("crit.mult1") * Mathf.Pow(1f + b.Get("crit.multGrowth"), lvVuKhi - 1);
+
+            float SatThuongMoiDon(int lvVuKhi)
             {
                 float d = st.Damage * TiLe(Slot.Weapon, lvVuKhi);
-                float heSoCm = st.CritMultiplier * TiLe(Slot.Ring, lvNhan);
-                float meter = Mathf.Max(2, b.GetInt("crit.meterSize"));
-                return d * (1f + (heSoCm - 1f) / meter);   // trung bình theo thanh dồn §5.4
+                return d * (1f + TiLeChiMang(lvVuKhi) * (HeSoChiMang(lvVuKhi) - 1f));
             }
 
-            int DonCan(int lvVuKhi, int lvNhan)
+            int DonCan(int lvVuKhi)
             {
-                float moiDon = SatThuongMoiDon(lvVuKhi, lvNhan);
+                float moiDon = SatThuongMoiDon(lvVuKhi);
                 return moiDon > 0f ? Mathf.CeilToInt(mauMotCon / moiDon) : 999;
             }
 
@@ -360,37 +369,49 @@ namespace TowerRpg.UI
             switch (s)
             {
                 case Slot.Weapon:
+                {
+                    int nay = DonCan(cap);
+                    string cm = $"chí mạng {TiLeChiMang(cap):P0} ×{HeSoChiMang(cap):0.0}";
+                    if (!conNang) return $"{nay} đòn trung bình  ·  {cm}  —  tới hạn";
+
+                    int sau = DonCan(cap + 1);
+                    string cmSau = $"{TiLeChiMang(cap + 1):P0} ×{HeSoChiMang(cap + 1):0.0}";
+                    if (sau < nay) return $"{nay}→{sau} đòn t.bình  ·  {cm} → {cmSau}";
+                    for (int them = 2; cap + them <= gs.Gear.CapOf(s); them++)
+                        if (DonCan(cap + them) < nay)
+                            return $"{nay} đòn t.bình  ·  {cm}  ·  còn {them} cấp nữa xuống {DonCan(cap + them)}";
+                    return $"{nay} đòn t.bình  ·  {cm} → {cmSau}";
+                }
+
                 case Slot.Ring:
                 {
-                    int nay = s == Slot.Weapon ? DonCan(cap, gs.Gear.Level(Slot.Ring))
-                                               : DonCan(gs.Gear.Level(Slot.Weapon), cap);
-                    if (!conNang) return $"Giết 1 quái: {nay} đòn  —  tới hạn";
-
-                    int sau = s == Slot.Weapon ? DonCan(cap + 1, gs.Gear.Level(Slot.Ring))
-                                               : DonCan(gs.Gear.Level(Slot.Weapon), cap + 1);
-                    if (sau < nay) return $"Giết 1 quái: {nay} đòn → {sau} đòn";
-
-                    // Chưa qua bậc thang: nói RÕ còn mấy cấp nữa mới xuống — đúng khuôn
-                    // "CÒN 17 TẦNG" của nút tự đánh, một lời hứa kiểm chứng được.
-                    for (int them = 2; cap + them <= gs.Gear.CapOf(s); them++)
+                    // Ô Nhẫn giờ cầm HÚT MÁU (quyết định #40), không còn là hệ số nhân.
+                    // Nói bằng thứ ĐẾM ĐƯỢC: hồi bao nhiêu máu cho mỗi con quái giết được,
+                    // chứ không phải một con số phần trăm trừu tượng.
+                    // ĐƠN VỊ PHẢI ĐẾM ĐƯỢC VÀ PHẢI ĐỔI MỖI CẤP. Hút máu trần 1,20% chia
+                    // cho 39 cấp là 0,031%/cấp — in ra phần trăm thì mọi cấp đều hiện
+                    // "0,0%", tức trả 300 Mảnh để đổi một con số thành chính nó (đúng cái
+                    // bẫy mà test Moi_o_trang_bi_deu_phai_DOI_SO bắt được).
+                    // Đơn vị đúng là MỖI TẦNG: dọn một tầng nghĩa là gây đúng tổng máu
+                    // của cả tầng đó, nên máu hồi mỗi tầng = hút × tổng máu tầng — vừa là
+                    // con số người chơi kiểm chứng được, vừa nhích mỗi lần nâng.
+                    float HoiMoiTang(int lv)
                     {
-                        int thu = s == Slot.Weapon ? DonCan(cap + them, gs.Gear.Level(Slot.Ring))
-                                                   : DonCan(gs.Gear.Level(Slot.Weapon), cap + them);
-                        if (thu < nay) return $"{nay} đòn  ·  còn {them} cấp nữa xuống {thu}";
+                        float hut = Mathf.Min(b.Get("lifesteal.cap"),
+                                              b.Get("lifesteal.perLevel") * Mathf.Max(0, lv - 1));
+                        return mauMotCon * soQuai * hut;
                     }
-
-                    // KHÔNG cấp nào trong trần hiện tại hạ được số đòn — nói THẲNG.
-                    // Đây là chỗ ô Nhẫn tự lộ mặt: cùng 300 Mảnh, Vũ khí cho +4,40% DPS
-                    // còn Nhẫn +1,15% (hệ số chí mạng bị chia cho meterSize = 5), nên Nhẫn
-                    // cần 12 cấp để bớt một đòn trong khi Vũ khí cần 4 — mà trần chỉ có 10.
-                    // §5.5 gọi Nhẫn là "ô đổ rác" nhưng chưa bao giờ nói ra trên màn hình;
-                    // im lặng ở đây là để người chơi tự đốt Mảnh rồi tự đoán.
-                    return $"{nay} đòn  ·  chưa trần nào hạ được — cần đột phá";
+                    float h = HoiMoiTang(cap);
+                    string nayS = h <= 0f ? "chưa hồi máu" : $"hồi {h:0.0} máu mỗi tầng";
+                    if (!conNang) return $"{nayS}  —  tới hạn";
+                    float hSau = HoiMoiTang(cap + 1);
+                    if (hSau <= h) return $"{nayS}  ·  đã chạm trần hút máu";
+                    return $"{nayS} → {hSau:0.0}";
                 }
 
                 case Slot.Glove:
                 {
-                    int don = DonCan(gs.Gear.Level(Slot.Weapon), gs.Gear.Level(Slot.Ring));
+                    int don = DonCan(gs.Gear.Level(Slot.Weapon));
                     float nay = st.AttacksPerSec > 0f ? don / st.AttacksPerSec : 0f;
                     if (!conNang) return $"{don} đòn  ·  {nay:0.0}s  —  tới hạn";
 
@@ -475,18 +496,21 @@ namespace TowerRpg.UI
                 coreLabel.text = $"{gs.Cores} Lõi  ·  đã tiêu {daTieu}/{tongCaGame} cả game";
             }
 
-            // HAI CON SỐ CỦA §5.5(b). Nhãn PHẢI là "đánh liên tục", KHÔNG được viết "giữ
-            // yên liên tục": §5.4 cho phép lùi lại chờ mà KHÔNG mất thanh dồn, nên nhãn
-            // sai sẽ dạy người chơi ngược luật. DESIGN.md:226-228 ghi rõ câu này.
+            // Chí mạng giờ là XÁC SUẤT (quyết định #40), không còn thanh dồn. Câu chú
+            // thích cũ ở đây dặn nhãn phải ghi "đánh liên tục" vì §5.4 cho phép lùi lại
+            // chờ mà không mất thanh — luật đó không còn nữa, và giữ lại chú thích ấy sẽ
+            // dạy người sau một cơ chế đã bị gỡ.
             if (critLabel != null)
             {
+                // Nói cả hai con số, và nói cả cái giá của ngẫu nhiên: "trung bình" là
+                // chữ quan trọng nhất dòng này.
                 PlayerStats st = PlayerStats.Instance;
-                int meter = BalanceConfig.Instance != null
-                          ? Mathf.Max(2, BalanceConfig.Instance.GetInt("crit.meterSize")) : 5;
-                float aps = st != null && st.Ready ? st.AttacksPerSec : 1f;
-                float giay = aps > 0f ? meter / aps : 0f;
-                float heSo = st != null && st.Ready ? st.CritMultiplier : 2f;
-                critLabel.text = $"Chí mạng ×{heSo:0.00}  —  {meter} đòn ≈ {giay:0.00} s đánh liên tục";
+                float p = st != null && st.Ready ? st.CritChance : 0f;
+                float m = st != null && st.Ready ? st.CritMultiplier : 2f;
+                float hut = st != null && st.Ready ? st.Lifesteal : 0f;
+                string sHut = hut > 0f ? $"  —  hút máu {hut:P2}" : "";
+                critLabel.text = $"Chí mạng {p:P0} · ×{m:0.00}  —  trung bình mỗi đòn "
+                               + $"×{1f + p * (m - 1f):0.00}{sHut}";
             }
 
             RefreshRespec(gs);

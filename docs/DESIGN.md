@@ -26,6 +26,16 @@ Mọi kết quả đều xác định và tính toán được.
 Tài nguyên luôn thiếu so với nhu cầu; người chơi buộc phải chọn tiêu vào đâu,
 và mỗi lựa chọn đóng lại một cánh cửa khác.
 
+> ⚠️ **SỬA Ở QUYẾT ĐỊNH #40 — ranh giới được vẽ lại, không bị xoá.**
+> Nguyên tắc "mọi kết quả đều xác định" giờ áp cho **TIẾN TRÌNH**: Mảnh rơi, giá nâng
+> cấp, máu quái, phần thưởng boss — tất cả vẫn cố định tuyệt đối, và khoảng cách giữa
+> hai người chơi vẫn do chăm chỉ quyết định chứ không do xui.
+> **Chí mạng thì KHÔNG còn xác định nữa**: mỗi đòn tung xúc xắc, tỉ lệ và hệ số đều do
+> ô Vũ khí điều khiển. Đây là lựa chọn của chủ dự án, và nó lật lại quyết định #6.
+> Cái giữ được: bộ số khớp vào đúng đường cong DPS cũ (lệch tối đa 2,46%) nên §5.7,
+> §5.10 và toàn bộ bảng cân bằng vẫn đúng **theo kỳ vọng**. Cái mất: một trận đơn lẻ
+> giờ có phương sai, và "mọi thất bại đều truy được về quyết định" không còn đúng 100%.
+
 ---
 
 ## 2. Không làm (non-goals)
@@ -122,31 +132,88 @@ nhân vật tự đánh kẻ địch gần nhất, **nhưng chỉ khi đứng y�
 Một luật duy nhất tạo ra toàn bộ chiều sâu của giai đoạn đánh tay. Không cần thêm
 hệ thống nào, sức căng đã có sẵn.
 
-### 5.4 Chí mạng xác định — thanh dồn
+### 5.4 Chí mạng ngẫu nhiên — do Vũ khí điều khiển
 
-Thay vì "20% cơ hội chí mạng": mỗi đòn đánh nạp một thanh; thanh đầy thì
-**đòn kế tiếp chắc chắn chí mạng**. Thanh hiển thị ngay dưới nhân vật.
+> **Mục này đã được VIẾT LẠI HOÀN TOÀN ở quyết định #40.** Bản cũ là *thanh dồn*: mỗi
+> đòn nạp một thanh, thanh đầy thì đòn kế tiếp **chắc chắn** chí mạng, thanh vẽ ngay
+> dưới chân nhân vật và chia đúng 5 vạch để ĐẾM được. Chủ dự án đổi sang xác suất thật.
+> Phần bị mất được ghi thẳng ở cuối mục, không giấu.
 
-Cùng một khoái cảm — số to, màu vàng, rung màn hình — nhưng không có xác suất nào.
-Tốt hơn xác suất ở ba điểm:
+Mỗi đòn tung một lần xúc xắc. **Cả hai con số đều theo cấp Ô VŨ KHÍ:**
 
-1. **Chơi quanh được.** Thanh gần đầy mà boss sắp ra đòn? Lùi lại, chờ, rồi dồn
-   chí mạng vào lúc boss hở sườn. Kỹ năng thật, xuất hiện đúng ở giai đoạn đánh tay.
-2. **Không bao giờ gây ức chế.** Không có chuyện "xui 10 đòn liền rồi chết".
-   Mọi thất bại đều truy được về quyết định.
-3. **Tính toán được.** Ngồi tính chính xác DPS trên bảng tính — cân bằng dễ hơn bội phần.
+| Vũ khí cấp | Tỉ lệ chí mạng | Hệ số | Nhân DPS trung bình |
+|---|---|---|---|
+| 1 | 25% | ×2,00 | 1,25 |
+| 10 | 27% | ×2,46 | 1,40 |
+| 20 | 30% | ×3,09 | 1,63 |
+| 40 | 37% | ×4,88 | 2,43 |
+| 60 | **45%** (trần) | ×7,71 | 4,02 |
 
-Ghép với luật 5.3: muốn dồn đủ thanh để tung chí mạng vào boss, phải **đứng yên
-đủ lâu** — đúng lúc nguy hiểm nhất.
+Nghĩa là nâng Vũ khí làm **ba** việc cùng lúc: đòn thường đau hơn, chí mạng đến nhiều
+hơn, và chí mạng đau hơn. Đó là chủ ý — Vũ khí trở thành trục sức mạnh rõ rệt, và ô
+Nhẫn được giải phóng để cầm **hút máu** (xem §5.5).
+
+**Tỉ lệ CÓ TRẦN ở 45%.** Không phải để cân bằng mà để giữ nghĩa: chí mạng quá thường
+xuyên thì hết là chí mạng, nó chỉ còn là sát thương nền chia làm hai loại.
+
+#### Bộ số này chọn thế nào
+
+Không bằng cảm tính. Hệ số nhân-DPS cũ là `F(L) = 0,8 + 0,4 × 1,03441^(L−1)` — tuyến
+tính theo hệ số Nhẫn. Bộ số mới được **khớp vào đúng đường cong đó** với sai lệch tối đa
+**2,46%** trên toàn dải cấp 1–60, rồi kiểm bằng mô phỏng leo hết 100 tầng với ngân sách
+quét 2× và mua tham lam: **biên nhỏ nhất 1,55** (ngưỡng §5.10 là 1,50). Nhờ vậy mười hệ
+số máu boss của §5.10 **không phải sửa một chữ số nào**.
+
+#### Cái bị mất — ghi lại để người sau không phải đoán
+
+Quyết định #6 chọn thanh dồn và liệt kê ba lý do. Hai trong ba lý do đó nay không còn:
+
+1. ~~**Chơi quanh được**~~ — chiến thuật "lùi lại chờ thanh đầy rồi dồn vào lúc boss hở
+   sườn" **đã mất**. Không còn thanh để chờ. Đây là thứ đắt nhất phải trả.
+2. ~~**Không bao giờ gây ức chế**~~ — giờ có thể xui. Bù lại: chết không mất gì (§4),
+   nên một lượt xui chỉ tốn thời gian chứ không tốn tiến trình.
+3. **Tính toán được** — GIỮ ĐƯỢC, nhưng theo **kỳ vọng** chứ không còn chính xác từng
+   đòn. Phương sai một trận boss cỡ 2,5–5% (1σ) trên tổng sát thương.
+
+Ghép với luật 5.3: vẫn phải **đứng yên trong tầm** thì mới có đòn nào để tung xúc xắc.
 
 ### 5.5 Trang bị
 
 | Ô | Chỉ số | Vai trò thật (đo được, không phải ý định) |
 |---|---|---|
-| Vũ khí | Sát thương mỗi đòn (+4,4%/cấp) | Trục sức mạnh. Đóng góp trần 20→60: **x5,60** |
-| Giáp | Máu tối đa + hút máu (+4,4%/cấp) | **Nguồn máu duy nhất**, nên là trục lựa chọn duy nhất. **x5,60** |
+| Vũ khí | Sát thương mỗi đòn (+4,4%/cấp) **+ tỉ lệ chí mạng + hệ số chí mạng** | Trục sức mạnh, và từ #40 là trục DUY NHẤT của sát thương |
+| Giáp | Máu tối đa (+4,4%/cấp) | **Nguồn máu duy nhất**. x5,60 |
 | Găng | Tốc độ đánh (+3,4%/cấp) | Trục **nhịp tay**. x3,87 |
-| Nhẫn | Hệ số chí mạng (+3,4%/cấp) | Trục **cảm giác**. x2,40 — thấp nhất |
+| Nhẫn | **Hút máu** — hồi % sát thương gây ra, trần 1,20% | Trục **sức bền thứ hai**, xem dưới |
+
+> **Bảng này đổi ở quyết định #40.** Trước đó Giáp hứa "máu + hút máu" mà hút máu chưa
+> bao giờ được cài, còn Nhẫn cầm hệ số chí mạng và là **ô đổ rác đo được** (đắt gấp 3,8
+> lần Vũ khí trên mỗi phần trăm sức mạnh). Giờ hút máu chuyển sang Nhẫn và chí mạng
+> chuyển sang Vũ khí.
+
+#### Hút máu phá được thế bế tắc đại số dưới đây — nhưng phải có trần, và trần rất thấp
+
+Mệnh đề ở phần sau chứng minh: với **toàn hệ số nhân**, không bao giờ có hai hướng xây
+dựng cân sức. Hút máu **không phải hệ số nhân** — nó trừ thẳng vào sát thương nhận vào,
+nên Nhẫn trở thành trục sức bền thứ hai thật sự, thứ mà 420.000 cấu hình quét bằng hệ số
+nhân đều không tạo ra được.
+
+Cái giá: hút máu là **vòng lặp phản hồi** — DPS càng cao thì hồi càng nhiều. Ngưỡng "hồi
+nhanh hơn mất" (bất tử, biên vô cực) phải đo bằng build **mạnh nhất mua nổi**, không phải
+build trung bình:
+
+| Build ở tầng 100 | DPS | Ngưỡng bất tử |
+|---|---|---|
+| bùng nổ 60/20/50/30 | 2.634 | **2,77%** |
+| cân bằng 40/40/40/40 | 461 | 15,79% |
+| bền bỉ 20/60/30/50 | 91 | 80,12% |
+
+Nên **trần 1,20%** — còn cách ngưỡng xấu nhất **2,15 lần**. Ở 3% thì build dồn Vũ khí
+BẤT TỬ (hệ số an toàn 0,92). Con số 5,85% từng ghi ở §7 là của hệ chí mạng CŨ; khi Vũ khí
+ôm cả tỉ lệ lẫn hệ số thì DPS build bùng nổ tăng hơn gấp đôi và ngưỡng tụt theo.
+
+**ĐỪNG NÂNG TRẦN NÀY MÀ KHÔNG CHẠY LẠI MÔ PHỎNG.**
+
 
 **Chỉ bốn ô. Không thêm.**
 
@@ -523,6 +590,7 @@ thao túng người chơi.
 | 37 | **Hai màn hình lớn nhất game CHƯA BAO GIỜ mở được bằng ngón tay** | Tin bốn lớp kiểm chứng đang có *(loại: cả bốn đều đi vòng qua đúng chỗ hỏng — xem cột lý do)*; dùng `UnityEventTools.AddPersistentListener` trong bộ dựng *(loại: API chỉ có trong Editor, và kiểu hỏng của nó vẫn im lặng; nối lúc chạy thì không có gì để hỏng)* | Chủ dự án báo *"tầng 1 không mở được trang bị cũng như nhân vật"*. **Nguyên nhân**: `BuildM1Scene.cs` nối bốn nút bằng `btn.onClick.AddListener(...)`. Dòng đó chạy đúng trong phiên Editor dựng scene rồi **biến mất khi `SaveScene` ghi file** — `AddListener` tạo đăng ký LÚC CHẠY, Unity chỉ tuần tự hoá `m_PersistentCalls`. File `M1.unity` ghi đúng điều đó: cả **7 Button** đều `m_Calls: []`, trong khi `m_Interactable: 1` và `m_TargetGraphic` đủ cả — nên nút *trông* hoàn toàn bình thường. TRANG BỊ chết từ **M2**, NHÂN VẬT từ **M3**, và cả hai nút ĐÓNG cũng chết, tức mở được cũng không thoát ra được. **Không phải lỗi của tầng 1** — hai nút câm ở MỌI tầng, chủ dự án chỉ tình cờ thử ở tầng đầu. **Vì sao bốn lớp kiểm chứng đều mù:** `VerifyM1Scene` soi tham chiếu `[SerializeField]` — nút được nối đủ, không thiếu gì; test PlayMode gọi thẳng `UpgradeScreen.Toggle()` — đi vòng qua đúng cái hỏng; ảnh chụp hai màn đó cũng do chính test ấy dựng ra nên nhìn vẫn đẹp; và chơi thử thì tôi chưa từng bấm hai nút đó bằng một cú chạm mô phỏng. Cả bốn lớp tránh đúng một chỗ duy nhất bị hỏng. **Sửa**: nối onClick ở `Start()` lúc chạy — đúng khuôn QUÉT NHANH và TỰ ĐÁNH, hai nút chưa bao giờ hỏng vì chúng vẫn luôn nối kiểu đó. Đổi tên nút đóng của màn nhân vật thành `CloseChar` vì trùng tên `Close` đã làm chính bộ đo của lỗi này bấm nhầm nút. **Lớp kiểm mới `HudNutTests`**: mọi test ở đó **BẤM**, không gọi hàm — kèm một phép raycast qua `EventSystem` khẳng định không thứ gì nuốt cú chạm trước khi nó tới nút. Nhóm 21 agent điều tra song song độc lập ra cùng kết luận, và chính họ sửa lại cách tôi mô tả triệu chứng |
 | 38 | **BA THANH VƠI ĐẦY CỦA GAME CHƯA BAO GIỜ VƠI — và mục kiểm đi xác nhận đúng cái tính chất gây ra lỗi** | Tin mục kiểm `HealthBar: Image.Type = Filled` *(loại: nó khẳng định đúng thứ làm hỏng)*; chỉ sửa vạch quét vì chủ dự án chỉ báo mỗi nút đó *(loại: cùng một dòng mã sai lặp ba lần, sửa một chỗ là để lại hai)* | Chủ dự án báo *"bấm QUÉT NHANH tôi không thấy có gì khác biệt"*. Điều tra ra hai nguyên nhân tách bạch, và nguyên nhân thứ hai lớn hơn nhiều: **`Image.Type.Filled` với sprite RỖNG không vơi.** `Image.OnPopulateMesh` mở đầu bằng `if (activeSprite == null) { base.OnPopulateMesh(toFill); return; }` — nhánh Filled không bao giờ chạy, nó vẽ nguyên khối chữ nhật và bỏ qua `fillAmount` hoàn toàn. Cả **ba** thanh của game dựng kiểu đó: đo bằng lưới thật ở `fillAmount = 0,25` ra **556/556 · 940/940 · 160/160 pixel**. Nghĩa là **thanh máu người chơi chưa bao giờ vơi kể từ M1**, **thanh máu boss kể từ M3** (thứ §5.1 đòi có vì "một trận 200 giây mà không có vạch tiến trình"), và **vạch quét chưa bao giờ chạy** — `HudUI.OnSweepProgress` gán `fillAmount` 60 lần/giây suốt 3 giây quét mà không một pixel nào đổi. **Mục kiểm cũ trong `VerifyM1Scene` khẳng định `img.type == Image.Type.Filled`** — tức nó cấp giấy thông hành cho đúng tính chất gây ra lỗi, và đã cấp suốt bốn mốc. Sửa: gán `WhitePixelSprite()` (đã có sẵn, đang dùng cho thanh máu quái) cho cả ba; mục kiểm giờ đòi **có sprite**; và test mới **hỏi LƯỚI** mà `Image` sinh ra thay vì hỏi thuộc tính — kèm một test đầu-cuối đánh mất 70% máu thật rồi đo. Nhóm 43 agent quét "giao diện nói sai về chính nó" tìm ra lỗi này; tôi đo lại bằng lưới trước khi tin. Ba lỗi nhỏ hơn cùng đợt: nút khoá bị Unity nuốt cú chạm nên **im lặng tuyệt đối** (giờ nói lý do bằng banner + tiếng `Cancel2.wav`); nhãn `"QUÉT NHANH / DỌN TẦNG 1"` đọc ra như MÔ TẢ VIỆC NÚT LÀM chứ không phải điều kiện (đổi sang khuôn đếm ngược `"CÒN 1 TẦNG"` như ba nút kia); và `"TRANG BỊ / TỚI HẠN"` hiện cả khi chỉ **thiếu Lõi** chứ chưa kịch bậc — bảo người chơi dừng lại đúng lúc hệ thống đang chờ họ đi gom Lõi |
 | 39 | **Đo hình học ở sáu tỉ lệ màn hình — và bộ đo bắt được hai lỗi nặng hơn cái nó đi tìm** | Chỉ vá banner cho vừa 20:9 *(loại: cùng một dòng sai — bề ngang tính từ hằng số `UiRefW` — lặp ở BA chỗ)*; giữ `matchWidthOrHeight = 0,5` *(loại: game DỌC thì bề ngang là trục bị bó, lấy trung bình hai trục là tự bóp trục đang bó)* | Dựng `KiemTiLeManHinh` trong `VerifyM1Scene`: tính khung thiết kế thật theo đúng công thức `ScaleWithScreenSize`, dựng lại rect của 10 phần tử HUD bằng toán (batchmode không có Game view để đổi cỡ), rồi khẳng định không cặp nào chồng nhau và không gì tràn ra ngoài — ở **sáu** tỉ lệ từ 16:9 tới 21:9 và một máy tính bảng 4:3. **Lần chạy đầu hỏng cả sáu**, và thứ nặng nhất KHÔNG phải chuyện tỉ lệ: `BossBar đè CharButton (184×44)` **ngay ở 1080×1920, đúng khung thiết kế** — thanh máu boss rộng `UiRefW − Edge×2` = 952 nên đi từ x 64 tới 1016, mà cột nút bắt đầu ở 832; **184 đơn vị bên phải của nó chui xuống dưới nút, ở mọi độ phân giải, suốt từ M3**. Đúng con bọ đã sửa một lần cho banner sự kiện — chú thích ở đó còn nguyên — mà không ai áp ngược lại. Sửa: ba phần tử (thanh máu, thanh boss, banner) chuyển sang **trải ngang** tới đúng mép cột nút thay vì rộng cứng; `matchWidthOrHeight` **0,5 → 0** để bề ngang khung thiết kế luôn đúng 1080 ở mọi tỉ lệ. **Rồi ảnh chụp ở 20:9 lộ ra lỗi thứ hai, hoàn toàn khác loại:** camera trực giao khoá nửa chiều CAO nên màn hình càng cao thấy càng HẸP — `OrthoSize = 7,2` cho nửa bề ngang **4,05** ở 16:9 (vừa đủ cho quái ở bán kính 3,5 cộng nửa thân, dư 1,2%) nhưng chỉ **3,24** ở 20:9, tức **tâm hai con quái hai bên nằm ngoài màn hình**. Trên điện thoại thật hôm nay người chơi đánh nhau với thứ họ chỉ thấy một nửa. Thêm `CameraFit`: nới `orthographicSize` vừa đủ để bề ngang cần thiết luôn lọt, không bao giờ thu nhỏ hơn cỡ thiết kế; lề suy từ chính `enemy.spawnRadius` + khoá mới `camera.marginX` chứ không viết cứng; sàn nới 14 → 24 đơn vị vì ở 21:9 camera nhìn thấy 18,7 đơn vị theo chiều dọc |
+| 40 | **Chí mạng thành hên xui, và hút máu cuối cùng cũng có thật — đảo ngược quyết định #6 và §1** | Giữ thanh dồn *(loại: chủ dự án yêu cầu đổi, và đó là quyền của họ)*; cho Vũ khí cầm chí mạng mà giữ Nhẫn làm hệ số nhân *(loại: Nhẫn đã là ô đổ rác đo được, thêm một hệ số nhân nữa không cứu được nó)*; hút máu trần 3% như chủ dự án chọn ban đầu *(loại: tôi đưa con số 5,85% để họ quyết, mà con số đó tính theo hệ chí mạng CŨ — ở hệ mới ngưỡng là 2,77% nên 3% là BẤT TỬ, hệ số an toàn 0,92)* | **Đây là lật lại nguyên tắc nền.** §1 và README đều mở đầu bằng "không có yếu tố ngẫu nhiên ở bất kỳ đâu", và quyết định #6 chọn thanh dồn với đúng ba lý do. Ranh giới giờ được VẼ LẠI chứ không xoá: **tiến trình** vẫn xác định tuyệt đối (Mảnh rơi, giá nâng, máu quái, thưởng boss), **nhịp đánh** thì hên xui. Bộ số không chọn bằng cảm tính — hệ số nhân-DPS cũ là `F(L) = 0,8 + 0,4 × 1,03441^(L−1)`, bộ mới khớp vào đúng đường cong đó với **lệch tối đa 2,46%**, nên mười hệ số máu boss của §5.10 không phải sửa một chữ số. Kiểm bằng mô phỏng leo hết 100 tầng: **biên nhỏ nhất 1,55** (ngưỡng 1,50), và bộ mô phỏng được đối chứng với baseline M4 trước khi tin (ra đúng 1,50). Kết quả: **25% ×2,0 ở cấp 1 → 45% ×7,7 ở cấp 60**, tỉ lệ có trần vì chí mạng quá thường xuyên thì hết là chí mạng. Ô **Nhẫn** nhận **hút máu** trần 1,20%. **Ba thứ phải ghi lại vì chúng là cái giá:** (1) chiến thuật chữ ký "lùi lại chờ thanh đầy rồi dồn vào lúc boss hở sườn" **đã mất hẳn**; (2) "mọi thất bại đều truy được về quyết định" không còn đúng 100% — phương sai một trận boss cỡ 2,5–5% trên tổng sát thương; (3) thanh chí mạng 5 vạch dưới chân nhân vật bị **gỡ hẳn** — vẽ nó ra là nói dối về một cơ chế không còn tồn tại, nên phản hồi chí mạng dồn hết vào khoảnh khắc nó nổ (vệt vàng to 1,35 lần, số vàng, rung, tiếng sắc — bốn kênh đã dựng ở M5). **Và một sai của chính tôi:** tôi đưa ngưỡng 5,85% để chủ dự án chọn trần hút máu, nhưng con số đó tính theo hệ chí mạng cũ — chính nửa còn lại của yêu cầu đã làm nó vô hiệu |
 
 ---
 
@@ -579,7 +647,11 @@ thao túng người chơi.
   sáu khung `FX/Smoke/Smoke` bung ra 1,45 lần rồi mờ ở nửa sau, cỡ khói theo boss hay quái
   thường (boss to gấp 2 lần nên khói bằng nhau là cái chết của boss trông NHỎ HƠN của lâu la).
   Pool riêng, truy cập tĩnh cùng khuôn `SfxPlayer` — xem `PuffFxSpawner`.
-- ⚠️ **HÚT MÁU CHƯA CÓ TRONG MÔ HÌNH — phải chốt trước mốc M4.** §5.5 ghi Giáp cho "máu +
+- ~~⚠️ **HÚT MÁU CHƯA CÓ TRONG MÔ HÌNH**~~ — **ĐÃ CHỐT VÀ ĐÃ CÀI** (quyết định #40). Hút
+  máu chuyển từ Giáp sang **ô Nhẫn**, trần **1,20%**, đưa thẳng vào mô hình. Con số 5,85%
+  ghi ở dòng cũ bên dưới là của hệ chí mạng CŨ; khi Vũ khí ôm cả tỉ lệ lẫn hệ số chí mạng
+  thì DPS build bùng nổ tăng hơn gấp đôi và ngưỡng bất tử tụt còn **2,77%** — nên trần
+  thật phải là 1,20% (cách ngưỡng 2,15 lần). Nội dung cũ: §5.5 ghi Giáp cho "máu +
   hút máu" nhưng bảng tính chỉ mô hình hoá máu. Đo ngược tại tầng 100: người chơi nhận
   **72,8 sát thương/giây**, nên chỉ cần hút máu **5,85%** là build sát thương cao nhất hồi
   nhanh hơn mất — **bất tử, biên vô cực**. 5,85% là con số hoàn toàn tầm thường trong ARPG.
@@ -606,7 +678,12 @@ thao túng người chơi.
   trên 5**, kéo dài 8 phút, và thẻ khoá ghi *"Hạ boss 2 để mở"* mà không nói boss 2 là
   tầng 20 — đúng câu chủ dự án hỏi, màn hình từ chối trả lời. Chưa sửa (chủ dự án chọn chỉ
   vá bốn lỗi trước); gói giao tiếp còn nguyên trong `docs/KE-HOACH-NHIP-DO.md`.
-- **Nhẫn là ô đổ rác** (§5.5) — sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
+- ~~**Nhẫn là ô đổ rác**~~ — **ĐÃ SỬA** (quyết định #40): Nhẫn không còn là hệ số nhân,
+  nó cầm **hút máu**. Vì hút máu trừ thẳng vào sát thương nhận vào chứ không nhân vào tích
+  sát-thương × máu, ô này thoát khỏi mệnh đề đại số ở §5.5 và trở thành **trục sức bền thứ
+  hai thật sự** — thứ mà 420.000 cấu hình quét bằng hệ số nhân đều không tạo ra được.
+  Nhãn trên màn hình cũng đổi sang đơn vị đếm được: *"hồi 0,8 máu mỗi tầng → 0,9"*.
+  Nội dung cũ: sửa hay chấp nhận? Cân lại bằng số thì phá §5.11; thêm cơ chế
   thì phá §5.1. Chưa có lời giải rẻ. **Cập nhật:** đo lại cho thấy nó là bẫy **ngay từ tầng 1**,
   không phải chỉ ở tầng 100 như mục này từng ghi — cùng 300 Mảnh, Vũ khí cho **+4,40%** DPS còn
   Nhẫn **+1,15%** (hệ số chí mạng chỉ vào công thức qua `1 + (cm−1)/meterSize`, tức bị chia cho 5),

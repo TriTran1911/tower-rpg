@@ -109,7 +109,6 @@ namespace TowerRpg.Tests
             ctrl.transform.position = near.Position - near.Position.normalized * (range * 0.55f);
 
             var hp = Object.FindFirstObjectByType<PlayerHealth>();
-            var meter = Object.FindFirstObjectByType<CritMeter>();
 
             float t = 0f;
             foreach ((float at, string name) in Shots)
@@ -129,7 +128,7 @@ namespace TowerRpg.Tests
                 RenderTexture.active = prev;
 
                 Debug.Log($"[chụp] {name}  t={t:0.0}s  quái={EnemyRegistry.Count}  " +
-                          $"máu={hp.Fraction:0.00}  thanhCM={meter.Fill01:0.00}");
+                          $"máu={hp.Fraction:0.00}");
             }
 
             // ── màn hình nâng cấp, dựng đúng CẢNH BỨC TƯỜNG của M2/M3 ────────────

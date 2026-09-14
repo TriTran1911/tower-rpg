@@ -8,20 +8,24 @@ namespace TowerRpg.Progression
     public enum Slot
     {
         Weapon = 0,   // Vũ khí — sát thương
-        Armor  = 1,   // Giáp   — máu (+ hút máu, chưa cài)
+        Armor  = 1,   // Giáp   — máu
         Glove  = 2,   // Găng   — tốc độ đánh
-        Ring   = 3,   // Nhẫn   — hệ số chí mạng
+        Ring   = 3,   // Nhẫn   — HÚT MÁU (quyết định #40, trước là hệ số chí mạng)
     }
 
     /// <summary>
     /// Trang bị: bốn ô, mỗi ô một cấp, nhân vào bốn thừa số khác nhau của công thức §5.7.
     ///
-    /// ⚠️ CHÚ THÍCH CŨ Ở ĐÂY GHI "Không có ô nào tốt hơn ô nào" — SAI, VÀ ĐO ĐƯỢC LÀ SAI.
-    /// Cùng một cái giá 300 Mảnh cho lần nâng đầu: Vũ khí +4,40% DPS · Găng +3,44% ·
-    /// Nhẫn +1,15% (vì hệ số chí mạng chỉ vào công thức qua 1 + (cm-1)/meterSize, tức bị
-    /// chia cho 5). Nhẫn đắt gấp 3,8 lần Vũ khí trên mỗi phần trăm sức mạnh — NGAY TỪ
-    /// TẦNG 1, không phải chỉ ở tầng 100 như §5.5 thú nhận.
-    /// Chính câu sai này là lý do suốt từ M2 không ai đi kiểm lại ô Nhẫn.
+    /// ⚠️ BỐN Ô KHÔNG CÙNG GIÁ TRỊ, và lịch sử chỗ này đáng nhớ: chú thích đầu tiên ghi
+    /// "không có ô nào tốt hơn ô nào" — sai và ĐO ĐƯỢC là sai (Nhẫn cũ đắt gấp 3,8 lần
+    /// Vũ khí trên mỗi phần trăm sức mạnh), và chính câu sai ấy là lý do suốt từ M2
+    /// không ai đi kiểm lại ô Nhẫn.
+    ///
+    /// Từ quyết định #40, ba ô đầu vẫn là HỆ SỐ NHÂN nhưng NHẪN THÌ KHÔNG: nó cầm hút
+    /// máu, thứ cộng vào sức bền chứ không nhân vào tích sát-thương × máu. Đó là lý do
+    /// nó thoát được mệnh đề đại số ở §5.5 — mệnh đề chứng minh rằng với TOÀN hệ số nhân
+    /// thì không bao giờ có hai hướng xây dựng cân sức. `gear.ring.perLevel` vì thế
+    /// bằng 0: Mult(Ring) luôn là 1, đừng nhân nó vào đâu cả.
     ///
     /// Từ M3 mỗi ô có TRẦN RIÊNG, nâng bằng Lõi: trần = maxLevel + bậc × capStep.
     /// Đó là toàn bộ cuộc chơi phân bổ ở §5.6 — Lõi hữu hạn tuyệt đối, tiêu vào ô nào

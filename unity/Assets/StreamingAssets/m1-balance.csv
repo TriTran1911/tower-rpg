@@ -20,15 +20,30 @@ player.attackRange,2.0,PHẢI nhỏ hơn enemy.attackRange
 player.hpPerFloor,0.045,§5.7 — máu nền tăng theo tầng đã qua, van an toàn #4 của §5.8
 
 # ── CHÍ MẠNG, thanh dồn xác định §5.4 ────────────────────────────────────────
-crit.meterSize,5,Cứ N đòn thì đòn thứ N chắc chắn chí mạng
-crit.multiplier,2.0,§5.7 baseCrit — hệ số ở Nhẫn cấp 1
+# ── CHÍ MẠNG NGẪU NHIÊN, DO VŨ KHÍ ĐIỀU KHIỂN (quyết định #40) ──────────────────
+# Thay hẳn thanh dồn của §5.4. Cả TỈ LỆ lẫn HỆ SỐ đều theo cấp VŨ KHÍ.
+# Bộ số này KHÔNG chọn bằng cảm tính: khớp vào đường cong nhân-DPS cũ
+# F(L) = 0,8 + 0,4 x 1,03441^(L-1) với lệch tối đa 2,46%, rồi kiểm bằng mô phỏng
+# leo hết 100 tầng — biên nhỏ nhất 1,55 (ngưỡng 1,50).
+crit.chance1,0.25,Tỉ lệ chí mạng ở Vũ khí cấp 1 — 1 trong 4 đòn
+crit.chanceGrowth,0.01,Tỉ lệ cộng thêm mỗi cấp Vũ khí (nhân dồn)
+crit.chanceCap,0.45,TRẦN tỉ lệ. Có trần vì chí mạng thường xuyên quá thì hết là chí mạng
+crit.mult1,2.0,Hệ số chí mạng ở Vũ khí cấp 1 — đúng gấp đôi
+crit.multGrowth,0.0231,Hệ số nhân thêm mỗi cấp Vũ khí. Ở cấp 60 là x7,71
 
 # ── TRANG BỊ §5.5, §5.7 ───────────────────────────────────────────────────────
 gear.maxLevel,10,Trần cấp khi CHƯA đột phá. Lõi nâng trần này lên — thuộc M3
 gear.weapon.perLevel,0.04403,Vũ khí — sát thương mỗi cấp
 gear.armor.perLevel,0.04403,Giáp — máu mỗi cấp. BẤT BIẾN dmgL == hpL, xem §5.5
 gear.glove.perLevel,0.03441,Găng — tốc độ đánh mỗi cấp
-gear.ring.perLevel,0.03441,Nhẫn — hệ số chí mạng mỗi cấp
+gear.ring.perLevel,0,Nhẫn KHÔNG còn là hệ số nhân — nó cầm hút máu, tính riêng ở lifesteal.*
+# ── HÚT MÁU, Ô NHẪN (quyết định #40) ────────────────────────────────────────────
+# Hồi máu bằng % sát thương GÂY RA. Đây là vòng lặp phản hồi: DPS càng cao hồi càng
+# nhiều, nên PHẢI có trần và trần phải đo bằng build MẠNH NHẤT mua nổi, không phải
+# build trung bình. Đo: ở trần 1,20% thì cách ngưỡng bất tử 2,15 lần.
+# ĐỪNG NÂNG TRẦN NÀY MÀ KHÔNG CHẠY LẠI MÔ PHỎNG. 3% là bất tử (hệ số an toàn 0,92).
+lifesteal.perLevel,0.000308,Hút máu cộng thêm mỗi cấp Nhẫn — tuyến tính, không nhân dồn
+lifesteal.cap,0.012,TRẦN hút máu. Chạm trần ở Nhẫn cấp 40
 gear.costBase,300,Mảnh để lên cấp 2
 gear.costGrowth,0.155,Chi phí nhân thêm mỗi cấp
 

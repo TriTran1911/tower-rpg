@@ -15,7 +15,7 @@ namespace TowerRpg.Player
     public sealed class AutoAttack : MonoBehaviour
     {
         [SerializeField] private PlayerController player;
-        [SerializeField] private CritMeter critMeter;
+        [SerializeField] private PlayerHealth health;
         [SerializeField] private DamagePopupSpawner popups;
         [SerializeField] private CameraShake cameraShake;
         [SerializeField] private Juice.SlashFxSpawner slashes;
@@ -38,8 +38,9 @@ namespace TowerRpg.Player
                 return;
             }
 
-            if (critMeter == null)
-                Debug.LogError("[AutoAttack] Chưa gán 'critMeter' — sẽ không bao giờ có chí mạng.", this);
+            if (health == null) health = PlayerHealth.Current;
+            if (health == null)
+                Debug.LogError("[AutoAttack] Không tìm thấy PlayerHealth — hút máu sẽ không chạy.", this);
 
             BalanceConfig.TryUse(this, ApplyBalance);
         }
@@ -75,10 +76,19 @@ namespace TowerRpg.Player
             PlayerStats st = PlayerStats.Instance;
             if (st == null || !st.Ready) return;
 
-            bool isCrit = critMeter != null && critMeter.RegisterAttack();
+            // TUNG XÚC XẮC (quyết định #40). Trước đây là thanh dồn: cứ đúng 5 đòn thì
+            // đòn thứ 5 chắc chắn chí mạng, không có xác suất nào trong cả game.
+            // Chủ dự án đổi hướng: chí mạng giờ hên xui, và cả tỉ lệ lẫn hệ số đều do
+            // VŨ KHÍ quyết định.
+            bool isCrit = Random.value < st.CritChance;
             float amount = isCrit ? st.Damage * st.CritMultiplier : st.Damage;
 
             target.TakeDamage(amount, isCrit);
+
+            // HÚT MÁU (ô Nhẫn). Hồi theo sát thương THẬT SỰ GÂY RA, nên đòn chí mạng
+            // hồi nhiều hơn — đó là cách nó nối vào trục ngẫu nhiên mới.
+            float hut = st.Lifesteal;
+            if (hut > 0f && health != null) health.Heal(amount * hut);
 
             // Chí mạng dùng tiếng CHÉM sắc (độ sắc đo được 0,448) còn đòn thường dùng tiếng
             // ĐẤM đục (0,065). Chênh lệch đó là chủ ý: §5.4 chọn thanh dồn XÁC ĐỊNH để người

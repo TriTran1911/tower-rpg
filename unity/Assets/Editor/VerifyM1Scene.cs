@@ -68,8 +68,7 @@ namespace TowerRpg.EditorTools
             fail += Check<PuffFxSpawner>(log, "prefab");
             fail += Check<DamagePopupSpawner>(log, "popupPrefab");
             fail += Check<PlayerController>(log, "joystick");
-            fail += Check<AutoAttack>(log, "player", "critMeter", "popups", "cameraShake");
-            fail += Check<CritMeterUI>(log, "meter", "segmentRoot", "segmentPrefab");
+            fail += Check<AutoAttack>(log, "player", "health", "popups", "cameraShake");
             fail += Check<PlayerHealthUI>(log, "health", "fillImage");
             fail += Check<VirtualJoystick>(log, "touchZone", "visual", "handle", "canvas");
             fail += Check<CameraShake>(log, "target");

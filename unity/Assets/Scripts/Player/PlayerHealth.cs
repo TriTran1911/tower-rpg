@@ -83,5 +83,19 @@ namespace TowerRpg.Player
         }
 
         public void ResetHealth() => _hp = _maxHp;
+
+        /// <summary>
+        /// Hồi máu — hiện chỉ có hút máu của ô Nhẫn gọi (quyết định #40).
+        ///
+        /// KHÔNG hồi khi đã gục: `_hp <= 0` là trạng thái chết, FloorRunner đang chờ hết
+        /// deathDelay để bày lại tầng. Hồi vào đó là hồi sinh một xác chết giữa chừng —
+        /// đòn cuối của người chơi vẫn bay tới quái SAU khi họ đã hết máu, nên nhánh này
+        /// KHÔNG phải giả thuyết.
+        /// </summary>
+        public void Heal(float amount)
+        {
+            if (amount <= 0f || _hp <= 0f) return;
+            _hp = Mathf.Min(_maxHp, _hp + amount);
+        }
     }
 }

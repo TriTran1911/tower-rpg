@@ -32,7 +32,9 @@ namespace TowerRpg.Core
         {
             "player.maxHp", "player.moveSpeed", "player.moveDeadzone",
             "player.attackDamage", "player.attacksPerSecond", "player.attackRange",
-            "player.hpPerFloor", "crit.meterSize", "crit.multiplier",
+            "player.hpPerFloor", "crit.chance1", "crit.chanceGrowth",
+            "crit.chanceCap", "crit.mult1", "crit.multGrowth",
+            "lifesteal.perLevel", "lifesteal.cap",
             "gear.maxLevel", "gear.weapon.perLevel", "gear.armor.perLevel",
             "gear.glove.perLevel", "gear.ring.perLevel", "gear.costBase",
             "gear.costGrowth", "enemy.hpFloor1", "enemy.hpGrowth",

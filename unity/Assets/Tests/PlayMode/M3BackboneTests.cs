@@ -457,8 +457,12 @@ namespace TowerRpg.Tests
 
                 float dmg = b.Get("player.attackDamage") * Pow("gear.weapon.perLevel", gear);
                 float aps = b.Get("player.attacksPerSecond") * Pow("gear.glove.perLevel", gear);
-                float critMul = Pow("gear.ring.perLevel", gear) * b.Get("crit.multiplier");
-                float pdps = dmg * aps * (1f + (critMul - 1f) / b.Get("crit.meterSize"));
+                // Chí mạng giờ NGẪU NHIÊN và do VŨ KHÍ điều khiển (quyết định #40).
+                // Biên tính bằng KỲ VỌNG: 1 + tỉ lệ x (hệ số - 1).
+                float cp = Mathf.Min(b.Get("crit.chanceCap"),
+                                     b.Get("crit.chance1") * Mathf.Pow(1f + b.Get("crit.chanceGrowth"), gear - 1));
+                float cm = b.Get("crit.mult1") * Mathf.Pow(1f + b.Get("crit.multGrowth"), gear - 1);
+                float pdps = dmg * aps * (1f + cp * (cm - 1f));
 
                 float php = b.Get("player.maxHp")
                           * Mathf.Pow(1f + b.Get("player.hpPerFloor"), floor - 1)

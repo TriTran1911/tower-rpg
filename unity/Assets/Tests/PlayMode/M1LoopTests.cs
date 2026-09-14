@@ -28,7 +28,6 @@ namespace TowerRpg.Tests
 
         private PlayerController _ctrl;
         private PlayerHealth    _health;
-        private CritMeter       _meter;
         private AutoAttack      _attack;
         private VirtualJoystick _joystick;
 
@@ -55,7 +54,6 @@ namespace TowerRpg.Tests
 
             _ctrl     = Object.FindFirstObjectByType<PlayerController>();
             _health   = Object.FindFirstObjectByType<PlayerHealth>();
-            _meter    = Object.FindFirstObjectByType<CritMeter>();
             _attack   = Object.FindFirstObjectByType<AutoAttack>();
             _joystick = Object.FindFirstObjectByType<VirtualJoystick>();
         }
@@ -69,7 +67,7 @@ namespace TowerRpg.Tests
             Assert.IsTrue(BalanceConfig.Instance.IsLoaded, "CSV chưa nạp xong");
             Assert.IsFalse(BalanceConfig.Instance.LoadFailed,
                            "nạp CSV THẤT BẠI — thiếu khoá hoặc thiếu file");
-            Assert.AreEqual(5, BalanceConfig.Instance.GetInt("crit.meterSize"));
+            Assert.AreEqual(0.25f, BalanceConfig.Instance.Get("crit.chance1"), 1e-6f);
             yield break;
         }
 
@@ -156,45 +154,6 @@ namespace TowerRpg.Tests
         }
 
         // ── 3. thanh chí mạng §5.4 ────────────────────────────────────────────────────
-
-        [UnityTest]
-        public IEnumerator Chi_mang_dung_nhip_cu_5_don_mot_lan()
-        {
-            _attack.enabled = false;                 // tự điều khiển nhịp, không để AutoAttack chen vào
-            yield return null;
-
-            int size = BalanceConfig.Instance.GetInt("crit.meterSize");
-            for (int round = 1; round <= 4; round++)
-            {
-                for (int i = 1; i < size; i++)
-                    Assert.IsFalse(_meter.RegisterAttack(),
-                                   $"vòng {round}, đòn {i}: KHÔNG được chí mạng");
-
-                Assert.IsTrue(_meter.RegisterAttack(),
-                              $"vòng {round}, đòn {size}: PHẢI chí mạng");
-            }
-        }
-
-        [UnityTest]
-        public IEnumerator Thanh_chi_mang_KHONG_reset_khi_di_chuyen()
-        {
-            _attack.enabled = false;
-            yield return null;
-
-            int size = BalanceConfig.Instance.GetInt("crit.meterSize");
-            for (int i = 1; i < size; i++) _meter.RegisterAttack();   // nạp gần đầy
-            Assert.IsTrue(_meter.IsReady, "nạp đủ size-1 đòn thì thanh phải sẵn sàng");
-
-            PushJoystick(new Vector2(1f, 0f));
-            yield return new WaitForSeconds(1.5f);
-            ReleaseJoystick();
-            yield return new WaitForFixedUpdate();
-
-            Assert.IsTrue(_meter.IsReady,
-                          "chạy vòng quanh xong thanh chí mạng bị reset — " +
-                          "chiến thuật chữ ký của §5.4 (lùi lại, chờ, dồn vào lúc boss hở sườn) đã mất");
-            Assert.IsTrue(_meter.RegisterAttack(), "đòn ngay sau khi dừng phải là chí mạng");
-        }
 
         // ── trợ giúp ──────────────────────────────────────────────────────────────────
 

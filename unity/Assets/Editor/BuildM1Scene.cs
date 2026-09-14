@@ -151,41 +151,17 @@ namespace TowerRpg.EditorTools
             body.bodyType = RigidbodyType2D.Dynamic;
             var ctrl   = playerGo.AddComponent<PlayerController>();
             var health = playerGo.AddComponent<PlayerHealth>();
-            var meter  = playerGo.AddComponent<CritMeter>();
             var attack = playerGo.AddComponent<AutoAttack>();
             var autoBattle = playerGo.AddComponent<AutoBattle>();
             var anim   = playerGo.AddComponent<PlayerAnimator>();
 
-            // thanh chí mạng ngay dưới chân nhân vật (§5.4) — CHIA VẠCH, không liền mạch
-            var critCanvasGo = new GameObject("CritBarCanvas");
-            critCanvasGo.transform.SetParent(playerGo.transform, false);
-            critCanvasGo.transform.localPosition = new Vector3(0f, -0.78f, 0f);
-            critCanvasGo.transform.localScale = Vector3.one * 0.01f;
-            var critCanvas = critCanvasGo.AddComponent<Canvas>();
-            critCanvas.renderMode = RenderMode.WorldSpace;
-            critCanvas.sortingOrder = 20;
-            var critRt = critCanvasGo.GetComponent<RectTransform>();
-            critRt.sizeDelta = new Vector2(150f, 20f);
-
-            Image critBg = MakeImage("CritBg", critCanvasGo.transform, new Color(0.06f, 0.05f, 0.04f, 0.85f));
-            critBg.rectTransform.anchorMin = Vector2.zero;
-            critBg.rectTransform.anchorMax = Vector2.one;
-            critBg.rectTransform.offsetMin = new Vector2(-4f, -4f);
-            critBg.rectTransform.offsetMax = new Vector2(4f, 4f);
-
-            var segRootGo = new GameObject("Segments", typeof(RectTransform));
-            segRootGo.transform.SetParent(critCanvasGo.transform, false);
-            var segRoot = segRootGo.GetComponent<RectTransform>();
-            segRoot.anchorMin = Vector2.zero;
-            segRoot.anchorMax = Vector2.one;
-            segRoot.offsetMin = segRoot.offsetMax = Vector2.zero;
-
-            // mẫu vạch — CritMeterUI nhân bản nó ra đúng crit.meterSize cái
-            Image segPrefab = MakeImage("SegmentPrefab", segRoot, Color.white);
-            segPrefab.rectTransform.sizeDelta = new Vector2(20f, 20f);
-            segPrefab.gameObject.SetActive(false);
-
-            var critUi = critCanvasGo.AddComponent<CritMeterUI>();
+            // KHÔNG CÒN THANH CHÍ MẠNG DƯỚI CHÂN. §5.4 cũ dựng một thanh chia đúng 5 vạch
+            // để người chơi ĐẾM được còn mấy đòn nữa tới chí mạng — đó là toàn bộ lý do
+            // chọn thanh dồn thay vì xác suất. Quyết định #40 đổi chí mạng sang hên xui,
+            // nên cái thanh đó không còn gì để đếm: vẽ nó ra là nói dối về một cơ chế
+            // không tồn tại nữa. Phản hồi chí mạng dồn hết vào KHOẢNH KHẮC nó nổ ra —
+            // vệt chém vàng to 1,35 lần, số sát thương vàng, rung màn hình, tiếng Slash
+            // sắc hẳn so với tiếng Hit đục. Bốn kênh, đều đã dựng ở M5.
 
             // ── Giao diện màn hình — docs/GIAO-DIEN.md ────────────────────────────────
             // Viền 9-patch = 6, KHÔNG phải 5. Đã đo từng pixel: vùng giữa chỉ đồng màu
@@ -758,7 +734,7 @@ namespace TowerRpg.EditorTools
             WireMusic(music, "Musics/1 - Adventure Begin.ogg", "Musics/17 - Fight.ogg");
             Wire(popups,   ("popupPrefab", popupPrefab.GetComponent<DamagePopup>()));
             Wire(ctrl,     ("joystick", joystick));
-            Wire(attack,   ("player", ctrl), ("critMeter", meter), ("popups", popups),
+            Wire(attack,   ("player", ctrl), ("health", health), ("popups", popups),
                            ("cameraShake", shake), ("slashes", slashes), ("animator", anim));
             Wire(anim,     ("target", psr), ("controller", ctrl));
             Wire(milestone, ("root", msGo), ("title", msTitle), ("detail", msDetail),
@@ -768,7 +744,6 @@ namespace TowerRpg.EditorTools
             Wire(transition, ("veil", veil), ("chapterNo", chNo), ("chapterName", chName),
                              ("chapterRange", chRange));
             WireEndTheme(vcMusic, "Musics/8 - End Theme.ogg");
-            Wire(critUi,   ("meter", meter), ("segmentRoot", segRoot), ("segmentPrefab", segPrefab));
             Wire(hpUi,     ("health", health), ("fillImage", hpFill), ("label", hpText));
             Wire(joystick, ("touchZone", zone), ("visual", joyVisual.rectTransform),
                            ("handle", joyHandle.rectTransform), ("canvas", canvas));

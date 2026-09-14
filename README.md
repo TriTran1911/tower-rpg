@@ -10,15 +10,21 @@ nâng cấp trang bị. **Cả năm mốc M1–M5 đã xong** — 100 tầng, 5 
 
 ---
 
-## Nguyên tắc nền: không có yếu tố ngẫu nhiên ở bất kỳ đâu
+## Nguyên tắc nền: không ngẫu nhiên ở chỗ TIẾN TRÌNH, ngẫu nhiên ở chỗ NHỊP ĐÁNH
 
-Không gacha, không hòm đồ, không tỉ lệ rơi — **kể cả chí mạng cũng không phải xác suất**.
-Chí mạng dùng *thanh dồn*: cứ đúng 5 đòn thì đòn thứ 5 chắc chắn chí mạng, thanh hiển thị
-đầy dần dưới chân nhân vật.
+Không gacha, không hòm đồ, không tỉ lệ rơi. Mảnh rơi ra cố định, giá nâng cấp cố định,
+máu quái cố định — **tiến trình của bạn không bao giờ phụ thuộc may rủi**. Đó là lời hứa
+gốc và nó không đổi: khoảng cách giữa hai người chơi do chăm chỉ quyết định, không do xui.
 
-Điều đó giữ được toàn bộ khoái cảm của đòn chí mạng, nhưng đổi lại ba thứ: chơi quanh nó được
-(lùi lại chờ thanh đầy rồi dồn vào lúc boss hở sườn), không bao giờ gây ức chế vì xui, và
-**tính được bằng bảng tính** — nên cân bằng được bằng số thay vì bằng cảm giác.
+**Chí mạng thì có.** Mỗi đòn tung một lần xúc xắc, và **cả tỉ lệ lẫn hệ số đều do VŨ KHÍ
+quyết định** — nâng vũ khí thì chí mạng vừa đến nhiều hơn vừa đau hơn (25% ×2,0 ở cấp 1,
+tới 45% ×7,7 ở cấp 60). Đổi lại, một trận dài vẫn tính được bằng kỳ vọng: bộ số được khớp
+vào đúng đường cong DPS cũ với sai lệch tối đa 2,46%, nên toàn bộ bảng cân bằng còn nguyên
+giá trị.
+
+> Bản trước dùng *thanh dồn* — cứ đúng 5 đòn thì đòn thứ 5 chắc chắn chí mạng — và
+> README này từng mở đầu bằng câu "không có yếu tố ngẫu nhiên ở bất kỳ đâu". Chủ dự án
+> đổi hướng ở quyết định #40; xem `docs/DESIGN.md` để biết cái gì được đánh đổi lấy cái gì.
 
 ## Luật cốt lõi
 

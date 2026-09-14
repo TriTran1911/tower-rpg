@@ -356,7 +356,7 @@ namespace TowerRpg.Tests
                 float truoc = s switch
                 {
                     Slot.Weapon => st.Damage, Slot.Armor => st.MaxHp,
-                    Slot.Glove => st.AttacksPerSec, _ => st.CritMultiplier,
+                    Slot.Glove => st.AttacksPerSec, _ => st.Lifesteal * 1e6f,
                 };
                 string a = F(truoc);
                 Assert.IsTrue(_gs.TryUpgrade(s));
@@ -364,12 +364,16 @@ namespace TowerRpg.Tests
                 float sau = s switch
                 {
                     Slot.Weapon => st.Damage, Slot.Armor => st.MaxHp,
-                    Slot.Glove => st.AttacksPerSec, _ => st.CritMultiplier,
+                    Slot.Glove => st.AttacksPerSec, _ => st.Lifesteal * 1e6f,
                 };
                 string bb = F(sau);
 
                 // Găng cấp 1->2 là 1,0 x 1,03441 = 1,034. Với một chữ số thập phân nó in ra
                 // "1.0 → 1.0": trả 300 Mảnh để đổi một con số thành chính nó.
+                // Nhẫn nhân 1e6 vì hút máu là 0,031%/cấp — con số ĐÚNG nhưng quá nhỏ cho
+                // hai chữ số thập phân. Cái người chơi THẬT SỰ đọc là "hồi X máu mỗi
+                // tầng" trong UpgradeScreen, và nó nhích mỗi cấp; test riêng ở
+                // ChiMangHutMauTests khoá điều đó.
                 Assert.AreNotEqual(a, bb,
                     $"ô {Equipment.DisplayName(s)} nâng cấp mà màn hình vẫn hiện '{a}' → '{bb}'");
             }
